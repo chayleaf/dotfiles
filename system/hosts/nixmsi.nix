@@ -27,8 +27,8 @@ in {
     resumeDevice = cryptroot;
     kernelParams = [
       "resume=/@swap/swapfile"
+      # resume_offset = $(btrfs inspect-internal map-swapfile -r path/to/swapfile)
       "resume_offset=533760"
-      # offset = $(btrfs inspect-internal map-swapfile -r path/to/swapfile)
       "fbcon=font:TER16x32"
     ];
     cleanTmpDir = true;
@@ -37,11 +37,18 @@ in {
         enable = true;
         enableCryptodisk = true;
         efiSupport = true;
+        # nodev = disable bios support 
         device = "nodev";
         gfxmodeEfi = "1920x1080";
+        gfxmodeBios = "1920x1080";
       };
       efi.canTouchEfiVariables = true;
       efi.efiSysMountPoint = "/boot/efi";
+    };
+    kernel.sysctl = {
+      "vm.dirty_ratio" = 4;
+      "vm.dirty_background_ratio" = 2;
+      "vm.swappiness" = 40;
     };
     kernelPackages = pkgs.linuxPackages_zen;
   };
@@ -63,18 +70,19 @@ in {
     fsType = "btrfs";
     # max compression! my cpu is pretty good anyway
     compress = "compress=zstd:15";
+    discard = "discard=async";
   in {
     "/" =     { inherit device fsType;
-                options = [ compress "subvol=@" ]; };
+                options = [ discard compress "subvol=@" ]; };
     "/nix" =  { inherit device fsType;
-                options = [ compress "subvol=@nix" "noatime" ]; };
+                options = [ discard compress "subvol=@nix" "noatime" ]; };
     "/swap" = { inherit device fsType;
-                options = [ compress "subvol=@swap" "noatime" ]; };
+                options = [ discard "subvol=@swap" "noatime" ]; };
     "/home" = { inherit device fsType;
-                options = [ compress "subvol=@home" ]; };
+                options = [ discard compress "subvol=@home" ]; };
     "/.snapshots" =
               { inherit device fsType;
-                options = [ compress "subvol=@snapshots" ]; };
+                options = [ discard compress "subvol=@snapshots" ]; };
     "/boot/efi" =
               { device = efiPart;
                 fsType = "vfat"; };
@@ -137,6 +145,26 @@ in {
 
   ### RANDOM PATCHES ###
 
+  # System76 scheduler (not actually a scheduler, just a renice daemon) for improved responsiveness
+
+  services.dbus.packages = [ pkgs.system76-scheduler ];
+  systemd.services."system76-scheduler" = {
+    description = "Automatically configure CPU scheduler for responsiveness on AC";
+    wantedBy = [ "multi-user.target" ];
+    serviceConfig = {
+      Type = "dbus";
+      BusName= "com.system76.Scheduler";
+      ExecStart = "${pkgs.system76-scheduler}/bin/system76-scheduler daemon";
+      ExecReload = "${pkgs.system76-scheduler}/bin/system76-scheduler daemon reload";
+    };
+  };
+  environment.etc."system76-scheduler/assignments.ron".source =
+    lib.mkOptionDefault "${pkgs.system76-scheduler}/etc/system76-scheduler/assignments.ron";
+  environment.etc."system76-scheduler/config.ron".source =
+    lib.mkOptionDefault "${pkgs.system76-scheduler}/etc/system76-scheduler/config.ron";
+  environment.etc."system76-scheduler/exceptions.ron".source =
+    lib.mkOptionDefault "${pkgs.system76-scheduler}/etc/system76-scheduler/exceptions.ron";
+
   # I can't enable early KMS with VFIO, so this will have to do
   # (amdgpu resets the font upon being loaded)
   systemd.services."systemd-vconsole-setup2" = {
@@ -166,5 +194,63 @@ in {
       exec ${shadow}/bin/login -f user
     fi
   '';
+
+  # overlays
+  nixpkgs.overlays = [(self: super: with lib; with pkgs; {
+    system76-scheduler = rustPlatform.buildRustPackage {
+      pname = "system76-scheduler";
+      version = "unstable-2022-10-05";
+      src = fetchFromGitHub {
+        owner = "pop-os";
+        repo = "system76-scheduler";
+        rev = "25a45add4300eab47ceb332b4ec07e1e74e4baaf";
+        sha256 = "sha256-eB1Qm+ITlLM51nn7GG42bydO1SQ4ZKM0wgRl8q522vw=";
+      };
+      cargoPatches = [(pkgs.writeText "system76-scheduler-cargo.patch" ''
+        diff --git i/daemon/Cargo.toml w/daemon/Cargo.toml
+        index 0397788..fbd6202 100644
+        --- i/daemon/Cargo.toml
+        +++ w/daemon/Cargo.toml
+        @@ -33,7 +33,7 @@ clap = { version = "3.1.18", features = ["cargo"] }
+         # Necessary for deserialization of untagged enums in assignments.
+         [dependencies.ron]
+         git = "https://github.com/MomoLangenstein/ron"
+        -branch = "253-untagged-enums"
+        +rev = "a9c5444d74677716f4a8a00504fb1bedbde55156"
+
+         [dependencies.tracing-subscriber]
+         version = "0.3.11"
+        diff --git i/Cargo.lock w/Cargo.lock
+        index a782756..fe56c1f 100644
+        --- i/Cargo.lock
+        +++ w/Cargo.lock
+        @@ -788,7 +788,7 @@ dependencies = [
+         [[package]]
+         name = "ron"
+         version = "0.7.0"
+        -source = "git+https://github.com/MomoLangenstein/ron?branch=253-untagged-enums#a9c5444d74677716f4a8a00504fb1bedbde55156"
+        +source = "git+https://github.com/MomoLangenstein/ron?rev=a9c5444d74677716f4a8a00504fb1bedbde55156#a9c5444d74677716f4a8a00504fb1bedbde55156"
+         dependencies = [
+          "base64",
+          "bitflags",
+      '')];
+      cargoSha256 = "sha256-EzvJEJlJzCzNEJLCE3U167LkaQHzGthPhIJ6fp0aGk8=";
+      nativeBuildInputs = [ pkg-config ];
+      buildInputs = [ dbus ];
+      EXECSNOOP_PATH = "${bcc}/bin/execsnoop";
+      postInstall = ''
+        install -D -m 0644 data/com.system76.Scheduler.conf $out/etc/dbus-1/system.d/com.system76.Scheduler.conf
+        mkdir -p $out/etc/system76-scheduler
+        install -D -m 0644 data/*.ron $out/etc/system76-scheduler/
+      '';
+
+      meta = {
+        description = "System76 Scheduler";
+        homepage = "https://github.com/pop-os/system76-scheduler";
+        license = licenses.mpl20;
+        platforms = [ "i686-linux" "x86_64-linux" ];
+      };
+    };
+  })];
 }
 
