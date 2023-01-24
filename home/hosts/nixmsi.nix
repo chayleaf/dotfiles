@@ -29,6 +29,8 @@
     bottles
     gimp krita blender
     tdesktop
+    rustc rustfmt cargo
+    (import ../common/home-daemon.nix { inherit lib pkgs; })
     # waiting until the PR gets merged
     (looking-glass-client.overrideAttrs (old: {
       version = "B6";

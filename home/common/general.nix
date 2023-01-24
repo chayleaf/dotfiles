@@ -55,6 +55,6 @@
   };
 
   home.packages = with pkgs; [
-    rclone fuse jq appimage-run python3Full
+    rclone fuse jq appimage-run python3Full killall
   ];
 }
