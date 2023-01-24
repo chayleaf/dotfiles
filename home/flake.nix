@@ -11,9 +11,11 @@
     };
   };
 
-  outputs = inputs@{ self, nixpkgs, home-manager, nur }:
+  outputs = { self, nixpkgs, home-manager, nur }:
     let
-      priv = import ./private.nix inputs;
+      # IRL-related private config
+      priv = if builtins.pathExists ./private.nix then (import ./private.nix) else {};
+      getPriv = (hostname: with builtins; if hasAttr hostname priv then (getAttr hostname priv) else {});
     in {
       homeConfigurations = {
         "user@nixmsi" = home-manager.lib.homeManagerConfiguration {
@@ -21,8 +23,7 @@
           modules = [
             nur.nixosModules.nur
             ./hosts/nixmsi.nix
-            # IRL-related private config
-            priv.nixmsi
+            (getPriv "nixmsi")
           ];
         };
       };

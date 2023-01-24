@@ -11,7 +11,8 @@
   let
     hw = nixos-hardware.nixosModules;
     # IRL-related stuff I'd rather not put into git
-    priv = import ./private.nix inputs;
+    priv = if builtins.fileExists ./private.nix then (import ./private.nix inputs) else {};
+    getPriv = (hostname: with builtins; if hasAttr hostname priv then getAttr hostname priv else {});
   in utils.lib.mkFlake {
     inherit self inputs;
     hostDefaults.modules = [
@@ -29,13 +30,13 @@
       nixmsi = {
         system = "x86_64-linux";
         modules = [
-          priv.nixmsi
           ./hosts/nixmsi.nix
           hw.common-pc-ssd # enables fstrim
           hw.common-cpu-amd # microcode
           hw.common-cpu-amd-pstate # amd-pstate
           hw.common-gpu-amd # configures drivers
           hw.common-pc-laptop # enables tlp
+          (getPriv "nixmsi")
         ];
       };
     };

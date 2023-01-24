@@ -1,0 +1,5 @@
+{
+  nixmsi = { pkgs, ... }: {
+    # insert private config here
+  };
+}

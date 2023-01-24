@@ -28,6 +28,7 @@
     protontricks proton-caller
     bottles
     gimp krita blender
+    tdesktop
     # waiting until the PR gets merged
     (looking-glass-client.overrideAttrs (old: {
       version = "B6";
