@@ -131,6 +131,11 @@ in {
     jack.enable = true;
   };
 
+  xdg.portal = {
+    enable = true;
+    extraPortals = with pkgs; [ xdg-desktop-portal-gtk xdg-desktop-portal-wlr ];
+  };
+
   users.users.user = {
     isNormalUser = true;
     extraGroups = [ "networkmanager" "wheel" ];

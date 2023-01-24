@@ -45,7 +45,7 @@
       cmakeFlags = old.cmakeFlags ++ [ "-DENABLE_PULSEAUDIO=no" ];
     }))
   ];
-  home.file."${config.xdg.configHome}/looking-glass/client.ini".text = ''
+  xdg.configFile."looking-glass/client.ini".text = ''
     [app]
     shmFile=/dev/kvmfr0
     capture=dxgi

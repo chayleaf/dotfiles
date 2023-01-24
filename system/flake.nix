@@ -11,7 +11,7 @@
   let
     hw = nixos-hardware.nixosModules;
     # IRL-related stuff I'd rather not put into git
-    priv = if builtins.fileExists ./private.nix then (import ./private.nix inputs) else {};
+    priv = if builtins.pathExists ./private.nix then (import ./private.nix) else {};
     getPriv = (hostname: with builtins; if hasAttr hostname priv then getAttr hostname priv else {});
   in utils.lib.mkFlake {
     inherit self inputs;

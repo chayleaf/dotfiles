@@ -98,13 +98,8 @@ commonConfig = {
   };
   menu = "${pkgs.bemenu}/bin/bemenu-run --no-overlap --prompt '>' --tb '#24101a' --tf '#ebbe5f' --fb '#24101a' --nb '#24101a70' --ab '#24101a70' --nf '#ebdadd' --af '#ebdadd' --hb '#394893' --hf '#e66e6e' --list 30 --prefix '*' --scrollbar autohide --fn 'Noto Sans Mono' --line-height 23 --sb '#394893' --sf '#ebdadd' --scb '#6b4d52' --scf '#e66e6e'";
   terminal = if config.useAlacritty then "${pkgs.alacritty}/bin/alacritty" else "${pkgs.urxvt}/bin/urxvt";
-  window = {
-    hideEdgeBorders = "smart";
-  };
+  window.hideEdgeBorders = "smart";
   workspaceAutoBackAndForth = true;
-  floating.criteria = [
-    { title = "Steam - Update News"; }
-  ];
 };
 genKeybindings = (default_options: kb:
   kb // {
@@ -124,14 +119,36 @@ genKeybindings = (default_options: kb:
 );
 in
 {
+  # TODO merge with colors in gui.nix
   imports = [ ./options.nix ./gui.nix ];
+  home.sessionVariables = {
+    BEMENU_OPTS = "--no-overlap --prompt '>' --tb '#24101a' --tf '#ebbe5f' --fb '#24101a' --nb '#24101a70' --ab '#24101a70' --nf '#ebdadd' --af '#ebdadd' --hb '#394893' --hf '#e66e6e' --list 30 --prefix '*' --scrollbar autohide --fn 'Noto Sans Mono' --line-height 23 --sb '#394893' --sf '#ebdadd' --scb '#6b4d52' --scf '#e66e6e'";
+    _JAVA_AWT_WM_NONREPARENTING = "1";
+    GTK_IM_MODULE = "fcitx";
+    QT_IM_MODULE = "fcitx";
+    XMODIFIERS = "@im=fcitx";
+    SDL_IM_MODULE = "fcitx";
+    XIM_SERVERS = "fcitx";
+    INPUT_METHOD = "fcitx";
+  };
+  xdg.configFile."xdg-desktop-portal-wlr/config".source = (pkgs.formats.ini {}).generate "xdg-desktop-portal-wlr.ini" {
+    screencast = {
+      max_fps = 60;
+      chooser_type = "simple";
+      chooser-cmd = "''${pkgs.slurp}/bin/slurp -f %o -or";
+      # exec_before
+      # exec_after
+    };
+  };
+  systemd.user.services = lib.mkIf config.wayland.windowManager.sway.enable {
+    gammastep.Unit.ConditionEnvironment = "WAYLAND_DISPLAY";
+  };
   programs.mako = {
     enable = lib.mkDefault config.wayland.windowManager.sway.enable;
     # ms
     defaultTimeout = 7500;
     font = "Noto Sans Mono 12";
   };
-  # TODO merge with colors in gui.nix
   programs.alacritty = {
     enable = lib.mkDefault config.useAlacritty;
     settings = {
@@ -177,9 +194,9 @@ in
     fonts = [ "xft:Noto Sans Mono:pixelsize=16" "xft:Symbols Nerd Font Mono:pixelsize=16" ];
   };
   xsession.windowManager.i3 = {
-    config = {
+    config = let i3Config = {
       keybindings = genKeybindings options.xsession.windowManager.i3 {};
-    } // commonConfig;
+    }; in i3Config // commonConfig // i3Config;
   };
   home.file.".xinitrc".text = ''
     if test -z "$DBUS_SESSION_BUS_ADDRESS"; then
@@ -192,22 +209,24 @@ in
     exec i3
   '';
   xsession.initExtra = ''
-    export BEMENU_OPTS="--no-overlap --prompt '>' --tb '#24101a' --tf '#ebbe5f' --fb '#24101a' --nb '#24101a70' --ab '#24101a70' --nf '#ebdadd' --af '#ebdadd' --hb '#394893' --hf '#e66e6e' --list 30 --prefix '*' --scrollbar autohide --fn 'Noto Sans Mono' --line-height 23 --sb '#394893' --sf '#ebdadd' --scb '#6b4d52' --scf '#e66e6e'"
-    export _JAVA_AWT_WM_NONREPARENTING=1
-    export GTK_IM_MODULE=fcitx
-    export QT_IM_MODULE=fcitx
-    export XMODIFIERS=@im=fcitx
-    export SDL_IM_MODULE=fcitx
-    export XIM_SERVERS=fcitx
-    export INPUT_METHOD=fcitx
     setxkbmap -layout jp,ru -option caps:swapescape,compose:menu,grp:win_space_toggle
   '';
   home.packages = with pkgs; if config.wayland.windowManager.sway.enable then [
     wl-clipboard
+    xdg-desktop-portal
+    xdg-desktop-portal-wlr
+    xdg-desktop-portal-gtk
   ] else [];
   wayland.windowManager.sway = {
     wrapperFeatures.gtk = true;
-    config = {
+    config = let swayConfig = {
+      window.commands = [
+        { command = "floating enable; move workspace current";
+          criteria = {
+            app_id = "^org.keepassxc.KeePassXC$";
+            title = "^KeePassXC - (?:Browser |ブラウザーの)?(?:Access Request|アクセス要求)$";
+          }; }
+      ];
       assigns = {
         "3" = [{ app_id = "org.keepassxc.KeePassXC"; }];
       };
@@ -216,6 +235,10 @@ in
         "${modifier}+Mod1+Print" = "exec ${grimshot}/bin/grimshot copy window";
       });
       startup = [
+        {
+          always = true;
+          command = "systemctl --user import-environment DISPLAY WAYLAND_DISPLAY SWAYSOCK XDG_CURRENT_DESKTOP";
+        }
         {
           command = "~/scripts/initwm.sh";
         }
@@ -237,23 +260,17 @@ in
           xkb_options = "caps:swapescape,compose:menu,grp:win_space_toggle";
         };
       };
-    } // commonConfig;
+    }; in swayConfig // commonConfig // swayConfig;
     extraSessionCommands = ''
-      export BEMENU_OPTS="--no-overlap --prompt '>' --tb '#24101a' --tf '#ebbe5f' --fb '#24101a' --nb '#24101a70' --ab '#24101a70' --nf '#ebdadd' --af '#ebdadd' --hb '#394893' --hf '#e66e6e' --list 30 --prefix '*' --scrollbar autohide --fn 'Noto Sans Mono' --line-height 23 --sb '#394893' --sf '#ebdadd' --scb '#6b4d52' --scf '#e66e6e'"
-      export _JAVA_AWT_WM_NONREPARENTING=1
-      export GTK_IM_MODULE=fcitx
-      export QT_IM_MODULE=fcitx
-      export XMODIFIERS=@im=fcitx
-      export SDL_IM_MODULE=fcitx
-      export XIM_SERVERS=fcitx
-      export INPUT_METHOD=fcitx
-
       export BEMENU_BACKEND=wayland
       export SDL_VIDEODRIVER=wayland
       export QT_QPA_PLATFORM=wayland
       export QT_WAYLAND_DISABLE_WINDOWDECORATION=1
       export QT_QPA_PLATFORMTHEME=gnome
       export MOZ_ENABLE_WAYLAND=1
+      export GDK_BACKEND=wayland
+      export GTK_USE_PORTAL=1
+      export XDG_CURRENT_DESKTOP=sway
     '';
   };
 }

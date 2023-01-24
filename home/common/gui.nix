@@ -1,5 +1,26 @@
 { config, pkgs, lib, ... }:
 {
+  home.sessionVariables."ALSOFT_CONF" = "${config.xdg.configHome}/.config/alsoft.conf";
+  xdg.configFile."alsoft.conf".text = ''
+    [general]
+    hrtf = true
+    stereo-encoding = hrtf
+    drivers = pipewire,pulseaudio,jack,alsa,oss,
+    periods = 2
+    hrtf-paths = ${pkgs.openal}/share/openal/hrtf
+
+    [decoder]
+    hq-mode = true
+
+    [pipewire]
+    rt-mix = true
+
+    [pulse]
+    allow-moves = true
+  '';
+
+  xdg.userDirs.enable = true;
+
   # TODO sort out this mess with colors
   programs.mpv = {
     enable = true;

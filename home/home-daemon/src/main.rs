@@ -6,15 +6,19 @@ use swayipc_async::{Connection, Event, EventType, WindowChange};
 
 #[tokio::main(flavor = "current_thread")]
 async fn main() {
-    let (dbus, _server_handle) = DBus::system(false, false)
+    let (sys_dbus, _server_handle) = DBus::system(false, false)
         .await
         .expect("failed to get the DBus object");
-    let dbus = Arc::new(dbus);
+    let (ses_dbus, _server_handle) = DBus::session(false, false)
+        .await
+        .expect("failed to get the DBus object");
+    let sys_dbus = Arc::new(sys_dbus);
+    let _ses_dbus = Arc::new(ses_dbus);
 
     let mut handlers = Vec::<Box<dyn SwayIpcHandler>>::new();
     for args in std::env::args().skip(1) {
         handlers.push(match args.as_str() {
-            "system76-scheduler" => Box::new(System76::new(dbus.clone())),
+            "system76-scheduler" => Box::new(System76::new(sys_dbus.clone())),
             _ => panic!("handler not supported"),
         })
     }
@@ -85,3 +89,4 @@ impl SwayIpcHandler for System76 {
         }
     }
 }
+

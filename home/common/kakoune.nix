@@ -39,7 +39,7 @@ in {
     '';
     plugins = with pkgs.kakounePlugins; [ kak-lsp sleuth-kak tabs-kak ]; 
   };
-  home.file."${config.xdg.configHome}/kak-lsp/kak-lsp.toml".text = ''
+  xdg.configFile."kak-lsp/kak-lsp.toml".text = ''
     # bash, clangd, json, html, css, python work out of the box
     [language.rust]
     filetypes = ["rust"]
