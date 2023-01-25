@@ -71,6 +71,8 @@ in {
   };
   programs.urxvt = {
     # default shell can't be changed... I can create a wrapper, but fuck that
+    # symbols nerd font mono doesnt seem to work anyway, so theres no point
+    # in switching from bash to zsh in this case
     enable = supportTerminal "urxvt";
     package = pkgs.rxvt-unicode-emoji;
     keybindings = {
@@ -80,9 +82,13 @@ in {
     extraConfig = {
       depth = 32;
       inheritPixmap = true;
+      # letterSpace = -1;
     };
     scroll.bar.enable = false;
-    fonts = [ "xft:Noto Sans Mono:size=16" "xft:Symbols Nerd Font Mono:size=16" ];
+    fonts = [
+      "xft:Noto Sans Mono:size=16"
+      "xft:Symbols Nerd Font Mono:size=16"
+    ];
   };
   programs.foot = {
     enable = supportTerminal "foot";

@@ -12,6 +12,10 @@
     history.path = "${config.xdg.dataHome}/zsh/zsh_history";
     shellAliases.s = "sudo -A";
     shellAliases.se = "sudo -AE";
+    # I dont want to remap the up key, so only map this, setting ATUIN_NOBIND to true
+    initExtra = ''
+      bindkey '^r' _atuin_search_widget
+    '';
     localVariables = {
       POWERLEVEL9K_LEFT_PROMPT_ELEMENTS = [
         # "os_icon"               # os identifier
@@ -101,6 +105,9 @@
       POWERLEVEL9K_COMMAND_EXECUTION_TIME_BACKGROUND = "3";
       POWERLEVEL9K_NIX_SHELL_FOREGROUND = "15";
       SHELL = "zsh";
+      ATUIN_NOBIND = "true";
+      # to allow rebinding ^r
+      ZVM_INIT_MODE = "sourcing";
     };
     plugins = with pkgs; [
       { name = "zsh-vi-mode";
