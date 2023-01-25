@@ -1,6 +1,7 @@
 { config, lib, pkgs, ... }:
 let
-  cryptroot = "/dev/disk/by-uuid/f4edc0df-b50b-42f6-94ed-1c8f88d6cdbb";
+  cryptrootUuid = "f4edc0df-b50b-42f6-94ed-1c8f88d6cdbb";
+  cryptroot = "/dev/disk/by-uuid/${cryptrootUuid}";
   encPart = "/dev/disk/by-uuid/ce6ccdf0-7b6a-43ae-bfdf-10009a55041a";
   efiPart = "/dev/disk/by-uuid/D77D-8CE0";
 in {
@@ -149,6 +150,19 @@ in {
   };
 
   ### RANDOM PATCHES ###
+
+  # zsh
+  environment.pathsToLink = [ "/share/zsh" ];
+
+  # dedupe
+
+  services.beesd = {
+    filesystems.cryptroot = {
+      spec = "UUID=${cryptrootUuid}";
+      hashTableSizeMB = 128;
+      # extraOptions = [ ];
+    };
+  };
 
   # System76 scheduler (not actually a scheduler, just a renice daemon) for improved responsiveness
 

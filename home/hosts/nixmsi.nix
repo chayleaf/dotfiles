@@ -11,6 +11,10 @@
   home.stateVersion = "22.11";
   home.username = "user";
   home.homeDirectory = "/home/user";
+  termShell = {
+    enable = true;
+    path = "${pkgs.zsh}/bin/zsh";
+  };
   xsession.windowManager.i3.enable = true;
   wayland.windowManager.sway.enable = true;
   nixpkgs.config.allowUnfreePredicate = pkg: builtins.elem (lib.getName pkg) [
@@ -20,6 +24,7 @@
     "steam-runtime"
     "steamcmd"
   ];
+  terminals = ["kitty" "urxvt"];
   home.packages = with pkgs; [
     steam-run steam
     easyeffects

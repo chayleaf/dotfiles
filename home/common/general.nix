@@ -1,6 +1,6 @@
-{ config, pkgs, ... }:
+{ config, pkgs, lib, ... }:
 {
-  imports = [ ./options.nix ];
+  imports = [ ./options.nix ./zsh.nix ];
   manual.json.enable = true;
   services.gpg-agent = {
     enable = true;
@@ -10,30 +10,82 @@
   };
 
   programs = {
+    atuin = {
+      enable = true;
+      settings = {
+        update_check = false;
+      };
+    };
+    nnn = let pluginSrc = "${pkgs.nnn.src}/plugins"; in {
+      enable = true;
+      package = (pkgs.nnn.override ({ withNerdIcons = true; })).overrideAttrs (oldAttrs: {
+        # no need to add makeWrapper to nativeBuildInputs as home-manager does it already
+        postInstall =
+          let nnnArchiveRegex = "\\.(${lib.strings.concatStringsSep "|" [
+            "7z" "a" "ace" "alz" "arc" "arj" "bz" "bz2" "cab" "cpio" "deb" "gz" "jar" "lha" "lz" "lzh" "lzma" "lzo" "rar" "rpm" "rz" "t7z" "tar" "tbz" "tbz2" "tgz" "tlz" "txz" "tZ" "tzo" "war" "xpi" "xz" "Z" "zip"
+          ]})$"; in with lib; with strings; ''
+          wrapProgram $out/bin/nnn \
+            --set GUI 1 \
+            --set NNN_OPENER ${escapeShellArg "${pluginSrc}/nuke"} \
+            --set NNN_ARCHIVE ${escapeShellArg nnnArchiveRegex} \
+            --add-flags ${
+              # -a: auto create fifo file
+              # -c: use NNN_OPENER
+              # -x: x server features
+              escapeShellArg "-a -c -x"
+            }
+        '';
+      });
+      extraPackages = with pkgs; [
+        # utils
+        gnused mktemp fzf coreutils-full findutils xdg-utils git gnupg whois curl
+        file mediainfo unzip gnutar man rclone sshfs trash-cli
+        # drag & drop
+        xdragon
+        # xembed
+        tabbed
+        # for preview
+        exa bat
+        ffmpeg ffmpegthumbnailer nsxiv imagemagick
+        libarchive unzip gnutar atool
+        libreoffice poppler_utils fontpreview djvulibre
+        glow w3m
+        # for opening
+        p7zip unrar-wrapper zathura mpv odt2txt
+      ];
+      plugins = {
+        src = pluginSrc;
+        mappings = {
+          p = "-preview-tui";
+          P = "fzplug";
+          D = "dragdrop";
+          c = "-chksum";
+          d = "-diffs";
+          f = "fzopen";
+          s = "suedit"; 
+          x = "togglex";
+          u = "umounttree";
+        };
+      };
+    };
     neomutt = {
       enable = true;
       sidebar.enable = true;
       vimKeys = true;
     };
     home-manager.enable = true;
+    # i only use this as a login shell
     bash = {
       enable = true;
-    };
-    fish = {
-      enable = true;
-      interactiveShellInit = ''
-        ${pkgs.gnupg}/bin/gpg-connect-agent --quiet updatestartuptty /bye > /dev/null
-      '';
-      shellInit = ''
-        set PATH ~/bin/:$PATH
-      '';
-      shellAbbrs = {
-      };
     };
     git = {
       enable = true;
       package = pkgs.gitAndTools.gitFull;
       delta.enable = true;
+      extraConfig = {
+        core.askPass = "";
+        credential.helper = "${pkgs.gitAndTools.gitFull}/bin/git-credential-libsecret";
+      };
     };
     ssh = {
       enable = true;

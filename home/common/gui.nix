@@ -1,5 +1,6 @@
 { config, pkgs, lib, ... }:
 {
+  imports = [ ./terminal.nix ];
   home.sessionVariables."ALSOFT_CONF" = "${config.xdg.configHome}/.config/alsoft.conf";
   xdg.configFile."alsoft.conf".text = ''
     [general]
@@ -71,6 +72,8 @@
     # "*fading" = 0;
     # "*fadeColor" = "#6b4d52";
   };
+  # home.file.".Xdefaults".source = /. + "/${config.home.homeDirectory}/.Xresources";
+  home.file.".Xdefaults".source = config.home.file."${config.home.homeDirectory}/.Xresources".source;
   services.gammastep.enable = true;
   services.kdeconnect.enable = true;
   fonts.fontconfig.enable = true;

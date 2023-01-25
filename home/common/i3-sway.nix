@@ -97,7 +97,6 @@ commonConfig = {
     inner = 10;
   };
   menu = "${pkgs.bemenu}/bin/bemenu-run --no-overlap --prompt '>' --tb '#24101a' --tf '#ebbe5f' --fb '#24101a' --nb '#24101a70' --ab '#24101a70' --nf '#ebdadd' --af '#ebdadd' --hb '#394893' --hf '#e66e6e' --list 30 --prefix '*' --scrollbar autohide --fn 'Noto Sans Mono' --line-height 23 --sb '#394893' --sf '#ebdadd' --scb '#6b4d52' --scf '#e66e6e'";
-  terminal = if config.useAlacritty then "${pkgs.alacritty}/bin/alacritty" else "${pkgs.urxvt}/bin/urxvt";
   window.hideEdgeBorders = "smart";
   workspaceAutoBackAndForth = true;
 };
@@ -130,6 +129,10 @@ in
     SDL_IM_MODULE = "fcitx";
     XIM_SERVERS = "fcitx";
     INPUT_METHOD = "fcitx";
+    SUDO_ASKPASS = pkgs.writeScript "sudo-askpass" ''
+      #! ${pkgs.bash}/bin/bash
+      ${pkgs.libsecret}/bin/secret-tool lookup root password
+    '';
   };
   xdg.configFile."xdg-desktop-portal-wlr/config".source = (pkgs.formats.ini {}).generate "xdg-desktop-portal-wlr.ini" {
     screencast = {
@@ -149,53 +152,10 @@ in
     defaultTimeout = 7500;
     font = "Noto Sans Mono 12";
   };
-  programs.alacritty = {
-    enable = lib.mkDefault config.useAlacritty;
-    settings = {
-      window.opacity = 0.75;
-      font.normal.family = "Noto Sans Mono";
-      font.size = 16;
-      colors.primary.background = "#24101a";
-      colors.primary.foreground = "#ebdadd";
-      colors.normal = {
-        black = "#523b3f";
-        red = "#e66e6e";
-        green = "#8cbf73";
-        yellow = "#ebbe5f";
-        blue = "#5968b3";
-        magenta = "#a64999";
-        cyan = "#77c7c2";
-        white = "#f0e4e6";
-      };
-      colors.bright = {
-        black = "#6b4d52";
-        red = "#e66e6e";
-        green = "#8cbf73";
-        yellow = "#ebbe5f";
-        blue = "#5968b3";
-        magenta = "#a64999";
-        cyan = "#77c7c2";
-        white = "#f7f0f1";
-      };
-    };
-  };
-  # i use this instead of alacritty on old laptops
-  programs.urxvt = {
-    enable = lib.mkDefault (!config.useAlacritty);
-    keybindings = {
-      "Control-Alt-C" = "builtin-string:";
-      "Control-Alt-V" = "builtin-string:";
-    };
-    extraConfig = {
-      depth = 32;
-      inheritPixmap = true;
-    };
-    scroll.bar.enable = false;
-    fonts = [ "xft:Noto Sans Mono:pixelsize=16" "xft:Symbols Nerd Font Mono:pixelsize=16" ];
-  };
   xsession.windowManager.i3 = {
     config = let i3Config = {
       keybindings = genKeybindings options.xsession.windowManager.i3 {};
+      terminal = config.terminalBinX;
     }; in i3Config // commonConfig // i3Config;
   };
   home.file.".xinitrc".text = ''
@@ -220,6 +180,7 @@ in
   wayland.windowManager.sway = {
     wrapperFeatures.gtk = true;
     config = let swayConfig = {
+      terminal = config.terminalBin;
       window.commands = [
         { command = "floating enable; move workspace current";
           criteria = {
