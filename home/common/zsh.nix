@@ -14,6 +14,22 @@
     shellAliases.se = "sudo -AE";
     # I dont want to remap the up key, so only map this, setting ATUIN_NOBIND to true
     initExtra = ''
+      up-line-or-local-history() {
+        zle set-local-history 1
+        zle up-line-or-history
+        zle set-local-history 0
+      }
+      zle -N up-line-or-local-history
+      down-line-or-local-history() {
+        zle set-local-history 1
+        zle down-line-or-history
+        zle set-local-history 0
+      }
+      zle -N down-line-or-local-history
+      bindkey '^[[A' up-line-or-local-history
+      bindkey '^[OA' up-line-or-local-history
+      bindkey '^[[B' down-line-or-local-history
+      bindkey '^[OB' down-line-or-local-history
       bindkey '^r' _atuin_search_widget
     '';
     localVariables = {

@@ -82,7 +82,6 @@ in {
     extraConfig = {
       depth = 32;
       inheritPixmap = true;
-      # letterSpace = -1;
     };
     scroll.bar.enable = false;
     fonts = [

@@ -77,6 +77,10 @@
     # i only use this as a login shell
     bash = {
       enable = true;
+      initExtra = ''
+        bind -x '"\C-r": __atuin_history'
+        export ATUIN_NOBIND=true
+      '';
     };
     git = {
       enable = true;
