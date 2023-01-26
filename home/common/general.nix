@@ -91,6 +91,17 @@
         credential.helper = "${pkgs.gitAndTools.gitFull}/bin/git-credential-libsecret";
       };
     };
+    bat = {
+      enable = true;
+    };
+    lsd = {
+      enable = true;
+      settings = {
+        date = "+%Y-%m-%d %H:%M:%S";
+        permission = "octal";
+        size = "short";
+      };
+    };
     ssh = {
       enable = true;
       compression = true;

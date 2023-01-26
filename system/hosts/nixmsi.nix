@@ -151,6 +151,8 @@ in {
 
   ### RANDOM PATCHES ###
 
+  programs.fuse.userAllowOther = true;
+
   # zsh
   environment.pathsToLink = [ "/share/zsh" ];
 

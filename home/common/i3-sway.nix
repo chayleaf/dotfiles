@@ -1,94 +1,100 @@
 { options, config, pkgs, lib, ... }:
 let
 modifier = "Mod4";
+barConfig = {
+  mode = "dock";
+  hiddenState = "hide";
+  position = "bottom";
+  workspaceButtons = true;
+  workspaceNumbers = true;
+  fonts = {
+    names = [ "Noto Sans Mono" "Symbols Nerd Font Mono" ];
+    size = 16.0;
+  };
+  trayOutput = "*";
+  colors = {
+    background = "#24101a";
+    statusline = "#ebdadd";
+    separator = "#6b4d52";
+    focusedWorkspace = {
+      border = "#782a2a";
+      background = "#782a2a";
+      text = "#ebdadd";
+    };
+    activeWorkspace = {
+      border = "#913131";
+      background = "#913131";
+      text = "#ebdadd";
+    };
+    inactiveWorkspace = {
+      border = "#472222";
+      background = "#4d2525";
+      text = "#8c8284";
+    };
+    urgentWorkspace = {
+      border = "#734545";
+      background = "#993d3d";
+      text = "#ebdadd";
+    };
+    bindingMode = {
+      border = "#734545";
+      background = "#993d3d";
+      text = "#ebdadd";
+    };
+  };
+};
 commonConfig = {
   modifier = modifier;
-  bars = [{
-    mode = "dock";
-    hiddenState = "hide";
-    position = "bottom";
-    workspaceButtons = true;
-    workspaceNumbers = true;
-    statusCommand = "${pkgs.i3status}/bin/i3status";
-    fonts = {
-      names = [ "Noto Sans Mono" "Symbols Nerd Font Mono" ];
-      size = 16.0;
-    };
-    trayOutput = "*";
-    colors = {
-      background = "#24101a";
-      statusline = "#ebdadd";
-      separator = "#6b4d52";
-      focusedWorkspace = {
-        border = "#782a2a";
-        background = "#782a2a";
-        text = "#ebdadd";
-      };
-      activeWorkspace = {
-        border = "#913131";
-        background = "#913131";
-        text = "#ebdadd";
-      };
-      inactiveWorkspace = {
-        border = "#472222";
-        background = "#4d2525";
-        text = "#8c8284";
-      };
-      urgentWorkspace = {
-        border = "#734545";
-        background = "#993d3d";
-        text = "#ebdadd";
-      };
-      bindingMode = {
-        border = "#734545";
-        background = "#993d3d";
-        text = "#ebdadd";
-      };
-    };
-  }];
   startup = [
     { command = "~/scripts/initwm.sh"; }
   ];
   colors = {
     focused = {
-      background = "#913131";
-      border = "#913131";
-      childBorder = "#b35656";
+      # background = "#913131";
+      #background = "#5e4651c9";
+      #border = "#5e4651c9";
+      childBorder = "#b0a3a5c0";
+      background = "#24101ac0";
+      border = "#24101ac0";
+      # childBorder = "#5e4651c9";
       indicator = "#b35656";
       text = "#ebdadd";
     };
     focusedInactive = {
-      background = "#782a2a";
-      border = "#782a2a";
-      childBorder = "#b32d2d";
+      # background = "#782a2a";
+      # border = "#782a2a";
+      #background = "#5e4651c9";
+      #border = "#5e4651c9";
+      #childBorder = "#5e4651c9";
+      background = "#24101ac0";
+      border = "#24101ac0";
+      childBorder = "#24101ac0";
+      # childBorder = "#b32d2d";
       indicator = "#b32d2d";
       text = "#ebdadd";
     };
-    placeholder = {
-      background = "#24101a";
-      border = "#24101a";
-      childBorder = "#24101a";
-      indicator = "#000000";
-      text = "#ebdadd";
-    };
     unfocused = {
-      background = "#4d2525";
-      border = "#472222";
-      childBorder = "#4d2525";
+      # background = "#4d2525";
+      # border = "#472222";
+      background = "#24101ac0";
+      border = "#24101ac0";
+      childBorder = "#24101ac0";
+      # childBorder = "#4d2525";
       indicator = "#661a1a";
       text = "#8c8284";
     };
     urgent = {
       background = "#993d3d";
       border = "#734545";
-      childBorder = "#993d3d";
+      childBorder = "#734545";
+      # childBorder = "#993d3d";
       indicator = "#993d3d";
       text = "#ebdadd";
     };
   };
   floating.titlebar = true;
   fonts = {
-    names = [ "Noto Sans" "Noto Emoji" "Symbols Nerd Font Mono" ];
+    names = [ "Noto Sans Mono" "Symbols Nerd Font Mono" ];
     size = 16.0;
   };
   gaps = {
@@ -157,6 +163,11 @@ in
   };
   xsession.windowManager.i3 = {
     config = let i3Config = {
+      bars = [
+        (barConfig // {
+          statusCommand = "${pkgs.i3status}/bin/i3status";
+        })
+      ];
       keybindings = genKeybindings options.xsession.windowManager.i3 {
         XF86AudioRaiseVolume = "exec ${pkgs.pamixer}/bin/pamixer --increase 5";
         XF86AudioLowerVolume = "exec ${pkgs.pamixer}/bin/pamixer --decrease 5";
@@ -187,9 +198,92 @@ in
     xdg-desktop-portal-wlr
     xdg-desktop-portal-gtk
   ] else [];
+  programs.waybar = {
+    enable = true;
+    settings = [{
+      layer = "bottom";
+      # position = "bottom";
+      ipc = true;
+      height = 40;
+      modules-left = [ "cpu" "sway/workspaces" "sway/mode" ];
+      "sway/workspaces" = {
+        disable-scroll = true;
+        format = "{value}{icon}";
+        format-icons = {
+          default = "";
+          focused = "";
+          urgent = " ";
+          "2" = " 󰵅";
+          "3" = " ";
+          "4" = " ";
+          "5" = " ";
+        };
+        persistent-workspaces = {
+          "1" = []; "2" = []; "3" = []; "4" = []; "5" = [];
+        };
+      };
+      "sway/mode" = {
+        tooltip = false;
+      };
+      modules-center = [ "sway/window" ];
+      #fixed-center = false;
+      "sway/window" = {
+        format = "{title}";
+        max-length = 50;
+        tooltip = false;
+        icon = true;
+        rewrite = {
+          kitty = "";
+          zsh = "";
+          nheko = "";
+          Nextcloud = "";
+          "(.*) — LibreWolf" = "$1";
+          "(.*) - KeePassXC" = "$1";
+        };
+      };
+      modules-right = [ "memory" "tray" "wireplumber" "clock" "sway/language" ];
+      cpu = {
+        # format = "{usage}% ";
+        format = " {icon0}{icon1}{icon2}{icon3}{icon4}{icon5}{icon6}{icon7}{icon8}{icon9}{icon10}{icon11}{icon12}{icon13}{icon14}{icon15}";
+        format-icons = ["▁" "▂" "▃" "▄" "▅" "▆" "▇" "█"];
+        tooltip = false;
+      };
+      memory = {
+        format = " {used}G";
+        tooltip = false;
+      };
+      tray = {
+        icon-size = 26;
+        spacing = 5;
+      };
+      wireplumber = {
+        format = "{icon} {volume}%";
+        format-muted = "ﱝ";
+        format-icons = ["奄" "奔" "墳"];
+        tooltip = false;
+      };
+      clock = {
+        interval = 5;
+        format = "{:%Y-%m-%d %H:%M:%S}";
+        tooltip = false;
+      };
+      "sway/language" = {
+        tooltip = false;
+      };
+    }];
+    style = ./waybar.css;
+  };
   wayland.windowManager.sway = {
     wrapperFeatures.gtk = true;
     config = let swayConfig = {
+      bars = [
+        {
+          command = "${config.programs.waybar.package}/bin/waybar";
+          mode = "dock";
+          position = "bottom";
+          hiddenState = "hide";
+        }
+      ];
       terminal = config.terminalBin;
       window.commands = [
         { command = "floating enable; move workspace current";
@@ -220,7 +314,7 @@ in
               ({a, b}: if a >= b then null else "${a}+${b}")
               (lib.attrsets.cartesianProductOfSets {
                 a = modifiers;
-                b=modifiers;
+                b = modifiers;
               }));
         modifierTriples = ["control+shift+mod1" "control+shift+mod4" "control+mod1+mod4" "control+shift+mod5"];
         modifierCombos = modifiers ++ modifierPairs ++ modifierTriples;
@@ -248,9 +342,9 @@ in
         "--locked XF86AudioRaiseVolume" = "exec ${pkgs.pamixer}/bin/pamixer --increase 5";
         "--locked XF86AudioLowerVolume" = "exec ${pkgs.pamixer}/bin/pamixer --decrease 5";
         "--locked XF86AudioMute" = "exec ${pkgs.pamixer}/bin/pamixer --toggle-mute";
-        "--locked XF86AudioPlay" = "exec ${pkgs.playerctl}/bin/playerctl play-pause";
-        "--locked XF86AudioNext" = "exec ${pkgs.playerctl}/bin/playerctl next";
-        "--locked XF86AudioPrev" = "exec ${pkgs.playerctl}/bin/playerctl previous";
+        "--locked --inhibited XF86AudioPlay" = "exec ${pkgs.playerctl}/bin/playerctl play-pause";
+        "--locked --inhibited XF86AudioNext" = "exec ${pkgs.playerctl}/bin/playerctl next";
+        "--locked --inhibited XF86AudioPrev" = "exec ${pkgs.playerctl}/bin/playerctl previous";
       });
       startup = [
         {

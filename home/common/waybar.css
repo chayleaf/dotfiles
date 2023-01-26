@@ -1,0 +1,107 @@
+@define-color bg rgba(36, 16, 26, .75); /*#24101ac0;*/
+@define-color blue #87e5cf;
+@define-color green #8cbf73;
+@define-color yellow #ebbe5f;
+@define-color red #e64040;
+@define-color pink #ffa8a8;
+@define-color fg #ebdadd;
+@define-color dimmed rgba(235, 218, 221, .15);
+
+* {
+  border: none;
+  border-radius: 0;
+  font-family: Noto Sans Mono, "Symbols Nerd Font Mono", monospace;
+  font-size: 19;
+  min-height: 0;
+}
+
+window#waybar {
+  background-color: @bg;
+  transition-property: background-color;
+  transition-duration: .5s;
+}
+
+window#waybar.hidden {
+  opacity: .2;
+}
+
+#workspaces button {
+  padding: 0 11px;
+  background: transparent;
+  border-bottom: 3px solid transparent;
+}
+
+#workspaces button.hover {
+  background-color: @background;
+  box-shadow: inherit;
+  border-bottom: 3px solid @dimmed;
+}
+
+#workspaces button.focused {
+  background-color: @dimmed;
+  border-bottom: 3px solid @fg;
+}
+
+#workspaces button.urgent {
+  background-color: @background;
+  border-bottom: 3px solid @red;
+}
+
+#mode {
+  background-color: transparent;
+  border: 2px solid @fg;
+  border-radius: 2px;
+  padding: 0 5px;
+}
+
+#clock,
+#cpu,
+#memory,
+#wireplumber,
+#battery,
+#language,
+#tray {
+  padding: 0 8px;
+}
+
+#mode,
+#workspaces,
+#workspaces button
+{
+  color: @fg;
+}
+#cpu {
+  color: @fg;
+}
+
+#window {
+  padding: 0 3px;
+  margin: 3px 2px;
+  background-color: transparent;
+  color: @fg;
+}
+
+
+.charging,
+#clock,
+#language,
+#wireplumber,
+#memory
+{
+  color: @fg;
+}
+
+#battery.full {
+  color: @green;
+}
+
+.discharging,
+.warning {
+  color: @yellow;
+}
+
+.critical {
+  color: #ffffff;
+  background: @red;
+}
+

@@ -132,7 +132,7 @@ in {
     font.size = 16;
     settings = {
       inherit shell;
-      symbol_map = "U+23FB-U+23FE,U+2665,U+26A1,U+2B58,U+E000-U+F8FF,U+F0000-U+FFFFF Symbols Nerd Font Mono";
+      symbol_map = "U+23FB-U+23FE,U+2665,U+26A1,U+2B58,U+E000-U+FD46,U+F0000-U+FFFFF Symbols Nerd Font Mono";
       cursor = "none";
       open_url_with = "${pkgs.xdg-utils}/bin/xdg-open";
       focus_follows_mouse = true;
