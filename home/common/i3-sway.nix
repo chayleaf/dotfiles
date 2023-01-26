@@ -11,7 +11,7 @@ commonConfig = {
     workspaceNumbers = true;
     statusCommand = "${pkgs.i3status}/bin/i3status";
     fonts = {
-      names = [ "Noto Sans Mono" ];
+      names = [ "Noto Sans Mono" "Symbols Nerd Font Mono" ];
       size = 16.0;
     };
     trayOutput = "*";
@@ -88,7 +88,7 @@ commonConfig = {
   };
   floating.titlebar = true;
   fonts = {
-    names = [ "Noto Sans" "Noto Emoji" "FontAwesome5Free" ];
+    names = [ "Noto Sans" "Noto Emoji" "Symbols Nerd Font Mono" ];
     size = 16.0;
   };
   gaps = {
@@ -96,7 +96,7 @@ commonConfig = {
     smartGaps = true;
     inner = 10;
   };
-  menu = "${pkgs.bemenu}/bin/bemenu-run --no-overlap --prompt '>' --tb '#24101a' --tf '#ebbe5f' --fb '#24101a' --nb '#24101a70' --ab '#24101a70' --nf '#ebdadd' --af '#ebdadd' --hb '#394893' --hf '#e66e6e' --list 30 --prefix '*' --scrollbar autohide --fn 'Noto Sans Mono' --line-height 23 --sb '#394893' --sf '#ebdadd' --scb '#6b4d52' --scf '#e66e6e'";
+  menu = "${pkgs.bemenu}/bin/bemenu-run --no-overlap --prompt '>' --tb '#24101a' --tf '#ebbe5f' --fb '#24101a' --nb '#24101ac0' --ab '#24101ac0' --nf '#ebdadd' --af '#ebdadd' --hb '#394893' --hf '#e66e6e' --list 30 --prefix '*' --scrollbar autohide --fn 'Noto Sans Mono' --line-height 23 --sb '#394893' --sf '#ebdadd' --scb '#6b4d52' --scf '#e66e6e'";
   window.hideEdgeBorders = "smart";
   workspaceAutoBackAndForth = true;
 };
@@ -104,6 +104,9 @@ genKeybindings = (default_options: kb:
   kb // {
     "${modifier}+Shift+g" = "floating toggle";
     "${modifier}+g" = "focus mode_toggle";
+    XF86AudioMicMute = "exec ${pkgs.pamixer}/bin/pamixer --default-source --toggle-mute";
+    XF86MonBrightnessDown = "exec ${pkgs.brightnessctl}/bin/brightnessctl set 5%-";
+    XF86MonBrightnessUp = "exec ${pkgs.brightnessctl}/bin/brightnessctl set 5%+";
   }
   // (lib.attrsets.filterAttrs
     (k: v:
@@ -121,7 +124,7 @@ in
   # TODO merge with colors in gui.nix
   imports = [ ./options.nix ./gui.nix ];
   home.sessionVariables = {
-    BEMENU_OPTS = "--no-overlap --prompt '>' --tb '#24101a' --tf '#ebbe5f' --fb '#24101a' --nb '#24101a70' --ab '#24101a70' --nf '#ebdadd' --af '#ebdadd' --hb '#394893' --hf '#e66e6e' --list 30 --prefix '*' --scrollbar autohide --fn 'Noto Sans Mono' --line-height 23 --sb '#394893' --sf '#ebdadd' --scb '#6b4d52' --scf '#e66e6e'";
+    BEMENU_OPTS = "--no-overlap --prompt '>' --tb '#24101a' --tf '#ebbe5f' --fb '#24101a' --nb '#24101ac0' --ab '#24101ac0' --nf '#ebdadd' --af '#ebdadd' --hb '#394893' --hf '#e66e6e' --list 30 --prefix '*' --scrollbar autohide --fn 'Noto Sans Mono' --line-height 23 --sb '#394893' --sf '#ebdadd' --scb '#6b4d52' --scf '#e66e6e'";
     _JAVA_AWT_WM_NONREPARENTING = "1";
     GTK_IM_MODULE = "fcitx";
     QT_IM_MODULE = "fcitx";
@@ -154,7 +157,14 @@ in
   };
   xsession.windowManager.i3 = {
     config = let i3Config = {
-      keybindings = genKeybindings options.xsession.windowManager.i3 {};
+      keybindings = genKeybindings options.xsession.windowManager.i3 {
+        XF86AudioRaiseVolume = "exec ${pkgs.pamixer}/bin/pamixer --increase 5";
+        XF86AudioLowerVolume = "exec ${pkgs.pamixer}/bin/pamixer --decrease 5";
+        XF86AudioMute = "exec ${pkgs.pamixer}/bin/pamixer --toggle-mute";
+        XF86AudioPlay = "exec ${pkgs.playerctl}/bin/playerctl play-pause";
+        XF86AudioNext = "exec ${pkgs.playerctl}/bin/playerctl next";
+        XF86AudioPrev = "exec ${pkgs.playerctl}/bin/playerctl previous";
+      };
       terminal = config.terminalBinX;
     }; in i3Config // commonConfig // i3Config;
   };
@@ -191,9 +201,56 @@ in
       assigns = {
         "3" = [{ app_id = "org.keepassxc.KeePassXC"; }];
       };
-      keybindings = genKeybindings options.wayland.windowManager.sway (with pkgs.sway-contrib; {
+      keybindings = genKeybindings options.wayland.windowManager.sway (with pkgs.sway-contrib;
+      let
+        modifiers = [
+          "shift"
+          "lock" # caps lock
+          "control"
+          "mod1" # alt
+          "mod2" # num lock
+          # "mod3" # no keys are here by default
+          "mod4" # super/hyper
+          "mod5" # alt gr?
+        ];
+        modifierPairs =
+          builtins.filter
+            (x: x != null)
+            (builtins.map
+              ({a, b}: if a >= b then null else "${a}+${b}")
+              (lib.attrsets.cartesianProductOfSets {
+                a = modifiers;
+                b=modifiers;
+              }));
+        modifierTriples = ["control+shift+mod1" "control+shift+mod4" "control+mod1+mod4" "control+shift+mod5"];
+        modifierCombos = modifiers ++ modifierPairs ++ modifierTriples;
+        # god this is so annoying... sway doesn't provide the option to ignore
+        # modifiers in a binding because i3 doesn't have it, and I'm not about
+        # to ask i3 to add it just so I can ask sway to add it.. this will do
+        forAllModifiers = (prefix: key: cmd:
+          lib.attrsets.genAttrs
+            ((builtins.map
+              (mod: "${prefix}${mod}+${key}")
+              modifierCombos)
+            ++ ["${prefix}${key}"])
+            (name: cmd));
+      in (forAllModifiers
+        "--inhibited --no-repeat "
+        "Scroll_Lock"
+        "exec ${pkgs.mumble}/bin/mumble rpc starttalking")
+      // (forAllModifiers
+        "--inhibited --no-repeat --release "
+        "Scroll_Lock"
+        "exec ${pkgs.mumble}/bin/mumble rpc stoptalking")
+      // {
         "${modifier}+Print" = "exec ${grimshot}/bin/grimshot copy area";
         "${modifier}+Mod1+Print" = "exec ${grimshot}/bin/grimshot copy window";
+        "--locked XF86AudioRaiseVolume" = "exec ${pkgs.pamixer}/bin/pamixer --increase 5";
+        "--locked XF86AudioLowerVolume" = "exec ${pkgs.pamixer}/bin/pamixer --decrease 5";
+        "--locked XF86AudioMute" = "exec ${pkgs.pamixer}/bin/pamixer --toggle-mute";
+        "--locked XF86AudioPlay" = "exec ${pkgs.playerctl}/bin/playerctl play-pause";
+        "--locked XF86AudioNext" = "exec ${pkgs.playerctl}/bin/playerctl next";
+        "--locked XF86AudioPrev" = "exec ${pkgs.playerctl}/bin/playerctl previous";
       });
       startup = [
         {
@@ -218,7 +275,7 @@ in
       input = {
         "*" = {
           xkb_layout = "jp,ru";
-          xkb_options = "caps:swapescape,compose:menu,grp:win_space_toggle";
+          xkb_options = "caps:swapescape,compose:ralt,grp:win_space_toggle";
         };
       };
     }; in swayConfig // commonConfig // swayConfig;
