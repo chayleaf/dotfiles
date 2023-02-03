@@ -1,7 +1,10 @@
 { config, pkgs, lib, ... }:
 {
   imports = [ ./terminal.nix ];
-  home.sessionVariables."ALSOFT_CONF" = "${config.xdg.configHome}/.config/alsoft.conf";
+  home.sessionVariables = {
+    ALSOFT_CONF = "${config.xdg.configHome}/.config/alsoft.conf";
+    SDL_AUDIODRIVER = "pipewire";
+  };
   xdg.configFile."alsoft.conf".text = ''
     [general]
     hrtf = true

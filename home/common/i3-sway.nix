@@ -50,44 +50,35 @@ commonConfig = {
   ];
   colors = {
     focused = {
-      # background = "#913131";
-      #background = "#5e4651c9";
-      #border = "#5e4651c9";
       childBorder = "#b0a3a5c0";
-      background = "#24101ac0";
-      border = "#24101ac0";
-      # childBorder = "#5e4651c9";
+      # background = "#24101ac0";
+      background = "#4c4042e0";
+      # border = "#24101ac0";
+      border = "#4c4042e0";
       indicator = "#b35656";
       text = "#ebdadd";
     };
     focusedInactive = {
-      # background = "#782a2a";
-      # border = "#782a2a";
-      #background = "#5e4651c9";
-      #border = "#5e4651c9";
-      #childBorder = "#5e4651c9";
-      background = "#24101ac0";
-      border = "#24101ac0";
+      # background = "#24101ac0";
+      background = "#4c4042e0";
+      # border = "#24101ac0";
+      border = "#4c4042e0";
       childBorder = "#24101ac0";
-      # childBorder = "#b32d2d";
       indicator = "#b32d2d";
       text = "#ebdadd";
     };
     unfocused = {
-      # background = "#4d2525";
-      # border = "#472222";
       background = "#24101ac0";
-      border = "#24101ac0";
+      # border = "#24101ac0";
+      border = "#4c4042e0";
       childBorder = "#24101ac0";
-      # childBorder = "#4d2525";
       indicator = "#661a1a";
-      text = "#8c8284";
+      text = "#ebdadd";
     };
     urgent = {
       background = "#993d3d";
       border = "#734545";
       childBorder = "#734545";
-      # childBorder = "#993d3d";
       indicator = "#993d3d";
       text = "#ebdadd";
     };
@@ -280,7 +271,7 @@ in
         {
           command = "${config.programs.waybar.package}/bin/waybar";
           mode = "dock";
-          position = "bottom";
+          position = "top";
           hiddenState = "hide";
         }
       ];
@@ -293,6 +284,10 @@ in
           }; }
       ];
       assigns = {
+        "2" = [
+          { app_id = "org.telegram.desktop"; }
+          { app_id = "nheko"; }
+        ];
         "3" = [{ app_id = "org.keepassxc.KeePassXC"; }];
       };
       keybindings = genKeybindings options.wayland.windowManager.sway (with pkgs.sway-contrib;
@@ -358,6 +353,9 @@ in
           always = true;
           command = "${pkgs.wl-clipboard}/bin/wl-paste -t text --watch ${pkgs.clipman}/bin/clipman store --no-persist";
         }
+        {
+          command = "${pkgs.swayidle}/bin/swayidle -w timeout 300 '' resume '${pkgs.sway}/bin/swaymsg \"output * dpms on\"'";
+        }
       ];
       output = {
         "*" = {
@@ -384,5 +382,59 @@ in
       export GTK_USE_PORTAL=1
       export XDG_CURRENT_DESKTOP=sway
     '';
+  };
+  services.swayidle = {
+    enable = true;
+    events = [
+      { event = "before-sleep"; command = "${pkgs.swaylock}/bin/swaylock"; }
+      # after-resume, lock, unlock
+    ];
+    timeouts = [
+      { timeout = 300; 
+        command = "${pkgs.sway}/bin/swaymsg \"output * dpms off\"";
+        resumeCommand = "${pkgs.sway}/bin/swaymsg \"output * dpms on\""; }
+      { timeout = 600;
+        command = "${pkgs.swaylock}/bin/swaylock"; }
+    ];
+  };
+  programs.swaylock.settings = let textColor = "#ebdadd"; bgColor = "#24101ac0"; in {
+    image = "${config.home.homeDirectory}/var/wallpaper.jpg";
+    font = "Unifont";
+    font-size = 64;
+
+    indicator-caps-lock = true;
+    indicator-radius = 256;
+    indicator-thickness = 32;
+    separator-color = "#00000000";
+
+    layout-text-color = textColor;
+    layout-bg-color = bgColor;
+    layout-border-color = "#00000000";
+
+    line-uses-inside = true;
+
+    inside-color = bgColor;
+    text-color = textColor;
+    ring-color = "#8cbf73"; # green
+    key-hl-color = "#6398bf"; # blue
+    bs-hl-color = "#e66e6e"; # red
+
+    inside-caps-lock-color = bgColor;
+    text-caps-lock-color = textColor;
+    ring-caps-lock-color = "#ebbe5f"; # yellow
+    caps-lock-key-hl-color = "#6398bf"; # same as normal key-hl-color
+    caps-lock-bs-hl-color = "#e66e6e"; # same as normal bs-hl-color
+
+    inside-clear-color = bgColor;
+    text-clear-color = textColor;
+    ring-clear-color = "#8cbf73"; # green
+
+    inside-ver-color = bgColor;
+    text-ver-color = textColor;
+    ring-ver-color = "#a64999"; # purple
+
+    inside-wrong-color = bgColor;
+    text-wrong-color = textColor;
+    ring-wrong-color = "#e64e4e"; # deep-ish red
   };
 }

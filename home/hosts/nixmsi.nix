@@ -34,7 +34,7 @@
     bottles
     gimp krita blender
     tdesktop
-    rustc rustfmt cargo
+    clang rustc rustfmt cargo clippy
     (import ../common/home-daemon.nix { inherit lib pkgs; })
     # waiting until the PR gets merged
     (looking-glass-client.overrideAttrs (old: {

@@ -6,11 +6,10 @@ edition = "2021"
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
 [dependencies]
-dbus-async = "2"
-dbus-message-parser = "4"
+zbus = { version = "3", features = ["tokio"] }
 futures-util = "0.3"
 swayipc-async = "2"
 
 [dependencies.tokio]
 version = "1"
-features = ["rt"]
+features = ["rt", "macros"]

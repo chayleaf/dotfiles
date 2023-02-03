@@ -36,8 +36,10 @@ in {
     extraConfig = ''
       eval %sh{kak-lsp --kakoune -s $kak_session}
       lsp-enable
+      hook global BufOpenFile .* autoconfigtab
+      hook global BufNewFile .* autoconfigtab
     '';
-    plugins = with pkgs.kakounePlugins; [ kak-lsp sleuth-kak tabs-kak ]; 
+    plugins = with pkgs.kakounePlugins; [ kak-lsp smarttab-kak tabs-kak ]; 
   };
   xdg.configFile."kak-lsp/kak-lsp.toml".text = ''
     # bash, clangd, json, html, css, python work out of the box

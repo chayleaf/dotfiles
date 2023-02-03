@@ -58,6 +58,14 @@ in {
     steam-hardware.enable = true;
     video.hidpi.enable = true;
     enableRedistributableFirmware = true;
+    opengl.driSupport32Bit = true;
+  };
+
+  services.tlp.settings = {
+    USB_DENYLIST = "0bda:8156";
+    USB_EXCLUDE_PHONE = 1;
+    START_CHARGE_THRESH_BAT0 = 75;
+    STOP_CHARGE_THRESH_BAT0 = 80;
   };
 
   # see common/vfio.nix
@@ -72,21 +80,64 @@ in {
     # max compression! my cpu is pretty good anyway
     compress = "compress=zstd:15";
     discard = "discard=async";
+    neededForBoot = true;
   in {
-    "/" =     { inherit device fsType;
+    # mount root on tmpfs
+    "/" =     { device = "none"; fsType = "tmpfs"; inherit neededForBoot;
+                options = [ "defaults" "size=2G" "mode=755" ]; };
+    "/persist" =
+              { inherit device fsType neededForBoot;
                 options = [ discard compress "subvol=@" ]; };
-    "/nix" =  { inherit device fsType;
+    "/nix" =  { inherit device fsType neededForBoot;
                 options = [ discard compress "subvol=@nix" "noatime" ]; };
-    "/swap" = { inherit device fsType;
+    "/swap" = { inherit device fsType neededForBoot;
                 options = [ discard "subvol=@swap" "noatime" ]; };
     "/home" = { inherit device fsType;
                 options = [ discard compress "subvol=@home" ]; };
     "/.snapshots" =
               { inherit device fsType;
                 options = [ discard compress "subvol=@snapshots" ]; };
+    "/boot" = { inherit device fsType neededForBoot;
+                options = [ discard compress "subvol=@boot" ]; };
     "/boot/efi" =
-              { device = efiPart;
-                fsType = "vfat"; };
+              { device = efiPart; fsType = "vfat"; inherit neededForBoot; };
+  };
+
+  environment.persistence."/persist" = {
+    hideMounts = true;
+    directories = [
+      # nixos files
+      "/etc/nixos"
+      "/var/lib/nixos"
+
+      # mullvad vpn
+      "/etc/mullvad-vpn"
+      "/var/cache/mullvad-vpn"
+
+      # as weird as it sounds, I won't use tmpfs for /tmp in case I'll have to put files over 2GB there
+      "/tmp"
+
+      # qemu/libvirt
+      "/var/cache/libvirt"
+      "/var/lib/libvirt"
+      "/var/lib/swtpm-localca"
+
+      # stored network info
+      "/var/lib/iwd"
+      "/var/db/dhcpcd"
+
+      # persist this since everything here is cleaned up by systemd-tmpfiles over time anyway
+      # ...or so I'd like to believe
+      "/var/lib/systemd"
+
+      "/var/db/sudo/lectured"
+      "/var/log"
+    ];
+    files = [
+      # hardware-related
+      "/etc/adjtime"
+      "/etc/machine-id"
+    ];
   };
 
   swapDevices = [ { device = "/swap/swapfile"; } ];
@@ -131,18 +182,33 @@ in {
     pulse.enable = true;
     jack.enable = true;
   };
+  # zsh
+  environment.pathsToLink = [ "/share/zsh" ];
+
+  programs.fuse.userAllowOther = true;
 
   xdg.portal = {
     enable = true;
     extraPortals = with pkgs; [ xdg-desktop-portal-gtk xdg-desktop-portal-wlr ];
   };
 
+  users.mutableUsers = false;
   users.users.user = {
     isNormalUser = true;
     extraGroups = [ "networkmanager" "wheel" ];
+    # initialHashedPassword = ...set in private.nix;
   };
+  # users.users.root.initialHashedPassword = ...set in private.nix;
   nix = {
-    settings.allowed-users = [ "user" ];
+    settings = {
+      allowed-users = [ "user" ];
+      auto-optimise-store = true;
+    };
+    gc = {
+      automatic = true;
+      dates = "weekly";
+      options = "--delete-older-than 30d";
+    };
     package = pkgs.nixFlakes;
     extraOptions = ''
       experimental-features = nix-command flakes
@@ -151,10 +217,8 @@ in {
 
   ### RANDOM PATCHES ###
 
-  programs.fuse.userAllowOther = true;
-
-  # zsh
-  environment.pathsToLink = [ "/share/zsh" ];
+  # why is this not part of base NixOS?
+  systemd.tmpfiles.rules = [ "d /var/lib/systemd/pstore 0755 root root 14d" ];
 
   # dedupe
 
@@ -162,7 +226,7 @@ in {
     filesystems.cryptroot = {
       spec = "UUID=${cryptrootUuid}";
       hashTableSizeMB = 128;
-      # extraOptions = [ ];
+      extraOptions = [ "--loadavg-target" "8.0" ];
     };
   };
 

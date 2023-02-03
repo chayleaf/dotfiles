@@ -5,9 +5,15 @@
     nixpkgs.url = "github:nixos/nixpkgs/nixos-unstable";
     utils.url = "github:gytis-ivaskevicius/flake-utils-plus";
     nixos-hardware.url = "github:NixOS/nixos-hardware";
+    impermanence.url = "github:nix-community/impermanence";
+    # simply make rust-overlay available for the whole system
+    rust-overlay = {
+      url = "github:oxalica/rust-overlay";
+      inputs.nixpkgs.follows = "nixpkgs";
+    };
   };
 
-  outputs = inputs@{ self, nixpkgs, utils, nixos-hardware }:
+  outputs = inputs@{ self, nixpkgs, utils, nixos-hardware, rust-overlay, impermanence }:
   let
     hw = nixos-hardware.nixosModules;
     # IRL-related stuff I'd rather not put into git
@@ -31,6 +37,7 @@
         system = "x86_64-linux";
         modules = [
           ./hosts/nixmsi.nix
+          impermanence.nixosModule
           hw.common-pc-ssd # enables fstrim
           hw.common-cpu-amd # microcode
           hw.common-cpu-amd-pstate # amd-pstate
