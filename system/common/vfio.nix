@@ -21,7 +21,7 @@
         passGpuAtBoot = mkOption {
           type = types.bool;
           default = false;
-          description = "Whether to pass the GPU at boot (can be more stable)";
+          description = "Whether to pass the GPU at boot (can be more stable). If false, a bootloader entry to do it will still be available.";
         };
         pciIDs = mkOption {
           type = with types; listOf str;
@@ -70,7 +70,24 @@
     gpuIDs = lib.concatStringsSep "," cfg.pciIDs;
     enableIvshmem = config.vfio.lookingGlass.enable && (builtins.length config.vfio.lookingGlass.ivshmem) > 0;
   in {
+    specialisation.vfio.configuration = lib.mkIf (!cfg.passGpuAtBoot) {
+      boot.kernelParams = [ "early_load_vfio" ];
+    };
     boot = {
+      initrd.postDeviceCommands = lib.mkIf (!cfg.passGpuAtBoot) ''
+        for o in $(cat /proc/cmdline); do
+          case $o in
+            early_load_vfio)
+              loadVfio=1
+              ;;
+          esac
+        done
+        if [[ -n "$loadVfio" ]]; then
+          modprobe vfio
+          modprobe vfio_iommu_type1
+          modprobe vfio_pci
+        fi
+      '';
       initrd.kernelModules = [
         (if cfg.intelCpu then "kvm-intel" else "kvm-amd")
       ] ++ (if cfg.passGpuAtBoot then [
@@ -79,6 +96,12 @@
         "vfio_pci"
         "vfio_virqfd"
       ] else []);
+      initrd.availableKernelModules = lib.mkIf (!cfg.passGpuAtBoot) [
+        "vfio"
+        "vfio_iommu_type1"
+        "vfio_pci"
+        "vfio_virqfd"
+      ];
       extraModulePackages =
         with config.boot.kernelPackages;
           lib.mkIf enableIvshmem [ kvmfr ];
@@ -118,11 +141,10 @@
       qemu = {
         ovmf.enable = true;
         # Full is needed for TPM and secure boot emulation
-        ovmf.packages = [ pkgs.OVMFFull ];
+        ovmf.packages = [ pkgs.OVMFFull.fd ];
         # TPM emulation
         swtpm.enable = true;
         verbatimConfig = ''
-          nvram = [ "${pkgs.OVMFFull}/FV/OVMF.fd:${pkgs.OVMFFull}/FV/OVMF_VARS.fd" ]
           cgroup_device_acl = [
             "/dev/kvmfr0",
             "/dev/vfio/vfio", "/dev/vfio/11", "/dev/vfio/12",

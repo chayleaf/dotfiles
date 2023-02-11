@@ -1,9 +1,14 @@
 { config, lib, pkgs, ... }:
 let
+  efiPart = "/dev/disk/by-uuid/D77D-8CE0";
+
+  encPart = "/dev/disk/by-uuid/ce6ccdf0-7b6a-43ae-bfdf-10009a55041a";
   cryptrootUuid = "f4edc0df-b50b-42f6-94ed-1c8f88d6cdbb";
   cryptroot = "/dev/disk/by-uuid/${cryptrootUuid}";
-  encPart = "/dev/disk/by-uuid/ce6ccdf0-7b6a-43ae-bfdf-10009a55041a";
-  efiPart = "/dev/disk/by-uuid/D77D-8CE0";
+
+  dataPart = "/dev/disk/by-uuid/f1447692-fa7c-4bd6-9cb5-e44c13fddfe3";
+  datarootUuid = "fa754b1e-ac83-4851-bf16-88efcd40b657";
+  dataroot = "/dev/disk/by-uuid/${datarootUuid}";
 in {
   system.stateVersion = "22.11";
 
@@ -21,6 +26,13 @@ in {
         # see https://asalor.blogspot.de/2011/08/trim-dm-crypt-problems.html before enabling
         allowDiscards = true;
         # improve SSD performance
+        bypassWorkqueues = true;
+        keyFile = "/crypto_keyfile.bin";
+      };
+      luks.devices."dataroot" = {
+        device = dataPart;
+        preLVM = true;
+        allowDiscards = true;
         bypassWorkqueues = true;
         keyFile = "/crypto_keyfile.bin";
       };
@@ -101,6 +113,9 @@ in {
                 options = [ discard compress "subvol=@boot" ]; };
     "/boot/efi" =
               { device = efiPart; fsType = "vfat"; inherit neededForBoot; };
+    "/data" =
+              { device = dataroot; fsType = "btrfs";
+                options = [ discard compress ]; };
   };
 
   environment.persistence."/persist" = {
@@ -147,8 +162,9 @@ in {
   i18n.supportedLocales = lib.mkDefault [ "en_US.UTF-8/UTF-8" ];
   networking.useDHCP = true;
   # networking.firewall.enable = false;
-  networking.firewall.allowedTCPPorts = [ 27015 25565 7777 ];
-  # networking.firewall.allowedUDPPorts = [ ... ];
+  # KDE connect: 1714-1764
+  networking.firewall.allowedTCPPorts = [ 27015 25565 7777 ] ++ (builtins.genList (x: 1714 + x) (1764 - 1714 + 1));
+  networking.firewall.allowedUDPPorts = (builtins.genList (x: 1714 + x) (1764 - 1714 + 1));
   # networking.hostName = "nixmsi";
   networking.wireless.iwd.enable = true;
   #networking.networkmanager.enable = true;
@@ -170,6 +186,7 @@ in {
     vim
     wget
     git
+    man-pages man-pages-posix
   ];
   services.dbus.enable = true;
   security.polkit.enable = true;
@@ -181,6 +198,12 @@ in {
     alsa.support32Bit = true;
     pulse.enable = true;
     jack.enable = true;
+    # from nix-gaming
+    lowLatency = {
+      enable = true;
+      quantum = 64;
+      rate = 48000;
+    };
   };
   # zsh
   environment.pathsToLink = [ "/share/zsh" ];
@@ -194,6 +217,7 @@ in {
 
   users.mutableUsers = false;
   users.users.user = {
+    uid = 1000;
     isNormalUser = true;
     extraGroups = [ "networkmanager" "wheel" ];
     # initialHashedPassword = ...set in private.nix;
@@ -215,7 +239,15 @@ in {
     '';
   };
 
+  documentation.dev.enable = true;
+
   ### RANDOM PATCHES ###
+
+  # I've had some weird issues with the entire system breaking after
+  # suspend because of /dev/shm getting nuked, maybe this'll help
+  services.logind.extraConfig = ''
+    RemoveIPC=no
+  '';
 
   # why is this not part of base NixOS?
   systemd.tmpfiles.rules = [ "d /var/lib/systemd/pstore 0755 root root 14d" ];

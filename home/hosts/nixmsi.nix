@@ -17,6 +17,17 @@
   };
   xsession.windowManager.i3.enable = true;
   wayland.windowManager.sway.enable = true;
+  terminals = ["kitty" "urxvt"];
+  services.mpd = {
+    enable = true;
+    network.startWhenNeeded = true;
+  };
+  services.mpdris2 = {
+    enable = true;
+  };
+  programs.ncmpcpp = {
+    enable = true;
+  };
   nixpkgs.config.allowUnfreePredicate = pkg: builtins.elem (lib.getName pkg) [
     "steam-run"
     "steam"
@@ -24,14 +35,14 @@
     "steam-runtime"
     "steamcmd"
   ];
-  terminals = ["kitty" "urxvt"];
   home.packages = with pkgs; [
     steam-run steam
     easyeffects
-    wineWowPackages.waylandFull
+    # wineWowPackages.waylandFull
     winetricks
-    protontricks proton-caller
+    protontricks # proton-caller
     bottles
+    virtmanager
     gimp krita blender
     tdesktop
     clang rustc rustfmt cargo clippy
@@ -53,24 +64,9 @@
   xdg.configFile."looking-glass/client.ini".text = ''
     [app]
     shmFile=/dev/kvmfr0
-    capture=dxgi
-
-    [dxgi]
-    copyBackend=d3d12
-    d3d12CopySleep=5
-    disableDamage=false
 
     [input]
     rawMouse=yes
     escapeKey=KEY_INSERT
-
-    [egl]
-    vsync=yes
-
-    [opengl]
-    vsync=yes
-
-    [win]
-    jitRender=yes
   '';
 }

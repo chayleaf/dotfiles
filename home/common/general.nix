@@ -94,6 +94,13 @@
     bat = {
       enable = true;
     };
+    bottom = {
+      enable = true;
+      settings = {
+        flags.network_use_bytes = true;
+        flags.enable_gpu_memory = true;
+      };
+    };
     lsd = {
       enable = true;
       settings = {
@@ -122,7 +129,8 @@
   };
 
   home.packages = with pkgs; [
-    rclone fuse jq appimage-run python3Full killall
-    comma
+    rclone sshfs fuse
+    jq python3Full killall
+    appimage-run comma
   ];
 }

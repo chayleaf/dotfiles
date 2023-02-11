@@ -383,10 +383,13 @@ in
       export XDG_CURRENT_DESKTOP=sway
     '';
   };
-  services.swayidle = {
+  services.swayidle = let swaylock-start = builtins.toString (with pkgs; writeScript "swaylock-start" ''
+    #! ${bash}/bin/bash
+    ${procps}/bin/pgrep -fx ${swaylock}/bin/swaylock || ${swaylock}/bin/swaylock
+  ''); in {
     enable = true;
     events = [
-      { event = "before-sleep"; command = "${pkgs.swaylock}/bin/swaylock"; }
+      { event = "before-sleep"; command = swaylock-start; }
       # after-resume, lock, unlock
     ];
     timeouts = [
@@ -394,7 +397,7 @@ in
         command = "${pkgs.sway}/bin/swaymsg \"output * dpms off\"";
         resumeCommand = "${pkgs.sway}/bin/swaymsg \"output * dpms on\""; }
       { timeout = 600;
-        command = "${pkgs.swaylock}/bin/swaylock"; }
+        command = swaylock-start; }
     ];
   };
   programs.swaylock.settings = let textColor = "#ebdadd"; bgColor = "#24101ac0"; in {

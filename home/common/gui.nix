@@ -78,7 +78,6 @@
   # home.file.".Xdefaults".source = /. + "/${config.home.homeDirectory}/.Xresources";
   home.file.".Xdefaults".source = config.home.file."${config.home.homeDirectory}/.Xresources".source;
   services.gammastep.enable = true;
-  services.kdeconnect.enable = true;
   fonts.fontconfig.enable = true;
   gtk = {
     enable = true;
@@ -130,7 +129,7 @@
     qt5ct qgnomeplatform
     # various programs i use
     keepassxc nheko qbittorrent anki mumble
-    nextcloud-client gnome.zenity
+    nextcloud-client gnome.zenity kdeconnect
     # cli tools
     imagemagick ffmpeg
     # fonts

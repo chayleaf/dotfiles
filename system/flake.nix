@@ -11,9 +11,13 @@
       url = "github:oxalica/rust-overlay";
       inputs.nixpkgs.follows = "nixpkgs";
     };
+    nix-gaming = {
+      url = "github:fufexan/nix-gaming";
+      inputs.nixpkgs.follows = "nixpkgs";
+    };
   };
 
-  outputs = inputs@{ self, nixpkgs, utils, nixos-hardware, rust-overlay, impermanence }:
+  outputs = inputs@{ self, nixpkgs, utils, nixos-hardware, rust-overlay, impermanence, nix-gaming }:
   let
     hw = nixos-hardware.nixosModules;
     # IRL-related stuff I'd rather not put into git
@@ -38,6 +42,7 @@
         modules = [
           ./hosts/nixmsi.nix
           impermanence.nixosModule
+          nix-gaming.nixosModules.pipewireLowLatency
           hw.common-pc-ssd # enables fstrim
           hw.common-cpu-amd # microcode
           hw.common-cpu-amd-pstate # amd-pstate
