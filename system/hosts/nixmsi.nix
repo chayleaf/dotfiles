@@ -1,4 +1,4 @@
-{ config, lib, pkgs, ... }:
+{ config, lib, pkgs, nixpkgs, ... }:
 let
   efiPart = "/dev/disk/by-uuid/D77D-8CE0";
 
@@ -63,8 +63,29 @@ in {
       "vm.dirty_background_ratio" = 2;
       "vm.swappiness" = 40;
     };
-    kernelPackages = pkgs.linuxPackages_zen;
+    kernelPackages = lib.mkDefault pkgs.linuxPackages_zen;
   };
+  # specialisation = let
+  #   zenKernels = pkgs.callPackage "${nixpkgs}/pkgs/os-specific/linux/kernel/zen-kernels.nix";
+  #   zenKernel = (version: sha256: (zenKernels {
+  #     kernelPatches = [
+  #       pkgs.linuxKernel.kernelPatches.bridge_stp_helper
+  #       pkgs.linuxKernel.kernelPatches.request_key_helper
+  #     ];
+  #     argsOverride = {
+  #       src = pkgs.fetchFromGitHub {
+  #         owner = "zen-kernel";
+  #         repo = "zen-kernel";
+  #         rev = "v${version}-zen1";
+  #         inherit sha256;
+  #       };
+  #       inherit version;
+  #       modDirVersion = lib.versions.pad 3 "${version}-zen1";
+  #     };
+  #   }).zen);
+  # in {
+  #   zen619.configuration.boot.kernelPackages = pkgs.linuxPackagesFor (zenKernel "6.1.9" "0fsmcjsawxr32fxhpp6sgwfwwj8kqymy0rc6vh4qli42fqmwdjgv");
+  # };
   nixpkgs.config.allowUnfreePredicate = pkg: (lib.getName pkg) == "steam-original";
   hardware = {
     steam-hardware.enable = true;
@@ -201,7 +222,8 @@ in {
     # from nix-gaming
     lowLatency = {
       enable = true;
-      quantum = 64;
+      # 96 is mostly fine but has just a little xruns
+      quantum = 128;
       rate = 48000;
     };
   };

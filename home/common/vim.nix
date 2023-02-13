@@ -6,15 +6,17 @@
     package = pkgs.neovim-unwrapped;
     extraPackages = with pkgs; [
       rust-analyzer
-      nodePackages.bash-language-server shellcheck
-      nodePackages.typescript-language-server
+      nodePackages_latest.bash-language-server shellcheck
+      nodePackages_latest.typescript-language-server
+      nodePackages_latest.svelte-language-server
       clang-tools
-      nodePackages.vscode-langservers-extracted
+      nodePackages_latest.vscode-langservers-extracted
       nil
       marksman
       taplo
+      python3Packages.python-lsp-server
     ];
-    extraPython3Packages = pyPkgs: with pyPkgs; [ python-lsp-server ];
+    # extraPython3Packages = pyPkgs: with pyPkgs; [ python-lsp-server ];
     extraConfig = '' 
       autocmd BufReadPost * if @% !~# '\.git[\/\\]COMMIT_EDITMSG$' && line("'\"") > 1 && line("'\"") <= line("$") | exe "normal! g`\"" | endif
       syntax on
@@ -25,13 +27,13 @@
     vimAlias = true;
     vimdiffAlias = true;
     plugins =
-      # TODO make pure
     let lua = (s: ''
         lua << EOF
         ${s}
         EOF
       '');
     in with pkgs.vimPlugins; [
+      vim-svelte
       # TODO remove on next nvim update (0.8.3/0.9)
       vim-nix
       { plugin = nvim-web-devicons;
@@ -137,7 +139,11 @@
             flags = lsp_flags,
             capabilities = capabilities,
           }
-          -- todo completion
+          require'lspconfig'.svelte.setup{
+            on_attach = on_attach,
+            flags = lsp_flags,
+            capabilities = capabilities,
+          }
           require'lspconfig'.html.setup{
             on_attach = on_attach,
             flags = lsp_flags,

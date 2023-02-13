@@ -181,7 +181,7 @@ in
     exec i3
   '';
   xsession.initExtra = ''
-    setxkbmap -layout jp,ru -option caps:swapescape,compose:menu,grp:win_space_toggle
+    setxkbmap -layout jp,ru -option compose:ralt,grp:win_space_toggle
   '';
   home.packages = with pkgs; if config.wayland.windowManager.sway.enable then [
     wl-clipboard
@@ -189,14 +189,25 @@ in
     xdg-desktop-portal-wlr
     xdg-desktop-portal-gtk
   ] else [];
+  services.playerctld.enable = true;
   programs.waybar = {
     enable = true;
+    package = pkgs.waybar.override { withMediaPlayer = true; };
     settings = [{
       layer = "bottom";
       # position = "bottom";
       ipc = true;
       height = 40;
-      modules-left = [ "cpu" "sway/workspaces" "sway/mode" ];
+      modules-left = [ "tray" "cpu" "memory" "sway/workspaces" "sway/mode" ];
+      mpris = {
+        format = "{player_icon} {title}";
+        format-paused = "{status_icon} <i>{title}</i>";
+        player-icons = {
+          default = "▶";
+          mpd = "🎵";
+	};
+        status-icons.paused = "⏸";
+      };
       "sway/workspaces" = {
         disable-scroll = true;
         format = "{value}{icon}";
@@ -232,7 +243,7 @@ in
           "(.*) - KeePassXC" = "$1";
         };
       };
-      modules-right = [ "memory" "tray" "wireplumber" "clock" "sway/language" ];
+      modules-right = [ "mpris" "wireplumber" "clock" "sway/language" ];
       cpu = {
         # format = "{usage}% ";
         format = " {icon0}{icon1}{icon2}{icon3}{icon4}{icon5}{icon6}{icon7}{icon8}{icon9}{icon10}{icon11}{icon12}{icon13}{icon14}{icon15}";
@@ -367,7 +378,7 @@ in
       input = {
         "*" = {
           xkb_layout = "jp,ru";
-          xkb_options = "caps:swapescape,compose:ralt,grp:win_space_toggle";
+          xkb_options = "compose:ralt,grp:win_space_toggle";
         };
       };
     }; in swayConfig // commonConfig // swayConfig;
@@ -378,9 +389,12 @@ in
       export QT_WAYLAND_DISABLE_WINDOWDECORATION=1
       export QT_QPA_PLATFORMTHEME=gnome
       export MOZ_ENABLE_WAYLAND=1
-      export GDK_BACKEND=wayland
+      export GDK_BACKEND=wayland,x11
       export GTK_USE_PORTAL=1
       export XDG_CURRENT_DESKTOP=sway
+      # SDL3 exists, so i can't really set SDL_DYNAMIC_API
+      # instead, running apps with SDL_DYNAMIC_API=$SDL2_DYNAMIC_API does the trick
+      export SDL2_DYNAMIC_API=${pkgs.SDL2.out}/lib/libSDL2.so
     '';
   };
   services.swayidle = let swaylock-start = builtins.toString (with pkgs; writeScript "swaylock-start" ''

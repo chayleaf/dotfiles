@@ -108,7 +108,7 @@
       extraModprobeConfig = let ivshmemConfig = if enableIvshmem then ''
           options kvmfr static_size_mb=${lib.concatStringsSep "," (map (x: toString x.size) cfg.lookingGlass.ivshmem)}
         '' else ""; in ''
-          options vfio-pci ids=${gpuIDs}
+          options vfio-pci ids=${gpuIDs} disable_idle_d3=1
           options kvm ignore_msrs=1
           ${ivshmemConfig}
         '';

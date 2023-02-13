@@ -50,6 +50,9 @@
           hw.common-pc-laptop # enables tlp
           (getPriv "nixmsi")
         ];
+        extraArgs = {
+          inherit nixpkgs;
+        };
       };
     };
   };

@@ -1,0 +1,17 @@
+{
+    "proton-ge": {
+        "cargoLocks": null,
+        "date": null,
+        "extract": null,
+        "name": "proton-ge",
+        "passthru": null,
+        "pinned": false,
+        "src": {
+            "name": null,
+            "sha256": "sha256-T+7R+zFMd0yQ0v7/WGym2kzMMulUmATS/LCEQS8whiw=",
+            "type": "url",
+            "url": "https://github.com/GloriousEggroll/proton-ge-custom/releases/download/GE-Proton7-49/GE-Proton7-49.tar.gz"
+        },
+        "version": "GE-Proton7-49"
+    }
+}

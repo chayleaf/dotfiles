@@ -28,6 +28,7 @@
   programs.ncmpcpp = {
     enable = true;
   };
+  services.kdeconnect.enable = true;
   nixpkgs.config.allowUnfreePredicate = pkg: builtins.elem (lib.getName pkg) [
     "steam-run"
     "steam"
@@ -35,6 +36,19 @@
     "steam-runtime"
     "steamcmd"
   ];
+  home.sessionVariables = let sources = (import ../_sources/generated.nix {
+    inherit (pkgs) fetchgit fetchurl fetchFromGitHub dockerTools;
+  });
+  proton-ge = pkgs.stdenv.mkDerivation {
+    inherit (sources.proton-ge) pname version src;
+    nativeBuildInputs = [];
+    installPhase = ''
+      mkdir -p $out
+      tar -C $out --strip=1 -x -f $src
+    '';
+  }; in {
+    STEAM_EXTRA_COMPAT_TOOLS_PATHS = "${proton-ge}";
+  };
   home.packages = with pkgs; [
     steam-run steam
     easyeffects
