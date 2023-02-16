@@ -130,7 +130,7 @@
 
   home.packages = with pkgs; [
     rclone sshfs fuse
-    jq python3Full killall
+    file jq python3Full killall
     appimage-run comma nvfetcher
   ];
 }

@@ -277,9 +277,15 @@ in {
   # dedupe
 
   services.beesd = {
+    # i have a lot of ram :tonystark:
     filesystems.cryptroot = {
       spec = "UUID=${cryptrootUuid}";
       hashTableSizeMB = 128;
+      extraOptions = [ "--loadavg-target" "8.0" ];
+    };
+    filesystems.dataroot = {
+      spec = "UUID=${datarootUuid}";
+      hashTableSizeMB = 256;
       extraOptions = [ "--loadavg-target" "8.0" ];
     };
   };
