@@ -192,16 +192,31 @@ in
   services.playerctld.enable = true;
   programs.waybar = {
     enable = true;
-    package = pkgs.waybar.override { withMediaPlayer = true; };
+    package = (pkgs.waybar.override {
+      withMediaPlayer = true;
+    }).overrideAttrs (old: {
+      src = pkgs.fetchFromGitHub {
+        owner = "chayleaf";
+        repo = "Waybar";
+        rev = "cc955294c2213a33b63638831dcbc422975fa9ca";
+        sha256 = "sha256-HKkgEgXdRJKLucXCH6dH5hu4VJOOrDUeLd/5fcmlUbo=";
+      };
+    });
     settings = [{
       layer = "bottom";
       # position = "bottom";
       ipc = true;
       height = 40;
-      modules-left = [ "tray" "cpu" "memory" "sway/workspaces" "sway/mode" ];
+      modules-left = [ "sway/workspaces" "sway/mode" "mpris" ];
       mpris = {
-        format = "{player_icon} {title}";
-        format-paused = "{status_icon} <i>{title}</i>";
+        tooltip = true;
+        format = "{player_icon} {dynamic}";
+        format-paused = "{status_icon} <i>{dynamic}</i>";
+        # tooltip-format = "{dynamic}";
+        album-len = 32;
+        artist-len = 32;
+        title-len = 32;
+        dynamic-len = 32;
         player-icons = {
           default = "▶";
           mpd = "🎵";
@@ -243,7 +258,7 @@ in
           "(.*) - KeePassXC" = "$1";
         };
       };
-      modules-right = [ "mpris" "wireplumber" "clock" "sway/language" ];
+      modules-right = [ "memory" "cpu" "tray" "wireplumber" "clock" "sway/language" ];
       cpu = {
         # format = "{usage}% ";
         format = " {icon0}{icon1}{icon2}{icon3}{icon4}{icon5}{icon6}{icon7}{icon8}{icon9}{icon10}{icon11}{icon12}{icon13}{icon14}{icon15}";
@@ -373,6 +388,7 @@ in
           bg = "~/var/wallpaper.jpg fill";
           # improved screen latency, apparently
           max_render_time = "2";
+          scale = builtins.toString config.displayScale;
         };
       };
       input = {

@@ -11,6 +11,7 @@
   home.stateVersion = "22.11";
   home.username = "user";
   home.homeDirectory = "/home/user";
+  displayScale = 1.1;
   termShell = {
     enable = true;
     path = "${pkgs.zsh}/bin/zsh";
@@ -39,7 +40,7 @@
   home.sessionVariables = let sources = (import ../_sources/generated.nix {
     inherit (pkgs) fetchgit fetchurl fetchFromGitHub dockerTools;
   });
-  proton-ge = pkgs.stdenv.mkDerivation {
+  proton-ge = pkgs.stdenvNoCC.mkDerivation {
     inherit (sources.proton-ge) pname version src;
     nativeBuildInputs = [];
     installPhase = ''

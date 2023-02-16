@@ -1,5 +1,10 @@
 { lib, ... }:
 with lib; {
+  options.displayScale = mkOption {
+    type = types.float;
+    description = "display scale";
+    default = 1;
+  };
   options.terminals = mkOption {
     type = with types; listOf str;
     description = "terminal kinds (possible values are alacritty, urxvt, kitty, foot)";
