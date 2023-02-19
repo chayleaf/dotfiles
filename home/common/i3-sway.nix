@@ -1,6 +1,8 @@
 { options, config, pkgs, lib, ... }:
 let
 modifier = "Mod4";
+rofiSway = config.programs.rofi.finalPackage;
+rofiI3 = pkgs.rofi.override { plugins = config.programs.rofi.plugins; };
 barConfig = {
   mode = "dock";
   hiddenState = "hide";
@@ -169,8 +171,9 @@ in
           statusCommand = "${pkgs.i3status}/bin/i3status";
         })
       ];
-      menu = "${pkgs.rofi}/bin/rofi -show drun";
+      menu = "${rofiI3}/bin/rofi -show drun";
       keybindings = genKeybindings options.xsession.windowManager.i3 {
+        "${modifier}+c" = "exec ${rofiI3}/bin/rofi -show calc -no-show-match -no-sort -no-persist-history";
         XF86AudioRaiseVolume = "exec ${pkgs.pamixer}/bin/pamixer --increase 5";
         XF86AudioLowerVolume = "exec ${pkgs.pamixer}/bin/pamixer --decrease 5";
         XF86AudioMute = "exec ${pkgs.pamixer}/bin/pamixer --toggle-mute";
@@ -262,6 +265,7 @@ in
         "Scroll_Lock"
         "exec ${pkgs.mumble}/bin/mumble rpc stoptalking")
       // {
+        "${modifier}+c" = "exec ${rofiSway}/bin/rofi -show calc -no-show-match -no-sort -no-persist-history";
         "${modifier}+Print" = "exec ${grimshot}/bin/grimshot copy area";
         "${modifier}+Mod1+Print" = "exec ${grimshot}/bin/grimshot copy window";
         "--locked XF86AudioRaiseVolume" = "exec ${pkgs.pamixer}/bin/pamixer --increase 5";
@@ -293,7 +297,7 @@ in
           xkb_options = "compose:ralt,grp:win_space_toggle";
         };
       };
-      menu = "${pkgs.rofi-wayland}/bin/rofi -show drun";
+      menu = "${rofiSway}/bin/rofi -show drun";
     }; in commonConfig // swayConfig;
     extraSessionCommands = ''
       export SDL_VIDEODRIVER=wayland
@@ -322,8 +326,13 @@ in
       { timeout = 300; 
         command = "${pkgs.sway}/bin/swaymsg \"output * dpms off\"";
         resumeCommand = "${pkgs.sway}/bin/swaymsg \"output * dpms on\""; }
+      { timeout = 598; 
+        command = "${pkgs.sway}/bin/swaymsg \"output * dpms on\""; }
       { timeout = 600;
         command = swaylock-start;
+        resumeCommand = "${pkgs.sway}/bin/swaymsg \"output * dpms on\""; }
+      { timeout = 602; 
+        command = "${pkgs.sway}/bin/swaymsg \"output * dpms off\"";
         resumeCommand = "${pkgs.sway}/bin/swaymsg \"output * dpms on\""; }
     ];
   };
@@ -375,7 +384,7 @@ in
   ] else [];
   programs.rofi = {
     enable = true;
-    font = "Noto Sans Mono 12";
+    font = "Noto Sans Mono 16";
     package = lib.mkIf config.wayland.windowManager.sway.enable pkgs.rofi-wayland;
     plugins = with pkgs; [
       rofi-calc
@@ -417,9 +426,11 @@ in
     };
     terminal = config.terminalBin;
     extraConfig = {
+      modi = [ "calc" "drun" "run" "ssh" ];
       icon-theme = "hicolor";
-      drun-match-fields = "name,generic,exec,keywords";
+      drun-match-fields = [ "name" "generic" "exec" "keywords" ];
       show-icons = true;
+      matching = "fuzzy";
       sort = true;
       sorting-method = "fzf";
       steal-focus = true;
