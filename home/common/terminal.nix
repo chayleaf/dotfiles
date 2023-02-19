@@ -16,14 +16,14 @@ in {
   terminalBinX = getTerminalBin (lib.lists.findFirst (term: term != "foot") null config.terminals);
   colors = {
     base = [
-      "523b3f"
-      "e66e6e"
-      "8cbf73"
-      "ebbe5f"
-      "5968b3"
-      "a64999"
-      "77c7c2"
-      "f0e4e6"
+      "523b3f" # black
+      "e66e6e" # red
+      "8cbf73" # green
+      "ebbe5f" # yellow
+      "5968b3" # blue
+      "a64999" # magenta
+      "77c7c2" # cyan
+      "f0e4e6" # white
       "6b4d52"
       "e66e6e"
       "8cbf73"

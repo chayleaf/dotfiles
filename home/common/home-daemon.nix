@@ -1,5 +1,5 @@
-{ lib, pkgs, ... }:
-pkgs.rustPlatform.buildRustPackage {
+{ lib, rustPlatform }:
+rustPlatform.buildRustPackage {
   pname = "home-daemon";
   version = "0.1";
 

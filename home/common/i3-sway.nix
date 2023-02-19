@@ -44,9 +44,16 @@ barConfig = {
   };
 };
 commonConfig = {
-  modifier = modifier;
+  inherit modifier;
   startup = [
-    { command = "~/scripts/initwm.sh"; }
+    { command = builtins.toString (with pkgs; writeShellScript "init-wm" ''
+      ${callPackage ./home-daemon.nix {}}/bin/dotfiles-home-daemon system76-scheduler&
+      ${gnome.zenity}/bin/zenity --password | (${keepassxc}/bin/keepassxc --pw-stdin ~/Nextcloud/keepass.kdbx&)
+      # nextcloud and nheko need secret service access
+      ${nextcloud-client}/bin/nextcloud --background&
+      ${nheko}/bin/nheko&
+      ${tdesktop}/bin/telegram-desktop -startintray&
+    ''); }
   ];
   colors = {
     focused = {
@@ -85,7 +92,6 @@ commonConfig = {
   };
   floating.criteria = [
     { class = "Anki"; title = "Add"; }
-    # { class = "Anki"; title = "Browse .*"; }
     { class = "Anki"; title = "Statistics"; }
     { class = "Anki"; title = "Preferences"; }
   ];
@@ -99,7 +105,6 @@ commonConfig = {
     smartGaps = true;
     inner = 10;
   };
-  menu = "${pkgs.bemenu}/bin/bemenu-run --no-overlap --prompt '>' --tb '#24101a' --tf '#ebbe5f' --fb '#24101a' --nb '#24101ac0' --ab '#24101ac0' --nf '#ebdadd' --af '#ebdadd' --hb '#394893' --hf '#e66e6e' --list 30 --prefix '*' --scrollbar autohide --fn 'Noto Sans Mono' --line-height 23 --sb '#394893' --sf '#ebdadd' --scb '#6b4d52' --scf '#e66e6e'";
   window.hideEdgeBorders = "smart";
   workspaceAutoBackAndForth = true;
 };
@@ -124,10 +129,9 @@ genKeybindings = (default_options: kb:
 );
 in
 {
-  # TODO merge with colors in gui.nix
+  # TODO merge with colors in gui.nix and terminal.nix
   imports = [ ./options.nix ./gui.nix ./waybar.nix ];
   home.sessionVariables = {
-    BEMENU_OPTS = "--no-overlap --prompt '>' --tb '#24101a' --tf '#ebbe5f' --fb '#24101a' --nb '#24101ac0' --ab '#24101ac0' --nf '#ebdadd' --af '#ebdadd' --hb '#394893' --hf '#e66e6e' --list 30 --prefix '*' --scrollbar autohide --fn 'Noto Sans Mono' --line-height 23 --sb '#394893' --sf '#ebdadd' --scb '#6b4d52' --scf '#e66e6e'";
     _JAVA_AWT_WM_NONREPARENTING = "1";
     GTK_IM_MODULE = "fcitx";
     QT_IM_MODULE = "fcitx";
@@ -165,6 +169,7 @@ in
           statusCommand = "${pkgs.i3status}/bin/i3status";
         })
       ];
+      menu = "${pkgs.rofi}/bin/rofi -show drun";
       keybindings = genKeybindings options.xsession.windowManager.i3 {
         XF86AudioRaiseVolume = "exec ${pkgs.pamixer}/bin/pamixer --increase 5";
         XF86AudioLowerVolume = "exec ${pkgs.pamixer}/bin/pamixer --decrease 5";
@@ -174,7 +179,7 @@ in
         XF86AudioPrev = "exec ${pkgs.playerctl}/bin/playerctl previous";
       };
       terminal = config.terminalBinX;
-    }; in i3Config // commonConfig // i3Config;
+    }; in commonConfig // i3Config;
   };
   home.file.".xinitrc".text = ''
     if test -z "$DBUS_SESSION_BUS_ADDRESS"; then
@@ -189,12 +194,6 @@ in
   xsession.initExtra = ''
     setxkbmap -layout jp,ru -option compose:ralt,grp:win_space_toggle
   '';
-  home.packages = with pkgs; if config.wayland.windowManager.sway.enable then [
-    wl-clipboard
-    xdg-desktop-portal
-    xdg-desktop-portal-wlr
-    xdg-desktop-portal-gtk
-  ] else [];
   wayland.windowManager.sway = {
     wrapperFeatures.gtk = true;
     config = let swayConfig = {
@@ -207,13 +206,13 @@ in
         }
       ];
       terminal = config.terminalBin;
-      window.commands = [
+      window = commonConfig.window // { commands = [
         { command = "floating enable; move workspace current";
           criteria = {
             app_id = "^org.keepassxc.KeePassXC$";
             title = "^KeePassXC - (?:Browser |ブラウザーの)?(?:Access Request|アクセス要求)$";
           }; }
-      ];
+      ]; };
       assigns = {
         "2" = [
           { app_id = "org.telegram.desktop"; }
@@ -272,13 +271,10 @@ in
         "--locked --inhibited XF86AudioNext" = "exec ${pkgs.playerctl}/bin/playerctl next";
         "--locked --inhibited XF86AudioPrev" = "exec ${pkgs.playerctl}/bin/playerctl previous";
       });
-      startup = [
+      startup = commonConfig.startup ++ [
         {
           always = true;
           command = "systemctl --user import-environment DISPLAY WAYLAND_DISPLAY SWAYSOCK XDG_CURRENT_DESKTOP";
-        }
-        {
-          command = "~/scripts/initwm.sh";
         }
         {
           command = "${pkgs.wl-clipboard}/bin/wl-paste -t text --watch ${pkgs.clipman}/bin/clipman store --no-persist";
@@ -297,9 +293,9 @@ in
           xkb_options = "compose:ralt,grp:win_space_toggle";
         };
       };
-    }; in swayConfig // commonConfig // swayConfig;
+      menu = "${pkgs.rofi-wayland}/bin/rofi -show drun";
+    }; in commonConfig // swayConfig;
     extraSessionCommands = ''
-      export BEMENU_BACKEND=wayland
       export SDL_VIDEODRIVER=wayland
       export QT_QPA_PLATFORM=wayland
       export QT_WAYLAND_DISABLE_WINDOWDECORATION=1
@@ -327,7 +323,8 @@ in
         command = "${pkgs.sway}/bin/swaymsg \"output * dpms off\"";
         resumeCommand = "${pkgs.sway}/bin/swaymsg \"output * dpms on\""; }
       { timeout = 600;
-        command = swaylock-start; }
+        command = swaylock-start;
+        resumeCommand = "${pkgs.sway}/bin/swaymsg \"output * dpms on\""; }
     ];
   };
   programs.swaylock.settings = rec {
@@ -369,5 +366,63 @@ in
     inside-wrong-color = inside-color;
     text-wrong-color = text-color;
     ring-wrong-color = "#e64e4e"; # deep-ish red
+  };
+  home.packages = with pkgs; if config.wayland.windowManager.sway.enable then [
+    wl-clipboard
+    xdg-desktop-portal
+    xdg-desktop-portal-wlr
+    xdg-desktop-portal-gtk
+  ] else [];
+  programs.rofi = {
+    enable = true;
+    font = "Noto Sans Mono 12";
+    package = lib.mkIf config.wayland.windowManager.sway.enable pkgs.rofi-wayland;
+    plugins = with pkgs; [
+      rofi-calc
+    ];
+    theme = with config.lib.formats.rasi; let transparent = mkLiteral "transparent"; in {
+      "*" = rec {
+        highlight = mkLiteral "bold italic";
+        scrollbar = true;
+
+        background = transparent;
+        background-color = mkLiteral "#24101a80";
+        foreground = mkLiteral "#ebdadd";
+        border-color = foreground;
+        separatorcolor = border-color;
+        scrollbar-handle = border-color;
+
+        normal-background = transparent;
+        normal-foreground = foreground;
+        alternate-normal-background = transparent;
+        alternate-normal-foreground = normal-foreground;
+        selected-normal-background = mkLiteral "#394893";
+        selected-normal-foreground = mkLiteral "#e66e6e";
+
+        active-background = foreground;
+        active-foreground = mkLiteral "#24101a";
+        alternate-active-background = active-background;
+        alternate-active-foreground = active-foreground;
+        selected-active-background = mkLiteral "#e66e6e";
+        selected-active-foreground = mkLiteral "#394893";
+
+        urgent-background = mkLiteral "#e66e6e";
+        urgent-foreground = foreground;
+        alternate-urgent-background = urgent-background;
+        alternate-urgent-foreground = urgent-foreground;
+        selected-urgent-background = mkLiteral "#394893";
+        selected-urgent-foreground = mkLiteral "#ebbe5f";
+      };
+      "@import" = "gruvbox-common.rasi";
+    };
+    terminal = config.terminalBin;
+    extraConfig = {
+      icon-theme = "hicolor";
+      drun-match-fields = "name,generic,exec,keywords";
+      show-icons = true;
+      sort = true;
+      sorting-method = "fzf";
+      steal-focus = true;
+    };
   };
 }

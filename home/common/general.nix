@@ -135,6 +135,10 @@
       mutableTrust = true;
     };
     nix-index.enable = true;
+    readline = {
+      enable = true;
+      variables.editing-mode = "vi";
+    };
   };
 
   home.packages = with pkgs; [

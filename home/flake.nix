@@ -9,9 +9,13 @@
       url = "github:nix-community/home-manager";
       inputs.nixpkgs.follows = "nixpkgs";
     };
+    nix-gaming = {
+      url = "github:fufexan/nix-gaming";
+      inputs.nixpkgs.follows = "nixpkgs";
+    };
   };
 
-  outputs = { self, nixpkgs, home-manager, nur }:
+  outputs = { self, nixpkgs, home-manager, nur, nix-gaming }:
     let
       # IRL-related private config
       priv = if builtins.pathExists ./private.nix then (import ./private.nix) else {};
@@ -22,6 +26,7 @@
           pkgs = nixpkgs.legacyPackages."x86_64-linux";
           modules = [
             nur.nixosModules.nur
+            { nixpkgs.overlays = [ nix-gaming.overlays.default ]; }
             ./hosts/nixmsi.nix
             (getPriv "nixmsi")
           ];

@@ -35,6 +35,7 @@
     "steam-original"
     "steam-runtime"
     "steamcmd"
+    "osu-lazer-bin"
   ];
   home.sessionVariables = let sources = (import ../_sources/generated.nix {
     inherit (pkgs) fetchgit fetchurl fetchFromGitHub dockerTools;
@@ -51,18 +52,17 @@
   };
   home.packages = with pkgs; [
     openrgb piper
-
     steam-run steam
+    osu-lazer-bin
     easyeffects
     # wineWowPackages.waylandFull
     winetricks
     protontricks # proton-caller
-    bottles
+    # bottles
     virtmanager
     gimp krita blender
     tdesktop
     clang rustc rustfmt cargo clippy
-    (import ../common/home-daemon.nix { inherit lib pkgs; })
     # waiting until the PR gets merged
     (looking-glass-client.overrideAttrs (old: {
       version = "B6";

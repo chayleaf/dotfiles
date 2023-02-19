@@ -78,7 +78,7 @@ let firefoxWithCcache = ({ useSccache, firefox-unwrapped }:
           rust-search-extension
           return-youtube-dislikes
           protondb-for-steam
-          privacy-redirect
+          libredirect
           privacy-pass
           noscript
           localcdn
@@ -92,6 +92,7 @@ let firefoxWithCcache = ({ useSccache, firefox-unwrapped }:
           # my packages
           yomichan
           youtube-nonstop
+          middle-mouse-button-scroll
         ];
       };
     };
