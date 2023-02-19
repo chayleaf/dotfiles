@@ -83,6 +83,12 @@ commonConfig = {
       text = "#ebdadd";
     };
   };
+  floating.criteria = [
+    { class = "Anki"; title = "Add"; }
+    # { class = "Anki"; title = "Browse .*"; }
+    { class = "Anki"; title = "Statistics"; }
+    { class = "Anki"; title = "Preferences"; }
+  ];
   floating.titlebar = true;
   fonts = {
     names = [ "Noto Sans Mono" "Symbols Nerd Font Mono" ];
@@ -119,7 +125,7 @@ genKeybindings = (default_options: kb:
 in
 {
   # TODO merge with colors in gui.nix
-  imports = [ ./options.nix ./gui.nix ];
+  imports = [ ./options.nix ./gui.nix ./waybar.nix ];
   home.sessionVariables = {
     BEMENU_OPTS = "--no-overlap --prompt '>' --tb '#24101a' --tf '#ebbe5f' --fb '#24101a' --nb '#24101ac0' --ab '#24101ac0' --nf '#ebdadd' --af '#ebdadd' --hb '#394893' --hf '#e66e6e' --list 30 --prefix '*' --scrollbar autohide --fn 'Noto Sans Mono' --line-height 23 --sb '#394893' --sf '#ebdadd' --scb '#6b4d52' --scf '#e66e6e'";
     _JAVA_AWT_WM_NONREPARENTING = "1";
@@ -189,108 +195,6 @@ in
     xdg-desktop-portal-wlr
     xdg-desktop-portal-gtk
   ] else [];
-  services.playerctld.enable = true;
-  programs.waybar = {
-    enable = true;
-    package = (pkgs.waybar.override {
-      withMediaPlayer = true;
-    }).overrideAttrs (old: {
-      src = pkgs.fetchFromGitHub {
-        owner = "chayleaf";
-        repo = "Waybar";
-        rev = "47edd76a56120226f15852ca1f9b3e4d02567c91";
-        sha256 = "sha256-s37M0ZG1S+Au68z6zC/QoJt+uLBdtFK1n1oCnWtwSc4=";
-      };
-    });
-    settings = [{
-      layer = "bottom";
-      # position = "bottom";
-      ipc = true;
-      height = 40;
-      modules-left = [ "sway/workspaces" "sway/mode" "mpris" ];
-      mpris = {
-        tooltip = true;
-        format = "{player_icon} {dynamic}";
-        format-paused = "{status_icon} {dynamic}";
-        interval = 10;
-        # tooltip-format = "{dynamic}";
-        album-len = 32;
-        artist-len = 32;
-        title-len = 32;
-        dynamic-len = 32;
-        player-icons = {
-          default = "▶";
-          mpd = "🎵";
-	};
-        status-icons.paused = "⏸";
-      };
-      "sway/workspaces" = {
-        disable-scroll = true;
-        format = "{value}{icon}";
-        format-icons = {
-          default = "";
-          focused = "";
-          urgent = " ";
-          "2" = " 󰵅";
-          "3" = " ";
-          "4" = " ";
-          "5" = " ";
-        };
-        persistent-workspaces = {
-          "1" = []; "2" = []; "3" = []; "4" = []; "5" = [];
-        };
-      };
-      "sway/mode" = {
-        tooltip = false;
-      };
-      modules-center = [ "sway/window" ];
-      #fixed-center = false;
-      "sway/window" = {
-        format = "{title}";
-        max-length = 50;
-        # tooltip = false;
-        icon = true;
-        rewrite = {
-          kitty = "";
-          zsh = "";
-          nheko = "";
-          Nextcloud = "";
-          "(.*) — LibreWolf" = "$1";
-          "(.*) - KeePassXC" = "$1";
-        };
-      };
-      modules-right = [ "memory" "cpu" "tray" "wireplumber" "clock" "sway/language" ];
-      cpu = {
-        # format = "{usage}% ";
-        format = " {icon0}{icon1}{icon2}{icon3}{icon4}{icon5}{icon6}{icon7}{icon8}{icon9}{icon10}{icon11}{icon12}{icon13}{icon14}{icon15}";
-        format-icons = ["▁" "▂" "▃" "▄" "▅" "▆" "▇" "█"];
-        tooltip = false;
-      };
-      memory = {
-        format = " {used}G";
-        tooltip = false;
-      };
-      tray = {
-        icon-size = 26;
-        spacing = 5;
-      };
-      wireplumber = {
-        format = "{icon} {volume}%";
-        format-muted = "ﱝ";
-        format-icons = ["奄" "奔" "墳"];
-        tooltip = false;
-      };
-      clock = {
-        interval = 5;
-        format = "{:%Y-%m-%d %H:%M:%S}";
-        tooltip = false;
-      };
-      "sway/language" = {
-        tooltip = false;
-      };
-    }];
-    style = ./waybar.css;
-  };
   wayland.windowManager.sway = {
     wrapperFeatures.gtk = true;
     config = let swayConfig = {
@@ -377,11 +281,7 @@ in
           command = "~/scripts/initwm.sh";
         }
         {
-          always = true;
           command = "${pkgs.wl-clipboard}/bin/wl-paste -t text --watch ${pkgs.clipman}/bin/clipman store --no-persist";
-        }
-        {
-          command = "${pkgs.swayidle}/bin/swayidle -w timeout 300 '' resume '${pkgs.sway}/bin/swaymsg \"output * dpms on\"'";
         }
       ];
       output = {
@@ -389,7 +289,6 @@ in
           bg = "~/var/wallpaper.jpg fill";
           # improved screen latency, apparently
           max_render_time = "2";
-          scale = builtins.toString config.displayScale;
         };
       };
       input = {
@@ -409,16 +308,16 @@ in
       export GDK_BACKEND=wayland,x11
       export GTK_USE_PORTAL=1
       export XDG_CURRENT_DESKTOP=sway
-      # SDL3 exists, so i can't really set SDL_DYNAMIC_API
-      # instead, running apps with SDL_DYNAMIC_API=$SDL2_DYNAMIC_API does the trick
-      export SDL2_DYNAMIC_API=${pkgs.SDL2.out}/lib/libSDL2.so
+      export XDG_SESSION_DESKTOP=sway
+      # TODO: set to sdl3 compat when SDL3 releases
+      export SDL_DYNAMIC_API=${pkgs.SDL2.out}/lib/libSDL2.so
     '';
   };
   services.swayidle = let swaylock-start = builtins.toString (with pkgs; writeScript "swaylock-start" ''
     #! ${bash}/bin/bash
-    ${procps}/bin/pgrep -fx ${swaylock}/bin/swaylock || ${swaylock}/bin/swaylock
+    ${procps}/bin/pgrep -fx ${swaylock}/bin/swaylock || (${swaylock}/bin/swaylock && ${pkgs.sway}/bin/swaymsg "output * dpms on")
   ''); in {
-    enable = true;
+    enable = config.wayland.windowManager.sway.enable;
     events = [
       { event = "before-sleep"; command = swaylock-start; }
       # after-resume, lock, unlock
@@ -431,7 +330,7 @@ in
         command = swaylock-start; }
     ];
   };
-  programs.swaylock.settings = let textColor = "#ebdadd"; bgColor = "#24101ac0"; in {
+  programs.swaylock.settings = rec {
     image = "${config.home.homeDirectory}/var/wallpaper.jpg";
     font = "Unifont";
     font-size = 64;
@@ -441,34 +340,34 @@ in
     indicator-thickness = 32;
     separator-color = "#00000000";
 
-    layout-text-color = textColor;
-    layout-bg-color = bgColor;
+    layout-text-color = text-color;
+    layout-bg-color = inside-color;
     layout-border-color = "#00000000";
 
     line-uses-inside = true;
 
-    inside-color = bgColor;
-    text-color = textColor;
+    inside-color = "#24101ac0";
+    text-color = "#ebdadd";
     ring-color = "#8cbf73"; # green
     key-hl-color = "#6398bf"; # blue
     bs-hl-color = "#e66e6e"; # red
 
-    inside-caps-lock-color = bgColor;
-    text-caps-lock-color = textColor;
+    inside-caps-lock-color = inside-color;
+    text-caps-lock-color = text-color;
     ring-caps-lock-color = "#ebbe5f"; # yellow
-    caps-lock-key-hl-color = "#6398bf"; # same as normal key-hl-color
-    caps-lock-bs-hl-color = "#e66e6e"; # same as normal bs-hl-color
+    caps-lock-key-hl-color = key-hl-color;
+    caps-lock-bs-hl-color = bs-hl-color;
 
-    inside-clear-color = bgColor;
-    text-clear-color = textColor;
-    ring-clear-color = "#8cbf73"; # green
+    inside-clear-color = inside-color;
+    text-clear-color = text-color;
+    ring-clear-color = ring-color; # green
 
-    inside-ver-color = bgColor;
-    text-ver-color = textColor;
+    inside-ver-color = inside-color;
+    text-ver-color = text-color;
     ring-ver-color = "#a64999"; # purple
 
-    inside-wrong-color = bgColor;
-    text-wrong-color = textColor;
+    inside-wrong-color = inside-color;
+    text-wrong-color = text-color;
     ring-wrong-color = "#e64e4e"; # deep-ish red
   };
 }

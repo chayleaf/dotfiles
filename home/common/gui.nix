@@ -128,7 +128,7 @@
     # gui compat stuff
     qt5ct qgnomeplatform
     # various programs i use
-    keepassxc nheko qbittorrent anki mumble
+    keepassxc nheko qbittorrent mumble
     nextcloud-client gnome.zenity kdeconnect
     # cli tools
     imagemagick ffmpeg
@@ -137,5 +137,10 @@
     (nerdfonts.override { fonts = [ "NerdFontsSymbolsOnly" ]; })
     # might check out some day (tm)
     # nyxt qutebrowser
+
+    # for updating parts of this repo
+    nvfetcher config.nur.repos.rycee.mozilla-addons-to-nix
+
+    anki-bin
   ];
 }

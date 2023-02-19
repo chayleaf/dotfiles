@@ -1,12 +1,21 @@
 { config, pkgs, lib, ... }:
 {
-  imports = [ ./options.nix ./zsh.nix ];
+  imports = [
+    ./options.nix
+    ./zsh.nix
+    ./fish.nix
+  ];
   manual.json.enable = true;
   services.gpg-agent = {
     enable = true;
     enableSshSupport = true;
     maxCacheTtl = 72000;
     maxCacheTtlSsh = 72000;
+  };
+  home.shellAliases = {
+    s = "sudo -A";
+    se = "sudo -AE";
+    l = "lsd";
   };
 
   programs = {
@@ -131,6 +140,6 @@
   home.packages = with pkgs; [
     rclone sshfs fuse
     file jq python3Full killall
-    appimage-run comma nvfetcher
+    appimage-run comma
   ];
 }

@@ -10,9 +10,6 @@
     dotDir = ".config/zsh";
     history.ignoreDups = true;
     history.path = "${config.xdg.dataHome}/zsh/zsh_history";
-    shellAliases.s = "sudo -A";
-    shellAliases.se = "sudo -AE";
-    shellAliases.l = "lsd";
     # I dont want to remap the up key, so only map this, setting ATUIN_NOBIND to true
     initExtra = ''
       up-line-or-local-history() {

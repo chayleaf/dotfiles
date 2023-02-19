@@ -2,7 +2,7 @@
 {
   imports = [
     ../common/general.nix
-    ../common/firefox.nix
+    ../common/firefox
     ../common/i3-sway.nix
     ../common/vim.nix
     ../common/helix.nix
@@ -11,10 +11,9 @@
   home.stateVersion = "22.11";
   home.username = "user";
   home.homeDirectory = "/home/user";
-  displayScale = 1.1;
   termShell = {
     enable = true;
-    path = "${pkgs.zsh}/bin/zsh";
+    path = "${pkgs.fish}/bin/fish";
   };
   xsession.windowManager.i3.enable = true;
   wayland.windowManager.sway.enable = true;
@@ -51,6 +50,8 @@
     STEAM_EXTRA_COMPAT_TOOLS_PATHS = "${proton-ge}";
   };
   home.packages = with pkgs; [
+    openrgb piper
+
     steam-run steam
     easyeffects
     # wineWowPackages.waylandFull

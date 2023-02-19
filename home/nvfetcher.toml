@@ -1,3 +1,7 @@
 [proton-ge]
 src.github = "GloriousEggroll/proton-ge-custom"
 fetch.url = "https://github.com/GloriousEggroll/proton-ge-custom/releases/download/$ver/$ver.tar.gz"
+
+[yomichan]
+src.github = "FooSoft/yomichan"
+fetch.url = "https://github.com/FooSoft/yomichan/releases/download/$ver/yomichan-firefox-dev.xpi"

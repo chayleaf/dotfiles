@@ -178,6 +178,8 @@ in {
 
   swapDevices = [ { device = "/swap/swapfile"; } ];
 
+  services.ratbagd.enable = true;
+
   ### SECTION 2: SYSTEM CONFIG/ENVIRONMENT ###
   i18n.defaultLocale = lib.mkDefault "en_US.UTF-8";
   i18n.supportedLocales = lib.mkDefault [ "en_US.UTF-8/UTF-8" ];
@@ -227,10 +229,19 @@ in {
       rate = 48000;
     };
   };
-  # zsh
-  environment.pathsToLink = [ "/share/zsh" ];
+
+  # environment.pathsToLink = [ "/share/zsh" "/share/fish" ];
+  programs.fish = {
+    enable = true;
+  };
+  programs.zsh = {
+    enable = true;
+    enableBashCompletion = true;
+  };
 
   programs.fuse.userAllowOther = true;
+
+  programs.ccache.enable = true;
 
   xdg.portal = {
     enable = true;

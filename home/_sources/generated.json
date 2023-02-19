@@ -13,5 +13,20 @@
             "url": "https://github.com/GloriousEggroll/proton-ge-custom/releases/download/GE-Proton7-49/GE-Proton7-49.tar.gz"
         },
         "version": "GE-Proton7-49"
+    },
+    "yomichan": {
+        "cargoLocks": null,
+        "date": null,
+        "extract": null,
+        "name": "yomichan",
+        "passthru": null,
+        "pinned": false,
+        "src": {
+            "name": null,
+            "sha256": "sha256-l70wVXHEArifukDelZeoVxIyP2Crs6QZSD/kFdEml/8=",
+            "type": "url",
+            "url": "https://github.com/FooSoft/yomichan/releases/download/22.10.23.0/yomichan-firefox-dev.xpi"
+        },
+        "version": "22.10.23.0"
     }
 }

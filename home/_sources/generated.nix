@@ -9,4 +9,12 @@
       sha256 = "sha256-T+7R+zFMd0yQ0v7/WGym2kzMMulUmATS/LCEQS8whiw=";
     };
   };
+  yomichan = {
+    pname = "yomichan";
+    version = "22.10.23.0";
+    src = fetchurl {
+      url = "https://github.com/FooSoft/yomichan/releases/download/22.10.23.0/yomichan-firefox-dev.xpi";
+      sha256 = "sha256-l70wVXHEArifukDelZeoVxIyP2Crs6QZSD/kFdEml/8=";
+    };
+  };
 }
