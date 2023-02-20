@@ -147,6 +147,7 @@
     };
     # profiles = {};
     package = pkgs.wrapMpv (pkgs.mpv-unwrapped.override {
+      # webp support
       ffmpeg_5 = pkgs.ffmpeg_5-full;
     }) {
       scripts =
@@ -284,7 +285,8 @@
     # cli tools
     imagemagick ffmpeg_5-full
     # fonts
-    noto-fonts noto-fonts-cjk noto-fonts-emoji
+    noto-fonts noto-fonts-cjk-sans noto-fonts-cjk-serif
+    noto-fonts-emoji noto-fonts-extra
     (nerdfonts.override { fonts = [ "NerdFontsSymbolsOnly" ]; })
     # might check out some day (tm)
     # nyxt qutebrowser

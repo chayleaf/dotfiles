@@ -55,13 +55,16 @@ window#waybar.hidden {
 }
 
 #clock,
-#cpu,
-#memory,
-#wireplumber,
 #battery,
-#language,
 #tray {
   padding: 0 8px;
+}
+
+#memory,
+#cpu,
+#wireplumber,
+#language {
+  padding: 0 3px;
 }
 
 #mode,
@@ -75,8 +78,8 @@ window#waybar.hidden {
 }
 
 #window {
-  padding: 0 3px;
-  margin: 3px 2px;
+  padding: 0 0;
+  margin: 3px 0;
   background-color: transparent;
   color: @fg;
 }

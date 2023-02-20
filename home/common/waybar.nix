@@ -9,8 +9,8 @@
       src = pkgs.fetchFromGitHub {
         owner = "chayleaf";
         repo = "Waybar";
-        rev = "44984a3990d347af50c09d8492bf3853cd361b96";
-        sha256 = "sha256-aiMvzB/uMaaQreCQ2T2nl4qFYW0DzMnvknvmdbGhF2c=";
+        rev = "8c3a5d8044b9de7de445c76b22443939a6870dc4";
+        sha256 = "sha256-4dRsR6D2KYa3eLojTNAS6UZNnle78yeNbSH2XwjcwlU=";
       };
     });
     settings = [{
@@ -23,7 +23,7 @@
         tooltip = true;
         format = "{player_icon} {dynamic}";
         format-paused = "{status_icon} {dynamic}";
-        interval = 10;
+        interval = 1;
         # tooltip-format = "{dynamic}";
         album-len = 32;
         artist-len = 32;
@@ -73,12 +73,12 @@
       modules-right = [ "memory" "cpu" "tray" "wireplumber" "clock" "sway/language" ];
       cpu = {
         # format = "{usage}% ";
-        format = " {icon0}{icon1}{icon2}{icon3}{icon4}{icon5}{icon6}{icon7}{icon8}{icon9}{icon10}{icon11}{icon12}{icon13}{icon14}{icon15}";
+        format = "{icon0}{icon1}{icon2}{icon3}{icon4}{icon5}{icon6}{icon7}{icon8}{icon9}{icon10}{icon11}{icon12}{icon13}{icon14}{icon15}";
         format-icons = ["▁" "▂" "▃" "▄" "▅" "▆" "▇" "█"];
         tooltip = false;
       };
       memory = {
-        format = " {used}G";
+        format = "{used}G";
         tooltip = false;
       };
       tray = {
@@ -86,9 +86,8 @@
         spacing = 5;
       };
       wireplumber = {
-        format = "{icon} {volume}%";
+        format = "{volume}%";
         format-muted = "ﱝ";
-        format-icons = ["奄" "奔" "墳"];
         tooltip = false;
       };
       clock = {
@@ -98,6 +97,8 @@
       };
       "sway/language" = {
         tooltip = false;
+        # make sure it isn't pushed away when other modules get too big
+        min-length = 2;
       };
     }];
     style = ./waybar.css;

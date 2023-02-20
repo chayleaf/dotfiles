@@ -310,12 +310,16 @@ in
       export XDG_CURRENT_DESKTOP=sway
       export XDG_SESSION_DESKTOP=sway
       # TODO: set to sdl3 compat when SDL3 releases
-      export SDL_DYNAMIC_API=${pkgs.SDL2.out}/lib/libSDL2.so
+      # this is for steam games, I set the launch options to:
+      # `SDL_DYNAMIC_API=$SDL2_DYNAMIC_API %command%`
+      # Steam itself doesn't work with SDL_DYNAMIC_API set, so it's
+      # a bad idea to set SDL_DYNAMIC_API globally
+      export SDL2_DYNAMIC_API=${pkgs.SDL2.out}/lib/libSDL2.so
     '';
   };
   services.swayidle = let swaylock-start = builtins.toString (with pkgs; writeScript "swaylock-start" ''
     #! ${bash}/bin/bash
-    ${procps}/bin/pgrep -fx ${swaylock}/bin/swaylock || (${swaylock}/bin/swaylock && ${pkgs.sway}/bin/swaymsg "output * dpms on")
+    ${procps}/bin/pgrep -fx "${swaylock}/bin/swaylock -f" || ${swaylock}/bin/swaylock -f
   ''); in {
     enable = config.wayland.windowManager.sway.enable;
     events = [
@@ -326,14 +330,8 @@ in
       { timeout = 300; 
         command = "${pkgs.sway}/bin/swaymsg \"output * dpms off\"";
         resumeCommand = "${pkgs.sway}/bin/swaymsg \"output * dpms on\""; }
-      { timeout = 598; 
-        command = "${pkgs.sway}/bin/swaymsg \"output * dpms on\""; }
       { timeout = 600;
-        command = swaylock-start;
-        resumeCommand = "${pkgs.sway}/bin/swaymsg \"output * dpms on\""; }
-      { timeout = 602; 
-        command = "${pkgs.sway}/bin/swaymsg \"output * dpms off\"";
-        resumeCommand = "${pkgs.sway}/bin/swaymsg \"output * dpms on\""; }
+        command = swaylock-start; }
     ];
   };
   programs.swaylock.settings = rec {
