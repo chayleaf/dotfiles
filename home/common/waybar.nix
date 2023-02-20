@@ -76,11 +76,9 @@
         # format = "{usage}% ";
         format = "{icon0}{icon1}{icon2}{icon3}{icon4}{icon5}{icon6}{icon7}{icon8}{icon9}{icon10}{icon11}{icon12}{icon13}{icon14}{icon15}";
         format-icons = ["▁" "▂" "▃" "▄" "▅" "▆" "▇" "█"];
-        tooltip = false;
       };
       memory = {
         format = "{used}G";
-        tooltip = false;
       };
       tray = {
         icon-size = 26;
@@ -94,7 +92,21 @@
       clock = {
         interval = 5;
         format = "{:%Y-%m-%d %H:%M:%S}";
-        tooltip = false;
+        tooltip-format = "<tt><small>{calendar}</small></tt>";
+        calendar = {
+          mode = "year";
+          # TODO: make this work
+          mode-mon-col = 3;
+          on-scroll = 1;
+          on-click-right = "mode";
+          format = {
+            months = "<span color='#ffead3'><b>{}</b></span>";
+            days = "<span color='#ecc6d9'><b>{}</b></span>";
+            weeks = "<span color='#99ffdd'><b>W{}</b></span>";
+            weekdays = "<span color='#ffcc66'><b>{}</b></span>";
+            today = "<span color='#ff6699'><b><u>{}</u></b></span>";
+          };
+        };
       };
       "sway/language" = {
         tooltip = false;

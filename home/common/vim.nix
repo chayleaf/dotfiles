@@ -20,6 +20,9 @@
     extraConfig = '' 
       autocmd BufReadPost * if @% !~# '\.git[\/\\]COMMIT_EDITMSG$' && line("'\"") > 1 && line("'\"") <= line("$") | exe "normal! g`\"" | endif
       syntax on
+      au FileType markdown set colorcolumn=73 textwidth=72
+      au FileType gitcommit set colorcolumn=73
+
       lua << EOF
       EOF
     '';
