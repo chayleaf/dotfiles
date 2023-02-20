@@ -15,6 +15,10 @@
   min-height: 0;
 }
 
+#mpris {
+  font-family: "Noto Sans Mono CJK JP", "Noto Sans Mono", "Symbols Nerd Font Mono", monospace;
+}
+
 window#waybar {
   background-color: @bg;
   transition-property: background-color;

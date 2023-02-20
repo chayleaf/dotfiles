@@ -9,8 +9,8 @@
       src = pkgs.fetchFromGitHub {
         owner = "chayleaf";
         repo = "Waybar";
-        rev = "8c3a5d8044b9de7de445c76b22443939a6870dc4";
-        sha256 = "sha256-4dRsR6D2KYa3eLojTNAS6UZNnle78yeNbSH2XwjcwlU=";
+        rev = "3091cf4a009e92665325c0dd61adf5ab367786a3";
+        sha256 = "sha256-zH4hbQ8+9TYRVW/XYqmAVsi0vsSPn1LPqXxr0gi0j1E=";
       };
     });
     settings = [{
@@ -24,16 +24,17 @@
         format = "{player_icon} {dynamic}";
         format-paused = "{status_icon} {dynamic}";
         interval = 1;
+        ellipsis = "…";
         # tooltip-format = "{dynamic}";
-        album-len = 32;
-        artist-len = 32;
-        title-len = 32;
-        dynamic-len = 32;
+        album-len = 44;
+        artist-len = 44;
+        title-len = 44;
+        dynamic-len = 44;
         player-icons = {
-          default = "▶";
-          mpd = "🎵";
+          default = "";
+          mpd = "";
 	};
-        status-icons.paused = "⏸";
+        status-icons.paused = "";
       };
       "sway/workspaces" = {
         disable-scroll = true;
