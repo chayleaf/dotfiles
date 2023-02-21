@@ -199,6 +199,9 @@ in
   '';
   wayland.windowManager.sway = {
     wrapperFeatures.gtk = true;
+    extraConfig = ''
+      title_align center
+    '';
     config = let swayConfig = {
       bars = [
         {
@@ -289,6 +292,7 @@ in
           bg = "~/var/wallpaper.jpg fill";
           # improved screen latency, apparently
           max_render_time = "2";
+          adaptive_sync = "on";
         };
       };
       input = {
@@ -300,6 +304,7 @@ in
       menu = "${rofiSway}/bin/rofi -show drun";
     }; in commonConfig // swayConfig;
     extraSessionCommands = ''
+      export WLR_RENDERER=vulkan
       export SDL_VIDEODRIVER=wayland
       export QT_QPA_PLATFORM=wayland
       export QT_WAYLAND_DISABLE_WINDOWDECORATION=1
@@ -328,8 +333,8 @@ in
     ];
     timeouts = [
       { timeout = 300; 
-        command = "${pkgs.sway}/bin/swaymsg \"output * dpms off\"";
-        resumeCommand = "${pkgs.sway}/bin/swaymsg \"output * dpms on\""; }
+        command = "${pkgs.sway}/bin/swaymsg \"output * power off\"";
+        resumeCommand = "${pkgs.sway}/bin/swaymsg \"output * power on\""; }
       { timeout = 600;
         command = swaylock-start; }
     ];

@@ -92,6 +92,8 @@ in {
     video.hidpi.enable = true;
     enableRedistributableFirmware = true;
     opengl.driSupport32Bit = true;
+    # sway WLR_RENDERER=vulkan
+    opengl.extraPackages = with pkgs; [ vulkan-validation-layers ];
   };
 
   services.tlp.settings = {
