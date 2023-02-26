@@ -1,4 +1,4 @@
-@define-color bg rgba(36, 16, 26, .75); /*#24101ac0;*/
+@define-color bg rgba(36, 16, 26, /*.75*/ .95); /*#24101ac0;*/
 @define-color blue #87e5cf;
 @define-color green #8cbf73;
 @define-color yellow #ebbe5f;

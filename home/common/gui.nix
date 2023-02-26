@@ -193,42 +193,6 @@
     enabled = "fcitx5";
     fcitx5.addons = with pkgs; [ fcitx5-lua fcitx5-gtk fcitx5-mozc fcitx5-configtool fcitx5-qt ];
   };
-  xresources.properties = {
-    # special colors
-    "*.foreground" = "#ebdadd";
-    "*.background" = "[75]#24101a";
-    "*.cursorColor" = "#ebdadd";
-    # black
-    "*.color0" = "#523b3f"; # "#3b4252";
-    "*.color8" = "#6b4d52"; # "#4c566a";
-    # red
-    "*.color1" = "#e66e6e";
-    "*.color9" = "#e66e6e";
-    # green
-    "*.color2" = "#8cbf73";
-    "*.color10" = "#8cbf73";
-    # yellow
-    "*.color3" = "#ebbe5f";
-    "*.color11" = "#ebbe5f";
-    # blue
-    "*.color4" = "#5968b3";
-    "*.color12" = "#5968b3";
-    # magenta
-    "*.color5" = "#a64999";
-    "*.color13" = "#a64999";
-    # cyan
-    "*.color6" = "#77c7c2";
-    "*.color14" = "#77c7c2";
-    # white
-    "*.color7" = "#f0e4e6";
-    "*.color15" = "#f7f0f1";
-    "*antialias" = true;
-    "*autohint" = true;
-    # "*fading" = 0;
-    # "*fadeColor" = "#6b4d52";
-  };
-  # home.file.".Xdefaults".source = /. + "/${config.home.homeDirectory}/.Xresources";
-  home.file.".Xdefaults".source = config.home.file."${config.home.homeDirectory}/.Xresources".source;
   services.gammastep.enable = true;
   fonts.fontconfig.enable = true;
   gtk = {

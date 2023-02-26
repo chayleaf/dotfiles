@@ -3,6 +3,37 @@ let
 modifier = "Mod4";
 rofiSway = config.programs.rofi.finalPackage;
 rofiI3 = pkgs.rofi.override { plugins = config.programs.rofi.plugins; };
+audioNext = with pkgs; writeShellScript "playerctl-next" ''
+  ${playerctl}/bin/playerctl next
+  PLAYER=$(${playerctl}/bin/playerctl -l | head -n 1)
+  # mpdris2 bug: audio wont play after a seek/skip, you have to pause-unpause
+  if [[ "$PLAYER" == "mpd" ]]; then
+    ${playerctl}/bin/playerctl pause
+    ${playerctl}/bin/playerctl position 0
+    ${playerctl}/bin/playerctl play
+  fi
+'';
+audioPrev = with pkgs; writeShellScript "playerctl-prev" ''
+  # just seek if over 5 seconds into the track
+  POS=$(${playerctl}/bin/playerctl position)
+  PLAYER=$(${playerctl}/bin/playerctl -l | head -n 1)
+  if [ -n "$POS" ]; then
+    if (( $(echo "$POS > 5.01" | ${bc}/bin/bc -l) )); then
+      SEEK=1
+    fi
+  fi
+  if [ -z "$SEEK" ]; then
+    ${playerctl}/bin/playerctl previous
+  else
+    ${playerctl}/bin/playerctl position 0
+  fi
+  # mpdris2 bug: audio wont play after a seek/skip, you have to pause-unpause
+  if [[ "$PLAYER" == "mpd" ]]; then
+    ${playerctl}/bin/playerctl pause
+    ${playerctl}/bin/playerctl position 0
+    ${playerctl}/bin/playerctl play
+  fi
+'';
 barConfig = {
   mode = "dock";
   hiddenState = "hide";
@@ -15,18 +46,18 @@ barConfig = {
   };
   trayOutput = "*";
   colors = {
-    background = "#24101a";
-    statusline = "#ebdadd";
-    separator = "#6b4d52";
+    background = "#${config.colors.background}";
+    statusline = "#${config.colors.foreground}";
+    separator = "#${config.colors.brBlack}";
     focusedWorkspace = {
       border = "#782a2a";
       background = "#782a2a";
-      text = "#ebdadd";
+      text = "#${config.colors.foreground}";
     };
     activeWorkspace = {
       border = "#913131";
       background = "#913131";
-      text = "#ebdadd";
+      text = "#${config.colors.foreground}";
     };
     inactiveWorkspace = {
       border = "#472222";
@@ -36,12 +67,12 @@ barConfig = {
     urgentWorkspace = {
       border = "#734545";
       background = "#993d3d";
-      text = "#ebdadd";
+      text = "#${config.colors.foreground}";
     };
     bindingMode = {
       border = "#734545";
       background = "#993d3d";
-      text = "#ebdadd";
+      text = "#${config.colors.foreground}";
     };
   };
 };
@@ -59,37 +90,37 @@ commonConfig = {
   ];
   colors = {
     focused = {
-      childBorder = "#b0a3a5c0";
-      # background = "#24101ac0";
+      childBorder = "#b0a3a5${config.colors.hexAlpha}";
+      # background = "#${config.colors.background}${config.colors.hexAlpha}";
       background = "#4c4042e0";
-      # border = "#24101ac0";
+      # border = "#${config.colors.background}${config.colors.hexAlpha}";
       border = "#4c4042e0";
       indicator = "#b35656";
-      text = "#ebdadd";
+      text = "#${config.colors.foreground}";
     };
     focusedInactive = {
-      # background = "#24101ac0";
+      # background = "#${config.colors.background}${config.colors.hexAlpha}";
       background = "#4c4042e0";
-      # border = "#24101ac0";
+      # border = "#${config.colors.background}${config.colors.hexAlpha}";
       border = "#4c4042e0";
-      childBorder = "#24101ac0";
+      childBorder = "#${config.colors.background}${config.colors.hexAlpha}";
       indicator = "#b32d2d";
-      text = "#ebdadd";
+      text = "#${config.colors.foreground}";
     };
     unfocused = {
-      background = "#24101ac0";
-      # border = "#24101ac0";
+      background = "#${config.colors.background}${config.colors.hexAlpha}";
+      # border = "#${config.colors.background}${config.colors.hexAlpha}";
       border = "#4c4042e0";
-      childBorder = "#24101ac0";
+      childBorder = "#${config.colors.background}${config.colors.hexAlpha}";
       indicator = "#661a1a";
-      text = "#ebdadd";
+      text = "#${config.colors.foreground}";
     };
     urgent = {
       background = "#993d3d";
       border = "#734545";
       childBorder = "#734545";
       indicator = "#993d3d";
-      text = "#ebdadd";
+      text = "#${config.colors.foreground}";
     };
   };
   floating.criteria = [
@@ -178,8 +209,8 @@ in
         XF86AudioLowerVolume = "exec ${pkgs.pamixer}/bin/pamixer --decrease 5";
         XF86AudioMute = "exec ${pkgs.pamixer}/bin/pamixer --toggle-mute";
         XF86AudioPlay = "exec ${pkgs.playerctl}/bin/playerctl play-pause";
-        XF86AudioNext = "exec ${pkgs.playerctl}/bin/playerctl next";
-        XF86AudioPrev = "exec ${pkgs.playerctl}/bin/playerctl previous";
+        XF86AudioNext = "exec ${audioNext}";
+        XF86AudioPrev = "exec ${audioPrev}";
       };
       terminal = config.terminalBinX;
     }; in commonConfig // i3Config;
@@ -275,8 +306,8 @@ in
         "--locked XF86AudioLowerVolume" = "exec ${pkgs.pamixer}/bin/pamixer --decrease 5";
         "--locked XF86AudioMute" = "exec ${pkgs.pamixer}/bin/pamixer --toggle-mute";
         "--locked --inhibited XF86AudioPlay" = "exec ${pkgs.playerctl}/bin/playerctl play-pause";
-        "--locked --inhibited XF86AudioNext" = "exec ${pkgs.playerctl}/bin/playerctl next";
-        "--locked --inhibited XF86AudioPrev" = "exec ${pkgs.playerctl}/bin/playerctl previous";
+        "--locked --inhibited XF86AudioNext" = "exec ${audioNext}";
+        "--locked --inhibited XF86AudioPrev" = "exec ${audioPrev}";
       });
       startup = commonConfig.startup ++ [
         {
@@ -355,25 +386,25 @@ in
 
     line-uses-inside = true;
 
-    inside-color = "#24101ac0";
-    text-color = "#ebdadd";
-    ring-color = "#8cbf73"; # green
+    inside-color = "#${config.colors.background}${config.colors.hexAlpha}";
+    text-color = "#${config.colors.foreground}";
+    ring-color = "#${config.colors.green}";
     key-hl-color = "#6398bf"; # blue
-    bs-hl-color = "#e66e6e"; # red
+    bs-hl-color = "#${config.colors.red}";
 
     inside-caps-lock-color = inside-color;
     text-caps-lock-color = text-color;
-    ring-caps-lock-color = "#ebbe5f"; # yellow
+    ring-caps-lock-color = "#${config.colors.yellow}";
     caps-lock-key-hl-color = key-hl-color;
     caps-lock-bs-hl-color = bs-hl-color;
 
     inside-clear-color = inside-color;
     text-clear-color = text-color;
-    ring-clear-color = ring-color; # green
+    ring-clear-color = ring-color;
 
     inside-ver-color = inside-color;
     text-ver-color = text-color;
-    ring-ver-color = "#a64999"; # purple
+    ring-ver-color = "#${config.colors.magenta}";
 
     inside-wrong-color = inside-color;
     text-wrong-color = text-color;
@@ -398,8 +429,10 @@ in
         scrollbar = true;
 
         background = transparent;
-        background-color = mkLiteral "#24101a80";
-        foreground = mkLiteral "#ebdadd";
+        background-color =
+          # this somehow uses different opacity
+          mkLiteral "#${config.colors.background}c0";
+        foreground = mkLiteral "#${config.colors.foreground}";
         border-color = foreground;
         separatorcolor = border-color;
         scrollbar-handle = border-color;
@@ -409,21 +442,21 @@ in
         alternate-normal-background = transparent;
         alternate-normal-foreground = normal-foreground;
         selected-normal-background = mkLiteral "#394893";
-        selected-normal-foreground = mkLiteral "#e66e6e";
+        selected-normal-foreground = mkLiteral "#${config.colors.red}";
 
         active-background = foreground;
-        active-foreground = mkLiteral "#24101a";
+        active-foreground = mkLiteral "#${config.colors.background}";
         alternate-active-background = active-background;
         alternate-active-foreground = active-foreground;
-        selected-active-background = mkLiteral "#e66e6e";
+        selected-active-background = mkLiteral "#${config.colors.red}";
         selected-active-foreground = mkLiteral "#394893";
 
-        urgent-background = mkLiteral "#e66e6e";
+        urgent-background = mkLiteral "#${config.colors.red}";
         urgent-foreground = foreground;
         alternate-urgent-background = urgent-background;
         alternate-urgent-foreground = urgent-foreground;
         selected-urgent-background = mkLiteral "#394893";
-        selected-urgent-foreground = mkLiteral "#ebbe5f";
+        selected-urgent-foreground = mkLiteral "#${config.colors.yellow}";
       };
       "@import" = "gruvbox-common.rasi";
     };

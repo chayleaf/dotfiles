@@ -9,7 +9,7 @@ let
   }).${term});
   color = builtins.elemAt config.colors.base;
   hex = (x: if builtins.isFunction x then (y: "#" + (x y)) else ("#" + x));
-  shell = lib.mkIf config.termShell.enable config.termShell.path;
+  shell = lib.mkIf config.termShell.enable (lib.mkDefault config.termShell.path);
 in {
   imports = [ ./options.nix ];
   terminalBin = getTerminalBin (builtins.head config.terminals);
@@ -35,8 +35,10 @@ in {
     ];
     foreground = "ebdadd";
     background = "24101a";
-    alpha = 0.75;
+    # 0.75 with opengl sway
+    alpha = 0.95;
   };
+  programs.tmux.shell = shell;
   programs.alacritty = {
     enable = supportTerminal "alacritty";
     # https://github.com/alacritty/alacritty/blob/master/alacritty.yml
@@ -48,24 +50,24 @@ in {
       colors.primary.background = hex config.colors.background;
       colors.primary.foreground = hex config.colors.foreground;
       colors.normal = {
-        black = hex color 0;
-        red = hex color 1;
-        green = hex color 2;
-        yellow = hex color 3;
-        blue = hex color 4;
-        magenta = hex color 5;
-        cyan = hex color 6;
-        white = hex color 7;
+        black = hex config.colors.black;
+        red = hex config.colors.red;
+        green = hex config.colors.green;
+        yellow = hex config.colors.yellow;
+        blue = hex config.colors.blue;
+        magenta = hex config.colors.magenta;
+        cyan = hex config.colors.cyan;
+        white = hex config.colors.white;
       };
       colors.bright = {
-        black = hex color 8;
-        red = hex color 9;
-        green = hex color 10;
-        yellow = hex color 11;
-        blue = hex color 12;
-        magenta = hex color 13;
-        cyan = hex color 14;
-        white = hex color 15;
+        black = hex config.colors.brBlack;
+        red = hex config.colors.brRed;
+        green = hex config.colors.brGreen;
+        yellow = hex config.colors.brYellow;
+        blue = hex config.colors.brBlue;
+        magenta = hex config.colors.brMagenta;
+        cyan = hex config.colors.brCyan;
+        white = hex config.colors.brWhite;
       };
     };
   };
@@ -89,6 +91,39 @@ in {
       "xft:Symbols Nerd Font Mono:size=16"
     ];
   };
+  xresources.properties = lib.mkIf config.programs.urxvt.enable {
+    # special colors
+    "*.foreground" = hex config.colors.foreground;
+    "*.background" = "[${builtins.toString config.colors.percentAlpha}]#${config.colors.background}";
+    "*.cursorColor" = hex config.colors.foreground;
+    # black
+    "*.color0" = hex color 0;
+    "*.color8" = hex color 8;
+    # red
+    "*.color1" = hex color 1;
+    "*.color9" = hex color 9;
+    # green
+    "*.color2" = hex color 2;
+    "*.color10" = hex color 10;
+    # yellow
+    "*.color3" = hex color 3;
+    "*.color11" = hex color 11;
+    # blue
+    "*.color4" = hex color 4;
+    "*.color12" = hex color 12;
+    # magenta
+    "*.color5" = hex color 5;
+    "*.color13" = hex color 13;
+    # cyan
+    "*.color6" = hex color 6;
+    "*.color14" = hex color 14;
+    # white
+    "*.color7" = hex color 7;
+    "*.color15" = hex color 15;
+    "*antialias" = true;
+    "*autohint" = true;
+  };
+  home.file.".Xdefaults".source = lib.mkIf config.programs.urxvt.enable config.home.file."${config.home.homeDirectory}/.Xresources".source;
   programs.foot = {
     enable = supportTerminal "foot";
     server.enable = true;

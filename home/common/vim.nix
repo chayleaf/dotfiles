@@ -24,6 +24,8 @@
       au FileType markdown set colorcolumn=73 textwidth=72
       au FileType gitcommit set colorcolumn=73
       highlight NormalFloat guibg=NONE
+      au BufReadPre * set foldmethod=syntax
+      au BufReadPost * folddoc foldopen!
     '';
     viAlias = true;
     vimAlias = true;
