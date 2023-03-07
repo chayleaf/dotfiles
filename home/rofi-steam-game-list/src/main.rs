@@ -410,8 +410,8 @@ impl std::future::Future for PendingFut {
 }
 
 fn main() {
-    let target_type = std::env::args().nth(1).map_or_else(
-        || "game".to_owned(),
+    let target_type = std::env::var("STEAM_GAME_LIST_TYPE").map_or_else(
+        |_| "game".to_owned(),
         |mut x| {
             x.make_ascii_lowercase();
             x
