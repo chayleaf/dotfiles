@@ -1,11 +1,11 @@
-{ lib, rustPlatform }:
+{ lib, rustPlatform, nix-gitignore }:
 rustPlatform.buildRustPackage {
   pname = "home-daemon";
   version = "0.1";
 
-  src = ../home-daemon;
+  src = nix-gitignore.gitignoreSource ["/target" "default.nix"] (lib.cleanSource ./.);
 
-  cargoLock.lockFile = ../home-daemon/Cargo.lock;
+  cargoLock.lockFile = ./Cargo.lock;
 
   meta = with lib; {
     description = "My custom home daemon";

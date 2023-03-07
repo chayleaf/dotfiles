@@ -1,11 +1,11 @@
-{ lib, rustPlatform }:
+{ lib, rustPlatform, nix-gitignore }:
 rustPlatform.buildRustPackage {
   pname = "rofi-steam-game-list";
   version = "0.1";
 
-  src = ../rofi-steam-game-list;
+  src = nix-gitignore.gitignoreSource ["/target" "default.nix"] (lib.cleanSource ./.);
 
-  cargoLock.lockFile = ../rofi-steam-game-list/Cargo.lock;
+  cargoLock.lockFile = ./Cargo.lock;
 
   meta = with lib; {
     description = "A program to list Steam games for Rofi";

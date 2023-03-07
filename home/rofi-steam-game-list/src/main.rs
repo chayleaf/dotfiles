@@ -255,11 +255,12 @@ fn read_time(s: String) -> io::Result<SystemTime> {
     std::fs::metadata(s + "/Steam/appcache/appinfo.vdf")?.modified()
 }
 
-fn read_appinfo(target_type: String, s: String) -> io::Result<(SystemTime, Vec<(u32, String)>)> {
+fn read_appinfo(target_type: &str, s: String) -> io::Result<(SystemTime, Vec<(u32, String)>)> {
     let time = read_time(s.clone())?;
     let vec = read_file(s + "/Steam/appcache/appinfo.vdf")?;
     let data = read_app_info(&mut &vec[..])?;
     let mut ret = Vec::new();
+    let target_types = target_type.split(',').collect::<HashSet<_>>();
     for mut info in data.entries {
         if let Some(mut x) = info
             .info
@@ -279,7 +280,7 @@ fn read_appinfo(target_type: String, s: String) -> io::Result<(SystemTime, Vec<(
                     .and_then(|x| String::from_utf8(x).ok())
                 {
                     t.make_ascii_lowercase();
-                    if t == target_type {
+                    if target_types.contains(t.as_str()) {
                         ret.push((info.app_id, n));
                     }
                 }
@@ -411,7 +412,7 @@ impl std::future::Future for PendingFut {
 
 fn main() {
     let target_type = std::env::var("STEAM_GAME_LIST_TYPE").map_or_else(
-        |_| "game".to_owned(),
+        |_| "game,application".to_owned(),
         |mut x| {
             x.make_ascii_lowercase();
             x
@@ -437,7 +438,7 @@ fn main() {
      * */
     let xdg_home = xdg_home();
     let xdg_home2 = xdg_home.clone();
-    let xdg_home3 = xdg_home;
+    let xdg_home3 = xdg_home.clone();
     let target_type2 = target_type.clone();
     let target_type3 = target_type.clone();
     let target_type4 = target_type.clone();
@@ -448,7 +449,7 @@ fn main() {
         let tx1 = tx0.clone();
         std::thread::spawn(move || {
             tx0.send(
-                read_appinfo(target_type2, crate::xdg_home()).map_or_else(|_| {
+                read_appinfo(&target_type2, xdg_home).map_or_else(|_| {
                     let _ = tx2.send(None);
                     None
                 }, |info| {
