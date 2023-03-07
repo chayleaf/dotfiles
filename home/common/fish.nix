@@ -1,15 +1,56 @@
 { config, pkgs, lib, ... }:
 {
-  # TODO: theme (it's using fish variables...)
-  programs.fish = {
+  programs.fish =
+    let nom-compat = pkgs.runCommand "any-shell-nom-compat" {} ''
+      mkdir -p $out/bin
+      for cmd in $(echo nix nix-shell nix-build); do
+        echo '#! ${pkgs.bash}/bin/bash' > $out/bin/$cmd
+        echo -n 'PATH=`echo $PATH | tr ":" "\n" | grep -v "any-shell-nom-compat" | tr "\n" ":"` ' >> $out/bin/$cmd
+        cmd1=$(echo $cmd | sed 's/nix/nom/')
+        echo "$cmd1"' "$@"' >> $out/bin/$cmd
+        chmod +x $out/bin/$cmd
+      done
+    '';
+  in {
     enable = true;
     # not sure this is needed, but just in case
     shellInit = ''
       source /etc/fish/config.fish
     '';
     interactiveShellInit = ''
-      ${pkgs.any-nix-shell}/bin/any-nix-shell fish --info-right | source
+      # ${pkgs.any-nix-shell}/bin/any-nix-shell fish | source
 
+      function nix-shell
+        ${pkgs.any-nix-shell}/bin/.any-nix-shell-wrapper fish $argv
+      end
+      function nix
+        if test $argv[1] = shell
+          set argv[1] fish
+          ${pkgs.any-nix-shell}/bin/.any-nix-wrapper $argv
+        else if test $argv[1] = develop
+          set argv[1] fish
+          command nix develop --command $argv
+        else
+          command nix $argv
+        end
+      end
+
+      function nom-shell
+        PATH="${nom-compat}/bin:$PATH" ${pkgs.any-nix-shell}/bin/.any-nix-shell-wrapper fish $argv
+      end
+      function nom
+        if test $argv[1] = shell
+          set argv[1] fish
+          PATH="${nom-compat}/bin:$PATH" ${pkgs.any-nix-shell}/bin/.any-nix-wrapper $argv
+        else if test $argv[1] = develop
+          set argv[1] fish
+          ${pkgs.nix-output-monitor}/bin/nom develop --command $argv
+        else
+          command nix $argv
+        end
+      end
+
+      export NOMCOMPAT=${nom-compat}
       # for posix compatibility
       set -gx SHELL zsh
 

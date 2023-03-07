@@ -94,13 +94,11 @@
         "vfio"
         "vfio_iommu_type1"
         "vfio_pci"
-        "vfio_virqfd"
       ] else []);
       initrd.availableKernelModules = lib.mkIf (!cfg.passGpuAtBoot) [
         "vfio"
         "vfio_iommu_type1"
         "vfio_pci"
-        "vfio_virqfd"
       ];
       extraModulePackages =
         with config.boot.kernelPackages;
@@ -118,8 +116,7 @@
       ];
       kernelModules = [
         "vhost-net"
-      ] ++ (if cfg.passGpuAtBoot then [] else [ "vfio_virqfd" ])
-        ++ (if enableIvshmem then [ "kvmfr" ] else []);
+      ] ++ (if enableIvshmem then [ "kvmfr" ] else []);
     };
     services.udev.extraRules = lib.mkIf enableIvshmem
       (lib.concatStringsSep

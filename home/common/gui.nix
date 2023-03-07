@@ -1,9 +1,31 @@
 { config, pkgs, lib, ... }:
 {
   imports = [ ./terminal.nix ];
+  i18n.inputMethod = let fcitx5-qt = pkgs.libsForQt5.fcitx5-qt; in {
+    enabled = "fcitx5";
+    fcitx5.addons = with pkgs; [ fcitx5-lua fcitx5-gtk fcitx5-mozc fcitx5-configtool fcitx5-qt ];
+  };
   home.sessionVariables = {
+    GTK_IM_MODULE = "fcitx";
+    QT_IM_MODULE = "fcitx";
+    XMODIFIERS = "@im=fcitx";
+    SDL_IM_MODULE = "fcitx";
+    XIM_SERVERS = "fcitx";
+    INPUT_METHOD = "fcitx";
+    SUDO_ASKPASS = pkgs.writeScript "sudo-askpass" ''
+      #! ${pkgs.bash}/bin/bash
+      ${pkgs.libsecret}/bin/secret-tool lookup root password
+    '';
+    SDL_AUDIODRIVER = "pipewire,pulse,dsound";
+    # SDL 3
+    SDL_AUDIO_DRIVER = "pipewire,pulseaudio,dsound";
     ALSOFT_CONF = "${config.xdg.configHome}/.config/alsoft.conf";
-    SDL_AUDIODRIVER = "pipewire";
+    # TODO: set to sdl3 compat when SDL3 releases
+    # this is for steam games, I set the launch options to:
+    # `SDL_DYNAMIC_API=$SDL2_DYNAMIC_API %command%`
+    # Steam itself doesn't work with SDL_DYNAMIC_API set, so it's
+    # a bad idea to set SDL_DYNAMIC_API globally
+    SDL2_DYNAMIC_API = "${pkgs.SDL2}/lib/libSDL2.so";
   };
   xdg.configFile."alsoft.conf".text = ''
     [general]
@@ -188,10 +210,6 @@
         (subserv 1338 true)
       ];
     };
-  };
-  i18n.inputMethod = let fcitx5-qt = pkgs.libsForQt5.fcitx5-qt; in {
-    enabled = "fcitx5";
-    fcitx5.addons = with pkgs; [ fcitx5-lua fcitx5-gtk fcitx5-mozc fcitx5-configtool fcitx5-qt ];
   };
   services.gammastep.enable = true;
   fonts.fontconfig.enable = true;

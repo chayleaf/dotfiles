@@ -53,7 +53,7 @@
   home.packages = with pkgs; [
     openrgb piper
     steam-run steam
-    osu-lazer-bin
+    osu-lazer-bin taisei
     easyeffects
     # wineWowPackages.waylandFull
     winetricks

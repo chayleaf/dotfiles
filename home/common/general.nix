@@ -56,12 +56,12 @@
         # for preview
         exa bat
         ffmpeg ffmpegthumbnailer nsxiv imagemagick
-        libarchive unzip gnutar atool
+        libarchive atool
         libreoffice poppler_utils fontpreview djvulibre
         glow w3m
         # for opening
-        p7zip unrar-wrapper zathura mpv odt2txt
-      ];
+        p7zip unrar-wrapper zathura odt2txt
+      ] ++ lib.optionals (!config.programs.mpv.enable) [ mpv ];
       plugins = {
         src = pluginSrc;
         mappings = {
@@ -144,6 +144,6 @@
   home.packages = with pkgs; [
     rclone sshfs fuse
     file jq python3Full killall
-    appimage-run comma
+    appimage-run comma nix-output-monitor
   ];
 }

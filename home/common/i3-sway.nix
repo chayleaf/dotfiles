@@ -80,7 +80,7 @@ commonConfig = {
   inherit modifier;
   startup = [
     { command = builtins.toString (with pkgs; writeShellScript "init-wm" ''
-      ${callPackage ./home-daemon.nix {}}/bin/dotfiles-home-daemon system76-scheduler&
+      ${callPackage ../home-daemon {}}/bin/dotfiles-home-daemon system76-scheduler&
       ${gnome.zenity}/bin/zenity --password | (${keepassxc}/bin/keepassxc --pw-stdin ~/Nextcloud/keepass.kdbx&)
       # nextcloud and nheko need secret service access
       ${nextcloud-client}/bin/nextcloud --background&
@@ -166,16 +166,6 @@ in
   imports = [ ./options.nix ./gui.nix ./waybar.nix ];
   home.sessionVariables = {
     _JAVA_AWT_WM_NONREPARENTING = "1";
-    GTK_IM_MODULE = "fcitx";
-    QT_IM_MODULE = "fcitx";
-    XMODIFIERS = "@im=fcitx";
-    SDL_IM_MODULE = "fcitx";
-    XIM_SERVERS = "fcitx";
-    INPUT_METHOD = "fcitx";
-    SUDO_ASKPASS = pkgs.writeScript "sudo-askpass" ''
-      #! ${pkgs.bash}/bin/bash
-      ${pkgs.libsecret}/bin/secret-tool lookup root password
-    '';
   };
   xdg.configFile."xdg-desktop-portal-wlr/config".source = (pkgs.formats.ini {}).generate "xdg-desktop-portal-wlr.ini" {
     screencast = {
@@ -189,7 +179,7 @@ in
   systemd.user.services = lib.mkIf config.wayland.windowManager.sway.enable {
     gammastep.Unit.ConditionEnvironment = "WAYLAND_DISPLAY";
   };
-  programs.mako = {
+  services.mako = {
     enable = lib.mkDefault config.wayland.windowManager.sway.enable;
     # ms
     defaultTimeout = 7500;
@@ -336,7 +326,9 @@ in
     }; in commonConfig // swayConfig;
     extraSessionCommands = ''
       export WLR_RENDERER=vulkan
-      export SDL_VIDEODRIVER=wayland
+      export SDL_VIDEODRIVER=wayland,x11,kmsdrm,windows,directx
+      # SDL3
+      export SDL_VIDEO_DRIVER=wayland,x11,kmsdrm,windows
       export QT_QPA_PLATFORM=wayland
       export QT_WAYLAND_DISABLE_WINDOWDECORATION=1
       export QT_QPA_PLATFORMTHEME=gnome
@@ -345,12 +337,6 @@ in
       export GTK_USE_PORTAL=1
       export XDG_CURRENT_DESKTOP=sway
       export XDG_SESSION_DESKTOP=sway
-      # TODO: set to sdl3 compat when SDL3 releases
-      # this is for steam games, I set the launch options to:
-      # `SDL_DYNAMIC_API=$SDL2_DYNAMIC_API %command%`
-      # Steam itself doesn't work with SDL_DYNAMIC_API set, so it's
-      # a bad idea to set SDL_DYNAMIC_API globally
-      export SDL2_DYNAMIC_API=${pkgs.SDL2.out}/lib/libSDL2.so
     '';
   };
   services.swayidle = let swaylock-start = builtins.toString (with pkgs; writeScript "swaylock-start" ''
@@ -462,7 +448,7 @@ in
     };
     terminal = config.terminalBin;
     extraConfig = {
-      modi = [ "calc" "drun" "run" "ssh" ];
+      modi = [ "steam:${pkgs.callPackage ../rofi-steam-game-list {}}/bin/rofi-steam-game-list" "drun" "run" "ssh" ];
       icon-theme = "hicolor";
       drun-match-fields = [ "name" "generic" "exec" "keywords" ];
       show-icons = true;

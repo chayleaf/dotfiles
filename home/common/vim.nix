@@ -19,13 +19,13 @@
     ];
     # extraPython3Packages = pyPkgs: with pyPkgs; [ python-lsp-server ];
     extraConfig = '' 
-      autocmd BufReadPost * if @% !~# '\.git[\/\\]COMMIT_EDITMSG$' && line("'\"") > 1 && line("'\"") <= line("$") | exe "normal! g`\"" | endif
       syntax on
       au FileType markdown set colorcolumn=73 textwidth=72
       au FileType gitcommit set colorcolumn=73
       highlight NormalFloat guibg=NONE
       au BufReadPre * set foldmethod=syntax
       au BufReadPost * folddoc foldopen!
+      autocmd BufReadPost * if @% !~# '\.git[\/\\]COMMIT_EDITMSG$' && line("'\"") > 1 && line("'\"") <= line("$") | exe "normal! g`\"" | endif
     '';
     viAlias = true;
     vimAlias = true;
@@ -40,6 +40,36 @@
       vim-svelte
       # TODO remove on next nvim update (0.8.3/0.9)
       vim-nix
+      { plugin = pkgs.vimUtils.buildVimPluginFrom2Nix {
+          pname = "vscode-nvim";
+          version = "2023-02-10";
+          src = pkgs.fetchFromGitHub {
+            owner = "Mofiqul";
+            repo = "vscode.nvim";
+            rev = "db9ee339b5556aa832ca58871fd18f9467a18520";
+            sha256 = "sha256-X2IgIjO5NNq7vJdl09hBY1TFqHlsfF1xfllKr4osILI=";
+          };
+        };
+        config = lua ''
+          require("vscode").setup({
+            transparent = true,
+            color_overrides = {
+              vscGray = "#745b5f",
+              vscViolet = "#${config.colors.magenta}",
+              vscBlue = "#6ddfd8",
+              vscDarkBlue = "#${config.colors.blue}",
+              vscGreen = "#${config.colors.green}",
+              vscBlueGreen = "#73bf88",
+              vscLightGreen = "#6acf6e",
+              vscRed = "#${config.colors.red}",
+              vscOrange = "#e89666",
+              vscLightRed = "#e64e4e",
+              vscYellowOrange = "#e8b166",
+              vscYellow = "#${config.colors.yellow}",
+              vscPink = "#cf83c4",
+            },
+          })
+        ''; }
       { plugin = nvim-web-devicons;
         config = lua ''
         require'nvim-web-devicons'.setup {

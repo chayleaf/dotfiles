@@ -43,6 +43,7 @@ in {
       # resume_offset = $(btrfs inspect-internal map-swapfile -r path/to/swapfile)
       "resume_offset=533760"
       "fbcon=font:TER16x32"
+      "consoleblank=60"
     ];
     cleanTmpDir = true;
     loader = {
