@@ -1,0 +1,45 @@
+diff --git a/Ghidra/Processors/x86/data/languages/x86gcc.cspec b/Ghidra/Processors/x86/data/languages/x86gcc.cspec
+index 17448cf9..b115b957 100644
+--- a/Ghidra/Processors/x86/data/languages/x86gcc.cspec
++++ b/Ghidra/Processors/x86/data/languages/x86gcc.cspec
+@@ -286,6 +286,40 @@
+       <register name="EAX"/>
+     </killedbycall>
+   </prototype>
++  <prototype name="__stdcall" extrapop="unknown" stackshift="4">
++    <input>
++      <pentry minsize="1" maxsize="500" align="4">
++        <addr offset="4" space="stack"/>
++      </pentry>
++    </input>
++    <output killedbycall="true">
++      <pentry minsize="4" maxsize="10" metatype="float" extension="float">
++        <register name="ST0"/>
++      </pentry>
++      <pentry minsize="1" maxsize="4">
++        <register name="EAX"/>
++      </pentry>
++      <pentry minsize="5" maxsize="8">
++        <addr space="join" piece1="EDX" piece2="EAX"/>
++      </pentry>
++    </output>
++    <unaffected>
++      <register name="ESP"/>
++      <register name="EBP"/>
++      <register name="ESI"/>
++      <register name="EDI"/>
++      <register name="EBX"/>
++    </unaffected>
++    <killedbycall>
++      <register name="ECX"/>
++      <register name="EDX"/>
++      <register name="ST0"/>
++      <register name="ST1"/>
++    </killedbycall>
++    <likelytrash>
++      <register name="EAX"/>
++    </likelytrash>
++  </prototype>
+   
+   <resolveprototype name="__cdecl/__regparm">
+     <model name="__cdecl"/>        <!-- The default case -->

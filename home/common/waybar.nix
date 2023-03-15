@@ -116,4 +116,7 @@
     }];
     style = ./waybar.css;
   };
+  home.packages = with pkgs; [
+    playerctl
+  ];
 }

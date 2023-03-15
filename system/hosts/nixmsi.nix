@@ -274,6 +274,7 @@ in {
       experimental-features = nix-command flakes
     '';
   };
+  systemd.services.nix-daemon.serviceConfig.LimitSTACKSoft = "infinity";
 
   documentation.dev.enable = true;
 

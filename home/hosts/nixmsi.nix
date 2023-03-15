@@ -4,7 +4,7 @@
     ../common/general.nix
     ../common/firefox
     ../common/i3-sway.nix
-    ../common/vim.nix
+    ../common/nvim
     ../common/helix.nix
     ../common/kakoune.nix
   ];
@@ -51,6 +51,9 @@
     STEAM_EXTRA_COMPAT_TOOLS_PATHS = "${proton-ge}";
   };
   home.packages = with pkgs; [
+    (ghidra.overrideAttrs (old: {
+      patches = old.patches ++ [ ../common/ghidra-stdcall.patch ];
+    })) cutter
     openrgb piper
     steam-run steam
     osu-lazer-bin taisei
