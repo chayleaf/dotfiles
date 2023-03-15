@@ -50,6 +50,13 @@
       arity = 1;
       value = "vim.cmd";
     };
+    fn = (if v?fn then v.fn else {}) // {
+      visualmode = {
+        type = "function";
+        arity = 0;
+        value = "vim.fn.visualmode";
+      };
+    };
   } else v);
 in
   patch (builtins.mapAttrs (setPath "")

@@ -11,15 +11,27 @@
   au BufReadPost * folddoc foldopen!
   autocmd BufReadPost * if @% !~# '\.git[\/\\]COMMIT_EDITMSG$' && line("'\"") > 1 && line("'\"") <= line("$") | exe "normal! g`\"" | endif
   */
+
+  # welcome to my cursed DSL
   programs.neovim = let
-    # a cursed DSL
+    # add a single ident level to code
     identLines = lines: builtins.concatStringsSep "\n" (map (x: "  ${x}") lines);
     ident = code: identLines (lib.splitString "\n" code);
+
+    # wrap an expression in parentheses if necessary
     # probably not the best heuristics, but good enough to make the output readable
     wrapSafe = s: (builtins.match "^[-\"a-zA-Z0-9_.()]*$" s) != null;
     wrapExpr = s: if wrapSafe s then s else "(${s})";
+
+    # Same, but for table keys
     keySafe = s: (builtins.match "^[a-zA-Z_][_a-zA-Z0-9]*$" s) != null;
     wrapKey = scope: s: if keySafe s then s else "[${compileExpr scope s}]";
+
+    # The following functions take state: sname and scope
+    # sname is module name
+    # scope is how many variables are currently in scope
+    # the count is used for generating new variable names
+
     compileFunc' = argn: sc@{sname,scope}: id: func:
       (if builtins.isFunction func
       then
@@ -39,6 +51,7 @@
         ${ident (compileStmt {inherit sname;scope = scope + argn;} func)}
         end'');
     compileFunc = compileFunc' 0;
+
     compileExpr = sc: func: (
       if builtins.isString func then
         if lib.hasInfix "\n" func then ''
@@ -79,6 +92,7 @@
         "${wrapExpr (compileExpr sc func.table)}[${compileExpr sc func.key}]"
       else null
     );
+
     compileStmt = sc@{sname,scope}: func: (
       if builtins.isList func then builtins.concatStringsSep "\n" (map (compileStmt sc) func)
       else if builtins.isAttrs func && (func?__kind) then (
@@ -138,36 +152,90 @@
         else compileExpr sc func
       ) else compileExpr sc func
     );
-    compile = sname: compileStmt {inherit sname;scope=1;};
+
+    # compile a module
+    compile = sname: input: (compileStmt {inherit sname;scope=1;} input) + "\n";
+    # pass some raw code to lua directly
     var = name: { __kind = "var"; _name = name; };
     raw = var;
+
+    # Access a property
+    # Corresponding lua code: table.property
+    # expr -> identifier -> expr
     prop = expr: name: { __kind = "prop"; inherit expr name; };
+
+    # Call a function
+    # corresponding lua code: someFunc()
+    # expr -> [args] -> expr | expr -> arg1 -> expr
     call = func: args: { __kind = "call"; inherit func args; };
+
+    # Call a method
+    # corresponding lua code: someTable:someFunc()
+    # expr -> identifier -> [args] -> expr | expr -> identifier -> arg1 -> expr
     mcall = val: name: args: { __kind = "mcall"; inherit val name args; };
-    setup = plugin: opts: call (prop plugin "setup") [ opts ];
-    require = name: call (var "require") [ name ];
+
+    # corresponding lua code: =
+    # expr -> expr -> stmt
     set = expr: val: { __kind = "assign"; inherit expr val; };
+
+    # opName -> expr1 -> expr2 -> expr | opName -> [exprs] -> expr
     op2 = op: args:
       if builtins.isList args then { __kind = "op2"; inherit op args; }
       else (secondArg: { __kind = "op2"; inherit op; args = [ args secondArg ]; })
     ;
+    # The following all have the signature
+    # expr1 -> expr2 -> expr2 | [exprs] -> expr
     eq = op2 "==";
-    # forin = n: expr: body: { __kind = "for"; inherit n expr body; };
     # gt = op2 ">";
     # ge = op2 ">=";
     # ne = op2 "~=";
     # and = op2 "and";
     # or = op2 "or";
+
+    # Corresponding lua code: for
+    # argc -> expr -> (expr1 -> ... -> exprN -> stmts) -> stmts
+    # forin = n: expr: body: { __kind = "for"; inherit n expr body; };
+
+    # Issues a return statement
+    # Corresponding lua code: return
+    # expr -> stmt
     return = expr: { __kind = "return"; inherit expr; };
+
+    # Creates a zero argument function with user-provided statements
+    # stmts -> expr
     defun = func: { __kind = "defun"; inherit func; };
+
+    # Corresponding lua code: if then else
+    # [[cond expr]] -> fallbackExpr -> stmts
     ifelse = conds: fallback: { __kind = "if"; inherit fallback; conds = if builtins.isList (builtins.elemAt conds 0) then conds else [conds]; };
+
+    # Corresponding lua code: if then
+    # [[cond expr]] -> > stmts
     # ifnoelse = conds: ifelse conds null;
+
+    # Corresponding lua code: table[key]
+    # table -> key -> expr
     tableAttr = table: key: { __kind = "tableAttr"; inherit table key; };
+
+    # Directly creates a local varible with your chosen name
+    # But why would you use this???
+    # bind' = name: val: { __kind = "bind"; inherit name val; };
+
+    # Creates variables and passes them to the function
+    # Corresponding lua code: local ... = ...
+    # [expr] -> (expr1 -> ... -> exprN -> stmt) -> stmt
     bind = vals: func: if builtins.isList vals then { __kind = "let"; inherit vals func; } else bind [ vals ] func;
+
+    # Creates variables and passes them to the function as well as variable binding code
+    # Corresponding lua code: local ... = ...
+    # [(expr1 -> ... -> exprN -> expr)] -> (expr1 -> ... -> exprN -> stmt) -> stmt
     bindrec = vals: func: if builtins.isList vals then { __kind = "letrec"; inherit vals func; } else bindrec [ vals ] func;
+
+    # "type definitions" for neovim
     defs = pkgs.callPackage ./vim-opts.nix { inherit raw call; };
   in with defs; let
-    # bind' = name: val: { __kind = "bind"; inherit name val; };
+    require = name: call (var "require") [ name ];
+    setup = plugin: opts: call (prop plugin "setup") [ opts ];
     # vimfn = name: call (raw "vim.fn.${name}");
     vimcmd = name: call (raw "vim.cmd.${name}");
     keymapSetSingle = opts@{
@@ -201,10 +269,10 @@
       })) keys) ++ [
         (call (prop (require "which-key") "register") [(lib.mapAttrs (k: v: [v.rhs v.desc]) keys) opts'])
       ];
-    keymapSetN = args: keymapSetSingle (args // { mode = "n"; });
-    keymapSetV = args: keymapSetSingle (args // { mode = "v"; });
     keymapSetNs = args: keymapSetMulti (args // { mode = "n"; });
     kmSetNs = keys: keymapSetNs { inherit keys; };
+    keymapSetVs = args: keymapSetMulti (args // { mode = "v"; });
+    kmSetVs = keys: keymapSetVs { inherit keys; };
   in {
     enable = true;
     defaultEditor = true;
@@ -242,10 +310,10 @@
         ) [
           { event = "FileType";
             pattern = ["markdown" "gitcommit"];
-            callback = defun (set vim.o.colorcolumn 73); }
+            callback = defun (set vim.o.colorcolumn "73"); }
           { event = "FileType";
             pattern = ["markdown"];
-            callback = defun (set vim.o.textwidth 72); }
+            callback = defun (set vim.o.textwidth "72"); }
           { event = "BufReadPre";
             callback = defun (set vim.o.foldmethod "syntax"); }
           { event = "BufWinEnter";
@@ -312,10 +380,11 @@
           (set vim.g.loaded_netrwPlugin 1)
           (set vim.opt.termguicolors true)
           (setup (require "nvim-tree") {}) # :help nvim-tree-setup
-          (keymapSetN {
-            lhs = "<C-N>";
-            rhs = prop (require "nvim-tree.api") "tree.toggle";
-            desc = "Toggle NvimTree";
+          (kmSetNs {
+            "<C-N>" = {
+              rhs = prop (require "nvim-tree.api") "tree.toggle";
+              desc = "Toggle NvimTree";
+            };
           })
         ]; }
       vim-sleuth
@@ -332,7 +401,7 @@
             [ "╰" name ]
             [ "│" name ]
           ]);
-        in compile "nvim_cmp" [(bind (require "cmp") (cmp:
+        in compile "nvim_cmp" (bind (require "cmp") (cmp:
           (setup cmp {
             snippet = {
               expand = args: (call (prop (require "luasnip") "lsp_expand") (prop args "body"));
@@ -410,7 +479,7 @@
               { name = "luasnip"; }
             ]];
           })
-        ))]; }
+        )); }
       lspkind-nvim
       cmp_luasnip
       cmp-nvim-lsp
@@ -427,15 +496,17 @@
       { plugin = comment-nvim;
         config = compile "comment_nvim" [
           (setup (require "Comment") {})
-          (keymapSetN {
-            lhs = "<space>/";
-            rhs = (prop (require "Comment.api") "toggle.linewise.current");
-            desc = "Comment current line";
+          (kmSetNs {
+            "<space>/" = {
+              rhs = prop (require "Comment.api") "toggle.linewise.current";
+              desc = "Comment current line";
+            };
           })
-          (keymapSetV {
-            lhs = "<space>/";
-            rhs = "<esc><cmd>lua require('Comment.api').toggle.linewise(vim.fn.visualmode())<cr>";
-            desc = "Comment current line";
+          (kmSetVs {
+            "<space>/" = {
+              rhs = "<esc><cmd>lua require('Comment.api').toggle.linewise(vim.fn.visualmode())<cr>";
+              desc = "Comment selection";
+            };
           })
         ]; }
       { plugin = nvim-lspconfig;
