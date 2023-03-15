@@ -246,11 +246,11 @@
       silent ? true,
       ...
     }: let
-      opts''' = opts // { inherit noremap silent; };
+      opts'' = opts // { inherit noremap silent; };
       opts' = lib.filterAttrs (k: v:
         k != "keys" && k != "mode" && k != "lhs" && k != "rhs" && k != "desc"
         # defaults to false
-        && ((k != "silent" && k != "noremap") || (builtins.isBool v && v))) opts''';
+        && ((k != "silent" && k != "noremap") || (builtins.isBool v && v))) opts'';
       in vim.keymap.set [ mode lhs rhs opts' ];
     keymapSetMulti = opts@{
       keys,
@@ -287,6 +287,7 @@
       nil
       marksman
       taplo
+      ripgrep
       (python3.withPackages (p: with p; [
         python-lsp-server
         pylsp-mypy
@@ -612,27 +613,26 @@
               (call on_attach [client bufnr])
             ])
             # BEGIN
-            (let lsp = { name, settings ? {} }: setupLsp name {
+            (let lsp' = { name, settings ? {} }: setupLsp name {
               inherit on_attach capabilities settings;
-            }; in (on_attach_rust: [
-              (vim.lsp.set_log_level "debug")
-            ] ++ [
+            }; lsp = args: lsp' (if builtins.isString args then { name = args; } else args); in (on_attach_rust: [
+              # (vim.lsp.set_log_level "debug")
               (map lsp [
                 # see https://github.com/neovim/nvim-lspconfig/blob/master/doc/server_configurations.md
-                { name = "bashls"; }
-                { name = "clangd"; }
+                "bashls"
+                "clangd"
                 # https://github.com/python-lsp/python-lsp-server/blob/develop/CONFIGURATION.md
                 { name = "pylsp"; settings = {
                   pylsp.plugins.pylsp_mypy.enabled = true;
                 }; }
-                { name = "svelte"; }
-                { name = "html"; }
-                { name = "cssls"; }
-                { name = "tsserver"; }
-                { name = "jsonls"; }
-                { name = "nil_ls"; }
-                { name = "taplo"; }
-                { name = "marksman"; }
+                "svelte"
+                "html"
+                "cssls"
+                "tsserver"
+                "jsonls"
+                "nil_ls"
+                "taplo"
+                "marksman"
               ])
               (setupLsp "rust_analyzer" {
                 on_attach = on_attach_rust;
