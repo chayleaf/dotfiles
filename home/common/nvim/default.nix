@@ -404,7 +404,7 @@
         in compile "nvim_cmp" (bind (require "cmp") (cmp:
           (setup cmp {
             snippet = {
-              expand = args: (call (prop (require "luasnip") "lsp_expand") (prop args "body"));
+              expand = { body, ... }: call (prop (require "luasnip") "lsp_expand") body;
             };
             view = { };
             window = {
@@ -417,10 +417,10 @@
               };
             };
             formatting = {
-              format = _: vim_item: [
+              format = _: vim_item: let kind = prop vim_item "kind"; in [
                 (set
-                  (prop vim_item "kind")
-                  (string.format (let kind = prop vim_item "kind"; in [
+                  kind
+                  (string.format ([
                     "%s %s"
                     (tableAttr (require "lspkind") kind)
                     kind
