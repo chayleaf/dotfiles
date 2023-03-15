@@ -354,24 +354,23 @@
           };
         };
         config = compile "vscode_nvim" (setup (require "vscode") {
-            transparent = true;
-            color_overrides = {
-              vscGray = "#745b5f";
-              vscViolet = "#${config.colors.magenta}";
-              vscBlue = "#6ddfd8";
-              vscDarkBlue = "#${config.colors.blue}";
-              vscGreen = "#${config.colors.green}";
-              vscBlueGreen = "#73bf88";
-              vscLightGreen = "#6acf6e";
-              vscRed = "#${config.colors.red}";
-              vscOrange = "#e89666";
-              vscLightRed = "#e64e4e";
-              vscYellowOrange = "#e8b166";
-              vscYellow = "#${config.colors.yellow}";
-              vscPink = "#cf83c4";
-            };
-          }); }
-        # ''; }
+          transparent = true;
+          color_overrides = {
+            vscGray = "#745b5f";
+            vscViolet = "#${config.colors.magenta}";
+            vscBlue = "#6ddfd8";
+            vscDarkBlue = "#${config.colors.blue}";
+            vscGreen = "#${config.colors.green}";
+            vscBlueGreen = "#73bf88";
+            vscLightGreen = "#6acf6e";
+            vscRed = "#${config.colors.red}";
+            vscOrange = "#e89666";
+            vscLightRed = "#e64e4e";
+            vscYellowOrange = "#e8b166";
+            vscYellow = "#${config.colors.yellow}";
+            vscPink = "#cf83c4";
+          };
+        }); }
       { plugin = nvim-web-devicons;
         config = compile "nvim_web_devicons" (setup (require "nvim-web-devicons") {}); }
       { plugin = nvim-tree-lua;
