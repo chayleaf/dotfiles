@@ -247,10 +247,8 @@
             pattern = ["markdown"];
             callback = defun (set vim.o.textwidth 72); }
           { event = "BufReadPre";
-            inherit group;
             callback = defun (set vim.o.foldmethod "syntax"); }
           { event = "BufWinEnter";
-            inherit group;
             callback = { buf, ... }:
               (bind (vim.filetype.match { inherit buf; }) (filetype: [
                 (vimcmd "folddoc" [ "foldopen!" ])
