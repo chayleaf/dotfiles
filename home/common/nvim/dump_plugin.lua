@@ -58,10 +58,10 @@ local json = require "cjson"
 -- mark globals before requiring package
 mark(_G)
 
-local package = "@package@"
+local package = @package@
 
 result = { __kind = "var", _type = "table", _name = "" }
-dump2(require(package), "", result)
+dump2(package, "", result)
 
 print(json.encode(result))
 

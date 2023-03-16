@@ -18,6 +18,57 @@
     identLines = lines: builtins.concatStringsSep "\n" (map (x: "  ${x}") lines);
     ident = code: identLines (lib.splitString "\n" code);
 
+    # convert list into pairs
+    pairsv = ret: list: key: if list == [] then {
+        list = ret;
+        leftover = key;
+      } else pairsk (ret ++ [[key (builtins.head list)]]) (builtins.tail list);
+    pairsk = ret: list: if list == [] then {
+        list = ret;
+        leftover = null;
+      } else pairsv ret (builtins.tail list) (builtins.head list);
+
+    # list end
+    end = list: builtins.elemAt list (builtins.length list - 1);
+    # pop list end
+    pop = list: lib.take (builtins.length list - 1) list;
+
+    luaType = val:
+      if builtins.isAttrs val && val?__kind then (
+        if val?_type then val._type
+        # can't know the type of arbitrary expressions!
+        else null
+      ) else if builtins.isList val || builtins.isAttrs val then "table"
+      else if builtins.isPath val || builtins.isString val then "string"
+      else if builtins.isInt val || builtins.isFloat val then "number"
+      else if builtins.isNull val then "nil"
+      else if builtins.isFunction val then let info = getInfo val; in (
+        if info != null && info?_expr then luaType info._expr
+        else if info != null && info?_stmt then luaType info._stmt
+        else "function"
+      ) else if builtins.isBool val then "boolean"
+      else null;
+
+    # vararg system
+    getInfo = func: if builtins.isFunction func && builtins.functionArgs func == {} then (
+      let ret = builtins.tryEval (func {__GET_INFO = true;}); in if ret.success then ret.value else null
+    ) else null;
+    isGetInfo = arg: arg == { __GET_INFO = true; };
+    argsSink = key: args: finally: arg:
+      if isGetInfo arg then
+        {${key} = finally args;}
+      else if builtins.isAttrs arg && arg?__kind && arg.__kind == "unroll" then
+        {${key} = finally (args ++ arg.list);}
+      else
+        argsSink key (args ++ [arg]) finally;
+
+    # The following functions may take state: moduleName and scope
+    # scope is how many variables are currently in scope
+    # the count is used for generating new variable names
+
+    pushScope = n: { moduleName, scope }: { inherit moduleName; scope = scope + n; };
+    pushScope1 = pushScope 1;
+
     # wrap an expression in parentheses if necessary
     # probably not the best heuristics, but good enough to make the output readable
     wrapSafe = s: (builtins.match "^[-\"a-zA-Z0-9_.()]*$" s) != null;
@@ -27,32 +78,32 @@
     keySafe = s: (builtins.match "^[a-zA-Z_][_a-zA-Z0-9]*$" s) != null;
     wrapKey = scope: s: if keySafe s then s else "[${compileExpr scope s}]";
 
-    # The following functions take state: sname and scope
-    # sname is module name
-    # scope is how many variables are currently in scope
-    # the count is used for generating new variable names
+    applyVars' = origScope: count: prefix: let self = (scope: func: argc:
+      let info = getInfo func; in
+      if info != null && info?_expr then self scope info._expr argc
+      else if info != null && info?_stmt then self scope info._stmt argc
+      else if count != null && scope == (origScope + count) then { result = func; }
+      else if count == null && !builtins.isFunction func then { result = func; inherit argc; }
+      else self (scope + 1) (let
+        args = builtins.functionArgs func;
+        name = "${prefix}${builtins.toString scope}"; in
+          if args == {} then func (RAW name)
+          else func (builtins.mapAttrs (k: v: RAW "${name}.${k}") args)) (argc + 1)
+    ); in self;
+    applyVars = count: prefix: scope: func: applyVars' scope count prefix scope func 0;
 
-    compileFunc' = argn: sc@{sname,scope}: id: func:
-      (if builtins.isFunction func
-      then
-      (compileFunc'
-          (argn + 1)
-          sc
-          id
-          (func (let
-            args = builtins.functionArgs func;
-            rawVar = var "${sname}_${id}_arg${builtins.toString (scope + argn)}";
-          in if args == {}
-            then rawVar
-            else builtins.mapAttrs (k: v: prop rawVar k) args
-          )))
-      else ''
-        function ${id}(${builtins.concatStringsSep ", " (builtins.genList (n: "${sname}_${id}_arg${builtins.toString (scope + n)}") argn)})
-        ${ident (compileStmt {inherit sname;scope = scope + argn;} func)}
-        end'');
-    compileFunc = compileFunc' 0;
+    compileFunc = state@{moduleName, scope}: id: expr:
+    let
+      res = applyVars null "${moduleName}_${id}_arg" scope expr;
+      argc = res.argc;
+      func = res.result;
+      header = if id == "" then "function" else "local function ${id}";
+    in ''
+      ${header}(${builtins.concatStringsSep ", " (builtins.genList (n: "${moduleName}_${id}_arg${builtins.toString (scope + n)}") argc)})
+      ${ident (compileStmt (pushScope argc state) func)}
+      end'';
 
-    compileExpr = sc: func: (
+    compileExpr = state: func: (
       if builtins.isString func then
         if lib.hasInfix "\n" func then ''
         [[
@@ -62,181 +113,183 @@
       else if builtins.isFloat func then builtins.toString func
       else if builtins.isBool func then (if func then "true" else "false")
       else if builtins.isNull func then "nil"
-      else if builtins.isPath func then compileExpr sc (builtins.toString func)
+      else if builtins.isPath func then compileExpr state (builtins.toString func)
       else if builtins.isFunction func then let
-        info = if builtins.functionArgs func == {} then (func "GET_INFO") else null; in
-        if builtins.isAttrs info && info?_name
-          then info._name
-          else (compileFunc sc "" func)
+        info = getInfo func; in
+        if info != null && info?_name then
+          info._name
+        else if info != null && info?_expr then
+          compileExpr state info._expr
+        else if info != null && info?_stmt then
+          assert false; null
+        else (compileFunc state "" func)
       else if builtins.isList func then ''
         {
-        ${ident (builtins.concatStringsSep "\n" (map (x: (compileExpr sc x) + ";" ) func))}
+        ${ident (builtins.concatStringsSep "\n" (map (x: (compileExpr state x) + ";" ) func))}
         }''
+      else if builtins.isAttrs func && func?_expr then compileExpr state func._expr
       else if builtins.isAttrs func && !(func?__kind) then ''
         {
-        ${ident (builtins.concatStringsSep "\n" (lib.mapAttrsToList (k: v: "${wrapKey sc k} = ${compileExpr sc v};") func))}
+        ${ident (builtins.concatStringsSep "\n" (lib.mapAttrsToList (k: v: "${wrapKey state k} = ${compileExpr state v};") func))}
         }''
       else if func.__kind == "var" then
         "${func._name}"
       else if func.__kind == "op2" then
-        builtins.concatStringsSep func.op (map (x: wrapExpr (compileExpr sc x)) func.args)
+        builtins.concatStringsSep " ${func.op} " (map (x: wrapExpr (compileExpr state x)) func.args)
       else if func.__kind == "defun" then
-        (compileFunc sc (if func?id then func.id else "") func.func)
+        (compileFunc state (if func?id then func.id else "") func.func)
       else if func.__kind == "prop" then
         assert lib.assertMsg (luaType func.expr == null || luaType func.expr == "table") "Unable to get property ${func.name} of a ${luaType func.expr}!";
-        "${wrapExpr (compileExpr sc func.expr)}.${func.name}"
+        "${wrapExpr (compileExpr state func.expr)}.${func.name}"
       else if func.__kind == "call" then
-        let args = if builtins.isList func._args then func._args else [func._args]; in
+        let args = func._args; in
         assert lib.assertMsg
           ((!(func._func?_minArity) || (builtins.length args) >= func._func._minArity) && (!(func._func?_maxArity) || (builtins.length args) <= func._func._maxArity))
-          "error: wrong function arity for ${compileExpr sc func._func}! expected at least ${builtins.toString func._func._minArity}; found ${builtins.toString (builtins.length args)}";
-        "${wrapExpr (compileExpr sc func._func)}(${builtins.concatStringsSep ", " (map (compileExpr sc) args)})"
+          "error: wrong function arity for ${compileExpr state func._func}! expected at least ${builtins.toString func._func._minArity}; found ${builtins.toString (builtins.length args)}";
+        "${wrapExpr (compileExpr state func._func)}(${builtins.concatStringsSep ", " (map (compileExpr state) args)})"
       else if func.__kind == "mcall" then
-        "${wrapExpr (compileExpr sc func.val)}:${func.name}(${builtins.concatStringsSep ", " (map (compileExpr sc) (if builtins.isList func.args then func.args else [func.args]))})"
+        "${wrapExpr (compileExpr state func.val)}:${func.name}(${builtins.concatStringsSep ", " (map (compileExpr state) func.args)})"
       else if func.__kind == "tableAttr" then
-        assert lib.assertMsg (luaType func.table == null || luaType func.table == "table") "Unable to get table value ${compileExpr sc func.key} of a ${luaType func.table} ${compileExpr sc func.table}!";
-        "${wrapExpr (compileExpr sc func.table)}[${compileExpr sc func.key}]"
-      else null
+        assert lib.assertMsg (luaType func.table == null || luaType func.table == "table") "Unable to get table value ${compileExpr state func.key} of a ${luaType func.table} ${compileExpr state func.table}!";
+        "${wrapExpr (compileExpr state func.table)}[${compileExpr state func.key}]"
+      else assert lib.assertMsg false "Invalid kind ${func.__kind}"; null
     );
 
-    luaType = val:
-      if builtins.isAttrs val && val?__kind then (
-        if val?_type then val._type
-        else null
-      ) else if builtins.isList val || builtins.isAttrs val then "table"
-      else if builtins.isPath val || builtins.isString val then "string"
-      else if builtins.isInt val || builtins.isFloat val then "number"
-      else if builtins.isNull val then "nil"
-      else if builtins.isFunction val then "function"
-      else if builtins.isBool val then "boolean"
-      else null;
-
-    compileStmt = sc@{sname,scope}: func: (
-      if builtins.isList func then builtins.concatStringsSep "\n" (map (compileStmt sc) func)
+    compileStmt = state@{moduleName,scope}: func: (
+      if builtins.isList func then builtins.concatStringsSep "\n" (map (compileStmt state) func)
+      else if builtins.isAttrs func && func?_stmt then compileStmt state func._stmt
       else if builtins.isAttrs func && (func?__kind) then (
         if func.__kind == "assign" then
           assert lib.assertMsg
             (luaType func.expr == null || luaType func.val == null || luaType func.val == func.expr._type)
-            "error: setting ${compileExpr sc func.expr} to wrong type. It should be ${luaType func.expr} but is ${luaType func.val}";
-          "${compileExpr sc func.expr} = ${compileExpr sc func.val}"
+            "error: setting ${compileExpr state func.expr} to wrong type. It should be ${luaType func.expr} but is ${luaType func.val}";
+          "${compileExpr state func.expr} = ${compileExpr state func.val}"
         else if func.__kind == "bind" then
-          "local ${func.name} = ${compileExpr sc func.val}"
+          "local ${func.name} = ${compileExpr state func.val}"
         else if func.__kind == "let" then ''
           ${builtins.concatStringsSep "\n" (lib.imap0 (n: val:
-          "local ${sname}_var${builtins.toString (scope + n)} = ${
-            compileExpr sc val
+          "local ${moduleName}_var${builtins.toString (scope + n)} = ${
+            compileExpr state val
           }") func.vals)}
-          ${let vals = func.vals; origScope = scope; apply = { scope, func }: if scope == (origScope + (builtins.length vals)) then func else apply {
-              scope = scope + 1;
-              func = func (raw "${sname}_var${builtins.toString scope}");
-            }; in 
-            compileStmt {inherit sname;scope = scope + (builtins.length func.vals);} (apply { inherit scope; inherit (func) func; })
+          ${
+            let res = applyVars (builtins.length func.vals) "${moduleName}_var" scope func.func; in
+            compileStmt (pushScope (builtins.length func.vals) state) res.result
           }''
-        else if func.__kind == "letrec" then ''
+        else if func.__kind == "letrec" then let argc = builtins.length func.vals; in ''
           ${builtins.concatStringsSep "\n" (lib.imap0 (n: val:
-          "local ${sname}_var${builtins.toString (scope + n)} = ${
-            let vals = func.vals; origScope = scope; apply = { scope, func }: if scope == (origScope + (builtins.length vals)) then func else apply {
-              scope = scope + 1;
-              func = func (raw "${sname}_var${builtins.toString scope}");
-            }; in
-            compileExpr {inherit sname;scope = scope + (builtins.length func.vals);} (apply { inherit scope; func = val; })
+          "local ${moduleName}_var${builtins.toString (scope + n)} = ${
+            let res = applyVars argc "${moduleName}_var" scope val; in
+            compileExpr (pushScope argc state) res.result
           }") func.vals)}
-          ${let vals = func.vals; origScope = scope; apply = { scope, func }: if scope == (origScope + (builtins.length vals)) then func else apply {
-              scope = scope + 1;
-              func = func (raw "${sname}_var${builtins.toString scope}");
-            }; in 
-            compileStmt {inherit sname;scope = scope + (builtins.length func.vals);} (apply { inherit scope; inherit (func) func; })
+          ${
+            let res = applyVars argc "${moduleName}_var" scope func.func; in
+            compileStmt (pushScope (builtins.length func.vals) state) res.result
           }''
         else if func.__kind == "for" then let
-          varNames = builtins.genList (n: "${sname}_var${builtins.toString (scope + n)}") func.n;
-          scope' = { inherit sname; scope = scope + 1; };
+          res = applyVars null "${moduleName}_var" scope func.body;
+          varNames = builtins.genList (n: "${moduleName}_var${builtins.toString (scope + n)}") res.argc;
           in ''
-            for ${builtins.concatStringsSep "," varNames} in ${compileExpr scope' func.expr} do
+            for ${builtins.concatStringsSep "," varNames} in ${compileExpr scope func.expr} do
             ${
-              let argn = func.n; origScope = scope; apply = { scope, func }: if scope == (origScope + argn) then func else apply {
-                scope = scope + 1;
-                func = func (raw "${sname}_var${builtins.toString scope}");
-              }; in 
-              ident (compileStmt scope' (apply { inherit scope; func = func.body; }))
+              ident (compileStmt (pushScope1 state) res.result)
             }
             end''
         else if func.__kind == "return" then
-          "return ${compileExpr sc func.expr}"
+          "return ${compileExpr state func.expr}"
         else if func.__kind == "if" then
           (lib.removeSuffix "else" ((builtins.concatStringsSep "" (map
             (cond: ''
-              if ${compileExpr sc (builtins.elemAt cond 0)} then
-              ${ident (compileStmt sc (builtins.elemAt cond 1))}
+              if ${compileExpr state (builtins.elemAt cond 0)} then
+              ${ident (compileStmt state (builtins.elemAt cond 1))}
               else'')
             func.conds))
-          + (if func.fallback != null then "\n${ident (compileStmt sc func.fallback)}\n" else ""))) + "end"
-        else compileExpr sc func
-      ) else compileExpr sc func
+          + (if func.fallback != null then "\n${ident (compileStmt state func.fallback)}\n" else ""))) + "end"
+        else compileExpr state func
+      ) else if builtins.isFunction func then (let
+        info = getInfo func; in
+        if info != null && info?_stmt then compileStmt state info._stmt
+        else compileExpr state func
+      ) else compileExpr state func
     );
 
     # compile a module
-    compile = sname: input: (compileStmt {inherit sname;scope=1;} input) + "\n";
+    compile = moduleName: input: (compileStmt { inherit moduleName; scope = 1; } input) + "\n";
+
     # pass some raw code to lua directly
-    var = name: { __kind = "var"; _name = name; };
-    raw = var;
+    VAR = name: { __kind = "var"; _name = name; };
+    RAW = VAR;
 
     # Access a property
     # Corresponding lua code: table.property
     # expr -> identifier -> expr
-    prop = expr: name: { __kind = "prop"; inherit expr name; };
+    PROP = expr: name: { __kind = "prop"; inherit expr name; };
+
+    # Escape a list so it can be passed to vararg functions
+    UNROLL = list: { __kind = "unroll"; inherit list; };
+
+    # Apply a list of arguments to a function/operator (probably more useful than the above)
+    APPLY = func: list: func (UNROLL list);
 
     # Call a function
+    # Useful if you need to call a zero argument function, or if you need to handle some weird metatable stuff
     # corresponding lua code: someFunc()
-    # expr -> [args] -> expr | expr -> arg1 -> expr
-    call = func: args: { __kind = "call"; _func = func; _args = args; };
+    # expr -> arg1 -> ... -> argN -> expr
+    CALL = func: argsSink "_expr" [] (args: { __kind = "call"; _func = func; _args = args; });
 
     # Call a method
     # corresponding lua code: someTable:someFunc()
-    # expr -> identifier -> [args] -> expr | expr -> identifier -> arg1 -> expr
-    mcall = val: name: args: { __kind = "mcall"; inherit val name args; };
+    # expr -> identifier -> arg1 -> ... -> argN -> expr
+    MCALL = val: name: argsSink "_expr" [] (args: { __kind = "mcall"; inherit val name args; });
 
     # corresponding lua code: =
     # expr -> expr -> stmt
-    set = expr: val: { __kind = "assign"; inherit expr val; };
+    SET = expr: val: { __kind = "assign"; inherit expr val; };
 
-    # opName -> expr1 -> expr2 -> expr | opName -> [exprs] -> expr
-    op2 = op: args:
-      if builtins.isList args then { __kind = "op2"; inherit op args; }
-      else (secondArg: { __kind = "op2"; inherit op; args = [ args secondArg ]; })
-    ;
+    # opName -> [exprs] -> expr | opName -> expr1 -> ... -> exprN -> expr
+    OP2 = op: argsSink "_expr" [] (args: { __kind = "op2"; inherit op args; });
+
     # The following all have the signature
-    # expr1 -> expr2 -> expr2 | [exprs] -> expr
-    eq = op2 "==";
-    # gt = op2 ">";
-    # ge = op2 ">=";
-    # ne = op2 "~=";
-    # and = op2 "and";
-    # or = op2 "or";
+    # expr1 -> ... -> exprN -> expr
+    EQ = OP2 "==";
+    # GT = OP2 ">";
+    # GE = OP2 ">=";
+    # NE = OP2 "~=";
+    # AND = OP2 "and";
+    OR = OP2 "or";
 
-    # Corresponding lua code: for
+    # Corresponding lua code: for ... in ...
     # argc -> expr -> (expr1 -> ... -> exprN -> stmts) -> stmts
-    # forin = n: expr: body: { __kind = "for"; inherit n expr body; };
+    # FORIN = expr: body: { __kind = "for"; inherit expr body; };
 
     # Issues a return statement
     # Corresponding lua code: return
     # expr -> stmt
-    return = expr: { __kind = "return"; inherit expr; };
+    RETURN = expr: { __kind = "return"; inherit expr; };
 
     # Creates a zero argument function with user-provided statements
     # stmts -> expr
-    defun = func: { __kind = "defun"; inherit func; };
+    DEFUN = func: { __kind = "defun"; inherit func; };
 
-    # Corresponding lua code: if then else
-    # [[cond expr]] -> fallbackExpr -> stmts
-    ifelse = conds: fallback: { __kind = "if"; inherit fallback; conds = if builtins.isList (builtins.elemAt conds 0) then conds else [conds]; };
+    # Corresponding lua code: if then (else?)
+    # [[cond expr]] -> fallbackExpr? -> stmts
+    IFELSE' = conds: fallback: { __kind = "if"; inherit fallback; conds = if builtins.isList (builtins.elemAt conds 0) then conds else [conds]; };
 
-    # Corresponding lua code: if then
-    # [[cond expr]] -> > stmts
-    # ifnoelse = conds: ifelse conds null;
+    # Corresponding lua code: if then (else?)
+    # (expr -> stmts ->)* (fallback expr ->)? stmts
+    IF = argsSink "_stmt" [] (args:
+      let pairs = pairsk [] args; in
+      if pairs.leftover == null && builtins.length pairs.list > 1 && builtins.elemAt (end pairs.list) 0 == ELSE
+      then IFELSE' (pop pairs.list) (builtins.elemAt (end pairs.list) 1)
+      else IFELSE' pairs.list pairs.leftover
+    );
+
+    # Signifies the fallback branch in IF. May only be the last branch.
+    # Note that you may also omit it and just include the last branch without a preceding condition.
+    ELSE = true;
 
     # Corresponding lua code: table[key]
     # table -> key -> expr
-    tableAttr = table: key: { __kind = "tableAttr"; inherit table key; };
+    ATTR = table: key: { __kind = "tableAttr"; inherit table key; };
 
     # Directly creates a local varible with your chosen name
     # But why would you use this???
@@ -244,23 +297,29 @@
 
     # Creates variables and passes them to the function
     # Corresponding lua code: local ... = ...
-    # [expr] -> (expr1 -> ... -> exprN -> stmt) -> stmt
-    bind = vals: func: if builtins.isList vals then { __kind = "let"; inherit vals func; } else bind [ vals ] func;
+    # expr1 -> (expr -> stmt) -> stmt | [expr] -> (expr1 -> ... -> exprN -> stmt) -> stmt
+    LET = vals: func: if builtins.isList vals then { __kind = "let"; inherit vals func; } else LET [ vals ] func;
 
     # Creates variables and passes them to the function as well as variable binding code
     # Corresponding lua code: local ... = ...
-    # [(expr1 -> ... -> exprN -> expr)] -> (expr1 -> ... -> exprN -> stmt) -> stmt
-    bindrec = vals: func: if builtins.isList vals then { __kind = "letrec"; inherit vals func; } else bindrec [ vals ] func;
+    # (expr1 -> expr) -> (expr1 -> stmt) -> stmt | [(expr1 -> ... -> exprN -> expr)] -> (expr1 -> ... -> exprN -> stmt) -> stmt
+    LETREC = vals: func: if builtins.isList vals then { __kind = "letrec"; inherit vals func; } else LETREC [ vals ] func;
 
     # "type definitions" for neovim
-    defs = pkgs.callPackage ./vim-opts.nix { inherit raw call; plugins = config.programs.neovim.plugins; };
-    reqbind = name: func: bind [ (defs.require name) ] (result: func (defs._reqbind name result._name));
+    defs = pkgs.callPackage ./vim-opts.nix { inherit RAW CALL isGetInfo compileExpr; inherit (config.programs.neovim) plugins; };
+
+    reqbindGen = names: func:
+      if names == [] then func
+      else result: reqbindGen (builtins.tail names) (func (defs._reqbind (builtins.head names) result._name));
+
+    # bind a value to a require
+    REQBIND = name: func:
+      if builtins.isList name
+      then LET (map defs.require name) (reqbindGen name func)
+      else LET [ (defs.require name) ] (result: func (defs._reqbind name result._name));
   in with defs; let
-    # require = name: call (var "require") [ name ];
-    # setup = plugin: opts: call (prop plugin "setup") [ opts ];
-    # vimfn = name: call (raw "vim.fn.${name}");
-    vimcmd = name: call (raw "vim.cmd.${name}");
-    vimg = name: prop vim.g name;
+    vimcmd = name: CALL (RAW "vim.cmd.${name}");
+    vimg = name: PROP vim.g name;
     keymapSetSingle = opts@{
       mode,
       lhs,
@@ -274,7 +333,7 @@
         k != "keys" && k != "mode" && k != "lhs" && k != "rhs" && k != "desc"
         # defaults to false
         && ((k != "silent" && k != "noremap") || (builtins.isBool v && v))) opts'';
-      in vim.keymap.set [ mode lhs rhs opts' ];
+      in vim.keymap.set mode lhs rhs opts';
     keymapSetMulti = opts@{
       keys,
       mode,
@@ -290,16 +349,16 @@
       in (lib.mapAttrsToList (k: {rhs, desc}: keymapSetSingle (opts' // {
         lhs = k; inherit rhs;
       })) keys) ++ [
-        (which-key.register [(lib.mapAttrs (k: v: [v.rhs v.desc]) keys) opts'])
+        (which-key.register (lib.mapAttrs (k: v: [v.rhs v.desc]) keys) opts')
       ];
     keymapSetNs = args: keymapSetMulti (args // { mode = "n"; });
     kmSetNs = keys: keymapSetNs { inherit keys; };
     keymapSetVs = args: keymapSetMulti (args // { mode = "v"; });
     kmSetVs = keys: keymapSetVs { inherit keys; };
 
-    which-key = req "which-key";
-    luasnip = req "luasnip";
-    cmp = req "cmp";
+    which-key = REQ "which-key";
+    luasnip = REQ "luasnip";
+    cmp = REQ "cmp";
   in {
     enable = true;
     defaultEditor = true;
@@ -330,42 +389,51 @@
     vimdiffAlias = true;
 
     extraLuaConfig = (compile "main" [
-      (set (vimg "vimsyn_embed") "l")
-      (bind (vim.api.nvim_create_augroup [ "nvimrc" { clear = true; } ]) (group:
-        map (au: let au' = lib.filterAttrs (k: v: k != "event") au;
-          in vim.api.nvim_create_autocmd [ au.event ({
-            inherit group;
-          } // au') ]
-        ) [
-          { event = "FileType";
-            pattern = ["markdown" "gitcommit"];
-            # must be a string
-            callback = defun (set vim.o.colorcolumn "73"); }
-          { event = "FileType";
-            pattern = ["markdown"];
-            # must be a number...
-            callback = defun (set vim.o.textwidth 72); }
-          { event = "BufReadPre";
-            callback = defun (set vim.o.foldmethod "syntax"); }
-          { event = "BufWinEnter";
-            callback = { buf, ... }:
-              (bind (vim.filetype.match { inherit buf; }) (filetype: [
-                (vimcmd "folddoc" [ "foldopen!" ])
-                (ifelse [(eq filetype "gitcommit") [
-                  (call vim.cmd {
-                    cmd = "normal";
-                    bang = true;
-                    args = [ "gg" ];
-                  })
-                ]]
-                  (call vim.cmd {
-                    cmd = "normal";
-                    bang = true;
-                    args = [ "g`\"" ];
-                  })
-                )
-              ])); }
-            ])) # END
+      (SET (vimg "vimsyn_embed") "l")
+      (LET (vim.api.nvim_create_augroup "nvimrc" { clear = true; }) (group:
+        lib.mapAttrsToList (k: v: vim.api.nvim_create_autocmd k { inherit group; callback = v; }) {
+          BufReadPre = DEFUN (SET vim.o.foldmethod "syntax");
+          BufEnter = { buf, ... }:
+            (LET (vim.filetype.match { inherit buf; }) (filetype: [
+              (IF (APPLY OR (map (EQ filetype) [ "gitcommit" "markdown" ])) (LET vim.o.colorcolumn (old_colorcolumn: [
+                (SET vim.o.colorcolumn "73")
+                (vim.api.nvim_create_autocmd "BufLeave" {
+                  callback = DEFUN [
+                    (SET vim.o.colorcolumn old_colorcolumn)
+                    # return true = delete autocommand
+                    (RETURN true)
+                  ];
+                })
+              ])))
+              (IF (EQ filetype "markdown") (LET vim.o.textwidth (old_textwidth: [
+                (SET vim.o.textwidth 72)
+                (vim.api.nvim_create_autocmd "BufLeave" {
+                  callback = DEFUN [
+                    (SET vim.o.textwidth old_textwidth)
+                    (RETURN true)
+                  ];
+                })
+              ])))
+            ]));
+          BufWinEnter = { buf, ... }:
+            (LET (vim.filetype.match { inherit buf; }) (filetype: [
+              (vimcmd "folddoc" "foldopen!")
+              (IF (EQ filetype "gitcommit")
+                (CALL vim.cmd {
+                  cmd = "normal";
+                  bang = true;
+                  args = [ "gg" ];
+                })
+              ELSE
+                (CALL vim.cmd {
+                  cmd = "normal";
+                  bang = true;
+                  args = [ "g`\"" ];
+                })
+              )
+            ]));
+        }
+      ))
     ]);
     plugins = let ps = pkgs.vimPlugins; in map (x: if x?config && x?plugin then { type = "lua"; } // x else x) [
       ps.vim-svelte
@@ -382,7 +450,7 @@
           };
         };
         config = compile "vscode_nvim" [
-          ((req "vscode").setup {
+          ((REQ "vscode").setup {
             transparent = true;
             color_overrides = {
               vscGray = "#745b5f";
@@ -400,25 +468,25 @@
               vscPink = "#cf83c4";
             };
           })
-          (vim.api.nvim_set_hl [ 0 "NormalFloat" {
+          (vim.api.nvim_set_hl 0 "NormalFloat" {
             bg = "NONE";
-          }])
+          })
         ]; }
       { plugin = ps.nvim-web-devicons;
-        config = compile "nvim_web_devicons" ((req "nvim-web-devicons").setup {}); }
+        config = compile "nvim_web_devicons" ((REQ "nvim-web-devicons").setup {}); }
       { plugin = ps.nvim-tree-lua;
-        config = compile "nvim_tree_lua" [
-          (set (vimg "loaded_netrw") 1)
-          (set (vimg "loaded_netrwPlugin") 1)
-          (set vim.o.termguicolors true)
-          ((req "nvim-tree").setup {}) # :help nvim-tree-setup
+        config = compile "nvim_tree_lua" (REQBIND ["nvim-tree" "nvim-tree.api"] (nvim-tree: nvim-tree-api: [
+          (SET (vimg "loaded_netrw") 1)
+          (SET (vimg "loaded_netrwPlugin") 1)
+          (SET vim.o.termguicolors true)
+          (nvim-tree.setup {}) # :help nvim-tree-setup
           (kmSetNs {
             "<C-N>" = {
-              rhs = (req "nvim-tree.api").tree.toggle;
+              rhs = nvim-tree-api.tree.toggle;
               desc = "Toggle NvimTree";
             };
           })
-        ]; }
+        ])); }
       ps.vim-sleuth
       ps.luasnip
       { plugin = ps.nvim-cmp;
@@ -433,11 +501,11 @@
             [ "╰" name ]
             [ "│" name ]
           ]);
-        in compile "nvim_cmp" (reqbind "cmp" (cmp:
+        in compile "nvim_cmp" (REQBIND [ "cmp" "lspkind" ] (cmp: lspkind:
           # call is required because cmp.setup is a table
-          (call cmp.setup {
+          (CALL cmp.setup {
             snippet = {
-              expand = { body, ... }: luasnip.lsp_expand [ body {} ];
+              expand = { body, ... }: luasnip.lsp_expand body {};
             };
             view = { };
             window = {
@@ -450,80 +518,67 @@
               };
             };
             formatting = {
-              format = _: vim_item: let kind = prop vim_item "kind"; in [
-                (set
-                  kind
-                  (string.format [
-                    "%s %s"
-                    (tableAttr (req "lspkind") kind)
-                    kind
-                  ]))
-                (return vim_item)
+              format = _: vim_item: let kind = PROP vim_item "kind"; in [
+                (SET kind (string.format "%s %s" (ATTR lspkind kind) kind))
+                (RETURN vim_item)
               ];
             };
             mapping = {
-              "<C-p>" = cmp.mapping.select_prev_item [{}];
-              "<C-n>" = cmp.mapping.select_next_item [{}];
-              "<C-space>" = cmp.mapping.complete [{}];
-              "<C-e>" = cmp.mapping.close [{}];
+              "<C-p>" = cmp.mapping.select_prev_item {};
+              "<C-n>" = cmp.mapping.select_next_item {};
+              "<C-space>" = cmp.mapping.complete {};
+              "<C-e>" = cmp.mapping.close {};
               "<cr>" = cmp.mapping.confirm {
                 behavior = cmp.ConfirmBehavior.Replace;
                 select = false;
               };
-              "<tab>" = call cmp.mapping [(fallback:
-                (ifelse [[(cmp.visible [])
-                  (cmp.select_next_item [])]
-                /*elseif*/ [(luasnip.expand_or_jumpable [])
-                  (vim.api.nvim_feedkeys [
-                    (vim.api.nvim_replace_termcodes [ "<Plug>luasnip-expand-or-jump" true true true ])
-                    ""
-                    false
-                  ])
-                ]] # else
-                  (call fallback [])
-                ))
-                [ "i" "s" ]
-              ];
-              "<S-tab>" = call cmp.mapping [(fallback:
-                (ifelse [[(cmp.visible [])
-                  (cmp.select_prev_item [])]
-                /*elseif*/ [(luasnip.jumpable [ (-1) ])
-                  (vim.api.nvim_feedkeys [
-                    (vim.api.nvim_replace_termcodes [ "<Plug>luasnip-jump-prev" true true true ])
-                    ""
-                    false
-                  ])
-                ]] # else
-                  (call fallback [])
-                ))
-                [ "i" "s" ]
-              ];
+              "<tab>" = CALL cmp.mapping (fallback:
+                (IF
+                  (CALL cmp.visible)
+                    (CALL cmp.select_next_item)
+                  (CALL luasnip.expand_or_jumpable)
+                    (vim.api.nvim_feedkeys
+                      (vim.api.nvim_replace_termcodes "<Plug>luasnip-expand-or-jump" true true true)
+                      ""
+                      false)
+                  ELSE
+                    (CALL fallback)))
+                [ "i" "s" ];
+              "<S-tab>" = CALL cmp.mapping (fallback:
+                (IF
+                  (CALL cmp.visible)
+                    (CALL cmp.select_prev_item)
+                  (luasnip.jumpable (-1))
+                    (vim.api.nvim_feedkeys
+                      (vim.api.nvim_replace_termcodes "<Plug>luasnip-jump-prev" true true true)
+                      ""
+                      false)
+                  ELSE
+                    (CALL fallback)))
+                [ "i" "s" ];
             };
-            sources = cmp.config.sources [[
+            sources = cmp.config.sources [
               { name = "nvim_lsp"; }
               { name = "luasnip"; }
-            ]];
+            ];
           })
         )); }
       ps.lspkind-nvim
       ps.cmp_luasnip
       ps.cmp-nvim-lsp
       { plugin = ps.nvim-autopairs;
-        config = compile "nvim_autopairs" (reqbind "nvim-autopairs.completion.cmp" (cmp_autopairs: [
-          ((req "nvim-autopairs").setup {
+        config = compile "nvim_autopairs" (REQBIND ["nvim-autopairs.completion.cmp" "nvim-autopairs"] (cmp-autopairs: nvim-autopairs: [
+          (nvim-autopairs.setup {
             disable_filetype = [ "TelescopePrompt" "vim" ];
           })
-          (mcall cmp.event "on" [
-            "confirm_done"
-            (cmp_autopairs.on_confirm_done [{}])
-          ])
+          (MCALL cmp.event "on" "confirm_done" (cmp-autopairs.on_confirm_done {}))
         ])); }
       { plugin = ps.comment-nvim;
         config = compile "comment_nvim" [
-          ((req "Comment").setup {})
+          ((REQ "Comment").setup {})
           (kmSetNs {
             "<space>/" = {
-              rhs = prop (req "Comment.api").toggle "linewise.current";
+              rhs = PROP (REQ "Comment.api").toggle "linewise.current";
               desc = "Comment current line";
             };
           })
@@ -535,7 +590,13 @@
           })
         ]; }
       { plugin = ps.nvim-lspconfig;
-        config = compile "nvim_lspconfig" (let setupLsp = lsp: builtins.seq (req "lspconfig.server_configurations.${lsp}") (call (prop (req "lspconfig") "${lsp}.setup")); in [
+        config = compile "nvim_lspconfig" (
+          let lsp = name: builtins.seq
+            # ensure an lsp exists (otherwise lspconfig will still create an empty config for some reason)
+            (REQ "lspconfig.server_configurations.${name}")
+            # metatables, son! they harden in response to physical trauma
+            (REQ' (PROP (require "lspconfig") name));
+          in [
           # See `:help vim.diagnostic.*` for documentation on any of the below functions
           (kmSetNs {
             "<space>e" = {
@@ -555,11 +616,11 @@
               desc = "Add buffer diagnostics to the location list.";
             };
           })
-          (bind [
+          (LET [
             # LET on_attach
-            (client: bufnr: ([
+            (client: bufnr: [
               # Enable completion triggered by <c-x><c-o>
-              (vim.api.nvim_buf_set_option [ bufnr "omnifunc" "v:lua.vim.lsp.omnifunc" ])
+              (vim.api.nvim_buf_set_option bufnr "omnifunc" "v:lua.vim.lsp.omnifunc")
               # Mappings.
               # See `:help vim.lsp.*` for documentation on any of the below functions
               (kmSetNs {
@@ -585,9 +646,7 @@
                   rhs = vim.lsp.buf.remove_workspace_folder;
                   desc = "Remove a folder from the workspace folders."; };
                 "<space>wl" = {
-                  rhs = (defun (print [
-                    (call vim.inspect [(vim.lsp.buf.list_workspace_folders [])])
-                  ]));
+                  rhs = DEFUN (print (CALL vim.inspect (CALL vim.lsp.buf.list_workspace_folders)));
                   desc = "List workspace folders."; };
                 "<space>D" = {
                   rhs = vim.lsp.buf.type_definition;
@@ -602,10 +661,10 @@
                   rhs = vim.lsp.buf.references;
                   desc = "Lists all the references to the symbol under the cursor in the quickfix window."; };
                 "<space>f" = {
-                  rhs = (defun (vim.lsp.buf.format {async = true;}));
+                  rhs = (DEFUN (vim.lsp.buf.format {async = true;}));
                   desc = "Formats a buffer."; };
               })
-            ]))
+            ])
             # LET rust_settings
             { rust-analyzer = {
               assist.emitMustUse = true;
@@ -614,36 +673,36 @@
               procMacro.enable = true;
             }; }
             # LET capabilities
-            (vim.tbl_extend [
+            (vim.tbl_extend
               "keep"
-              ((req "cmp_nvim_lsp").default_capabilities [{}])
-              (vim.lsp.protocol.make_client_capabilities [])
-            ])
+              ((REQ "cmp_nvim_lsp").default_capabilities {})
+              (CALL vim.lsp.protocol.make_client_capabilities))
           # BEGIN
           ] (on_attach: rust_settings: capabilities: [
-            (bindrec
+            (LETREC
             # LETREC on_attach_rust
             (on_attach_rust: client: bufnr: [
-              (vim.api.nvim_create_user_command ["RustAndroid" (opts: [
+              (vim.api.nvim_create_user_command "RustAndroid" (opts: [
                 (vim.lsp.set_log_level "debug")
-                (setupLsp "rust_analyzer" {
+                ((lsp "rust_analyzer").setup {
                   on_attach = on_attach_rust;
                   inherit capabilities;
-                  settings = vim.tbl_deep_extend [
+                  settings = vim.tbl_deep_extend
                     "keep"
                     config.rustAnalyzerAndroidSettings
-                    rust_settings
-                  ];
+                    rust_settings;
                 })
-              ]) {}])
-              (call on_attach [client bufnr])
+              ]) {})
+              (CALL on_attach client bufnr)
             ])
             # BEGIN
-            (let lsp' = { name, settings ? {} }: setupLsp name {
+            (let setupLsp' = { name, settings ? {} }: (lsp name).setup {
               inherit on_attach capabilities settings;
-            }; lsp = args: lsp' (if builtins.isString args then { name = args; } else args); in (on_attach_rust: [
+            };
+            setupLsp = args: setupLsp' (if builtins.isString args then { name = args; } else args);
+            in (on_attach_rust: [
               # (vim.lsp.set_log_level "debug")
-              (map lsp [
+              (map setupLsp [
                 # see https://github.com/neovim/nvim-lspconfig/blob/master/doc/server_configurations.md
                 "bashls"
                 "clangd"
@@ -660,7 +719,7 @@
                 "taplo"
                 "marksman"
               ])
-              (setupLsp "rust_analyzer" {
+              ((lsp "rust_analyzer").setup {
                 on_attach = on_attach_rust;
                 settings = rust_settings;
                 inherit capabilities;
@@ -670,8 +729,8 @@
         ]); }
       { plugin = ps.which-key-nvim;
         config = compile "which_key_nvim" [
-          (set vim.o.timeout true)
-          (set vim.o.timeoutlen 500)
+          (SET vim.o.timeout true)
+          (SET vim.o.timeoutlen 500)
           (which-key.setup {})
         ]; }
     ];

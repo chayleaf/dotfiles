@@ -4,19 +4,26 @@
 , neovimUtils
 , lua51Packages
 , wrapNeovimUnstable
-, call
+, CALL
+, isGetInfo
 , substituteAll
 , plugins
+, compileExpr
 # , extraLuaPackages ? []
 , ... }: 
 
-let update = self: prefix: lib.mapAttrs (k: v: let
+# TODO: bfs instead of dfs in var dumps
+
+let
+update = self: prefix: lib.mapAttrs (k: v: let
   v' = update self prefix v;
   in (if builtins.isAttrs v && v?__kind then (
     if v.__kind == "rec" then
-      lib.attrByPath (lib.splitString "." v.path) self
+      lib.attrByPath (lib.splitString "." v.path) null self
     else if v.__kind == "var" && v._type == "function" then
-      (args: if args == "GET_INFO" then v' else call v' args)
+        (args:
+          if isGetInfo args then v'
+          else CALL v' args)
     else v'
   ) else if builtins.isAttrs v then v'
   else if prefix != "" && k == "_name" then
@@ -32,7 +39,7 @@ config = neovimUtils.makeNeovimConfig {
 neovim = wrapNeovimUnstable neovim-unwrapped config;
 getReqAttrs = name: builtins.fromJSON (builtins.readFile (stdenvNoCC.mkDerivation {
   phases = [ "installPhase" ];
-  name = "neovim-require-${name}.json";
+  name = "neovim-types-${name}.json";
   dumpPlugin = substituteAll {
     src = ./dump_plugin.lua;
     package = name;
@@ -43,8 +50,12 @@ getReqAttrs = name: builtins.fromJSON (builtins.readFile (stdenvNoCC.mkDerivatio
     nvim --headless -S $dumpPlugin -i NONE -u NONE -n -c 'echo""|qall!' 2>$out
   '';
 }));
-req = name: let result = update result "require(\"${name}\")" (getReqAttrs name); in result;
-_reqbind = name: varname: let result = update result "${varname}" (getReqAttrs name); in result;
+req = name: let res = update res name (getReqAttrs name); in res;
+REQ = name: req "require(\"${name}\")";
+# the code must not use external state! this can't be checked
+# this could (?) be fixed with REQBIND', but I don't need it
+REQ' = code: req (compileExpr { moduleName = "req"; scope = 1; } code);
+_reqbind = name: varname: let s = "require(\"${name}\")"; res = update res "${varname}" (getReqAttrs s); in res;
 in result // {
-  inherit req _reqbind;
+  inherit REQ REQ' _reqbind;
 }
