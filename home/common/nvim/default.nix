@@ -65,8 +65,8 @@
       else if builtins.isPath func then compileExpr sc (builtins.toString func)
       else if builtins.isFunction func then let
         info = if builtins.functionArgs func == {} then (func "GET_INFO") else null; in
-        if builtins.isAttrs info && info?value
-          then info.value
+        if builtins.isAttrs info && info?_name
+          then info._name
           else (compileFunc sc "" func)
       else if builtins.isList func then ''
         {
@@ -85,7 +85,11 @@
       else if func.__kind == "prop" then
         "${wrapExpr (compileExpr sc func.expr)}.${func.name}"
       else if func.__kind == "call" then
-        "${wrapExpr (compileExpr sc func._func)}(${builtins.concatStringsSep ", " (map (compileExpr sc) (if builtins.isList func._args then func._args else [func._args]))})"
+        let args = if builtins.isList func._args then func._args else [func._args]; in
+        assert (lib.assertMsg
+          ((!(func._func?_minArity) || (builtins.length args) >= func._func._minArity) && (!(func._func?_maxArity) || (builtins.length args) <= func._func._maxArity))
+          "error: wrong function arity for ${compileExpr sc func._func}! expected at least ${builtins.toString func._func._minArity}; found ${builtins.toString (builtins.length args)}");
+          "${wrapExpr (compileExpr sc func._func)}(${builtins.concatStringsSep ", " (map (compileExpr sc) args)})"
       else if func.__kind == "mcall" then
         "${wrapExpr (compileExpr sc func.val)}:${func.name}(${builtins.concatStringsSep ", " (map (compileExpr sc) (if builtins.isList func.args then func.args else [func.args]))})"
       else if func.__kind == "tableAttr" then
@@ -416,7 +420,7 @@
           # call is required because cmp.setup is a table
           (call cmp.setup {
             snippet = {
-              expand = { body, ... }: luasnip.lsp_expand body;
+              expand = { body, ... }: luasnip.lsp_expand [ body {} ];
             };
             view = { };
             window = {
@@ -441,10 +445,10 @@
               ];
             };
             mapping = {
-              "<C-p>" = cmp.mapping.select_prev_item [];
-              "<C-n>" = cmp.mapping.select_next_item [];
-              "<C-space>" = cmp.mapping.complete [];
-              "<C-e>" = cmp.mapping.close [];
+              "<C-p>" = cmp.mapping.select_prev_item [{}];
+              "<C-n>" = cmp.mapping.select_next_item [{}];
+              "<C-space>" = cmp.mapping.complete [{}];
+              "<C-e>" = cmp.mapping.close [{}];
               "<cr>" = cmp.mapping.confirm {
                 behavior = cmp.ConfirmBehavior.Replace;
                 select = false;
@@ -494,7 +498,7 @@
           })
           (mcall cmp.event "on" [
             "confirm_done"
-            (cmp_autopairs.on_confirm_done [])
+            (cmp_autopairs.on_confirm_done [{}])
           ])
         ])); }
       { plugin = ps.comment-nvim;
@@ -595,8 +599,8 @@
             # LET capabilities
             (vim.tbl_extend [
               "keep"
+              ((req "cmp_nvim_lsp").default_capabilities [{}])
               (vim.lsp.protocol.make_client_capabilities [])
-              ((req "cmp_nvim_lsp").default_capabilities [])
             ])
           # BEGIN
           ] (on_attach: rust_settings: capabilities: [
