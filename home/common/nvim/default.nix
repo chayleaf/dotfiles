@@ -83,24 +83,41 @@
       else if func.__kind == "defun" then
         (compileFunc sc (if func?id then func.id else "") func.func)
       else if func.__kind == "prop" then
+        assert lib.assertMsg (luaType func.expr == null || luaType func.expr == "table") "Unable to get property ${func.name} of a ${luaType func.expr}!";
         "${wrapExpr (compileExpr sc func.expr)}.${func.name}"
       else if func.__kind == "call" then
         let args = if builtins.isList func._args then func._args else [func._args]; in
-        assert (lib.assertMsg
+        assert lib.assertMsg
           ((!(func._func?_minArity) || (builtins.length args) >= func._func._minArity) && (!(func._func?_maxArity) || (builtins.length args) <= func._func._maxArity))
-          "error: wrong function arity for ${compileExpr sc func._func}! expected at least ${builtins.toString func._func._minArity}; found ${builtins.toString (builtins.length args)}");
-          "${wrapExpr (compileExpr sc func._func)}(${builtins.concatStringsSep ", " (map (compileExpr sc) args)})"
+          "error: wrong function arity for ${compileExpr sc func._func}! expected at least ${builtins.toString func._func._minArity}; found ${builtins.toString (builtins.length args)}";
+        "${wrapExpr (compileExpr sc func._func)}(${builtins.concatStringsSep ", " (map (compileExpr sc) args)})"
       else if func.__kind == "mcall" then
         "${wrapExpr (compileExpr sc func.val)}:${func.name}(${builtins.concatStringsSep ", " (map (compileExpr sc) (if builtins.isList func.args then func.args else [func.args]))})"
       else if func.__kind == "tableAttr" then
+        assert lib.assertMsg (luaType func.table == null || luaType func.table == "table") "Unable to get table value ${compileExpr sc func.key} of a ${luaType func.table} ${compileExpr sc func.table}!";
         "${wrapExpr (compileExpr sc func.table)}[${compileExpr sc func.key}]"
       else null
     );
+
+    luaType = val:
+      if builtins.isAttrs val && val?__kind then (
+        if val?_type then val._type
+        else null
+      ) else if builtins.isList val || builtins.isAttrs val then "table"
+      else if builtins.isPath val || builtins.isString val then "string"
+      else if builtins.isInt val || builtins.isFloat val then "number"
+      else if builtins.isNull val then "nil"
+      else if builtins.isFunction val then "function"
+      else if builtins.isBool val then "boolean"
+      else null;
 
     compileStmt = sc@{sname,scope}: func: (
       if builtins.isList func then builtins.concatStringsSep "\n" (map (compileStmt sc) func)
       else if builtins.isAttrs func && (func?__kind) then (
         if func.__kind == "assign" then
+          assert lib.assertMsg
+            (luaType func.expr == null || luaType func.val == null || luaType func.val == func.expr._type)
+            "error: setting ${compileExpr sc func.expr} to wrong type. It should be ${luaType func.expr} but is ${luaType func.val}";
           "${compileExpr sc func.expr} = ${compileExpr sc func.val}"
         else if func.__kind == "bind" then
           "local ${func.name} = ${compileExpr sc func.val}"
