@@ -21,7 +21,7 @@ in {
         rust-analyzer
         nodePackages.bash-language-server shellcheck
         nodePackages.typescript-language-server
-        clang-tools
+        clang-tools_latest
         nodePackages.vscode-langservers-extracted
         nil
         marksman

@@ -1,5 +1,15 @@
 { lib, config, ... }:
 with lib; {
+  options.rustAnalyzerAndroidSettings = mkOption {
+    type = with types; attrs;
+    description = "Additional cargo arguments for rust-analyzer's RustAndroid command";
+    # TODO: create a neovim plugin or edit an existing one for workspace-specific config
+    default = {
+      rust-analyzer = {
+        cargo.target = "x86_64-linux-android";
+      };
+    };
+  };
   options.terminals = mkOption {
     type = with types; listOf str;
     description = "terminal kinds (possible values are alacritty, urxvt, kitty, foot)";

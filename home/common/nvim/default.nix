@@ -85,7 +85,7 @@
       else if func.__kind == "prop" then
         "${wrapExpr (compileExpr sc func.expr)}.${func.name}"
       else if func.__kind == "call" then
-        "${wrapExpr (compileExpr sc func.func)}(${builtins.concatStringsSep ", " (map (compileExpr sc) (if builtins.isList func.args then func.args else [func.args]))})"
+        "${wrapExpr (compileExpr sc func._func)}(${builtins.concatStringsSep ", " (map (compileExpr sc) (if builtins.isList func._args then func._args else [func._args]))})"
       else if func.__kind == "mcall" then
         "${wrapExpr (compileExpr sc func.val)}:${func.name}(${builtins.concatStringsSep ", " (map (compileExpr sc) (if builtins.isList func.args then func.args else [func.args]))})"
       else if func.__kind == "tableAttr" then
@@ -167,7 +167,7 @@
     # Call a function
     # corresponding lua code: someFunc()
     # expr -> [args] -> expr | expr -> arg1 -> expr
-    call = func: args: { __kind = "call"; inherit func args; };
+    call = func: args: { __kind = "call"; _func = func; _args = args; };
 
     # Call a method
     # corresponding lua code: someTable:someFunc()
@@ -232,12 +232,14 @@
     bindrec = vals: func: if builtins.isList vals then { __kind = "letrec"; inherit vals func; } else bindrec [ vals ] func;
 
     # "type definitions" for neovim
-    defs = pkgs.callPackage ./vim-opts.nix { inherit raw call; };
+    defs = pkgs.callPackage ./vim-opts.nix { inherit raw call; plugins = config.programs.neovim.plugins; };
+    reqbind = name: func: bind [ (defs.require name) ] (result: func (defs._reqbind name result._name));
   in with defs; let
-    require = name: call (var "require") [ name ];
-    setup = plugin: opts: call (prop plugin "setup") [ opts ];
+    # require = name: call (var "require") [ name ];
+    # setup = plugin: opts: call (prop plugin "setup") [ opts ];
     # vimfn = name: call (raw "vim.fn.${name}");
     vimcmd = name: call (raw "vim.cmd.${name}");
+    vimg = name: prop vim.g name;
     keymapSetSingle = opts@{
       mode,
       lhs,
@@ -267,12 +269,16 @@
       in (lib.mapAttrsToList (k: {rhs, desc}: keymapSetSingle (opts' // {
         lhs = k; inherit rhs;
       })) keys) ++ [
-        (call (prop (require "which-key") "register") [(lib.mapAttrs (k: v: [v.rhs v.desc]) keys) opts'])
+        (which-key.register [(lib.mapAttrs (k: v: [v.rhs v.desc]) keys) opts'])
       ];
     keymapSetNs = args: keymapSetMulti (args // { mode = "n"; });
     kmSetNs = keys: keymapSetNs { inherit keys; };
     keymapSetVs = args: keymapSetMulti (args // { mode = "v"; });
     kmSetVs = keys: keymapSetVs { inherit keys; };
+
+    which-key = req "which-key";
+    luasnip = req "luasnip";
+    cmp = req "cmp";
   in {
     enable = true;
     defaultEditor = true;
@@ -282,7 +288,7 @@
       nodePackages_latest.bash-language-server shellcheck
       nodePackages_latest.typescript-language-server
       nodePackages_latest.svelte-language-server
-      clang-tools
+      clang-tools_latest
       nodePackages_latest.vscode-langservers-extracted
       nil
       marksman
@@ -298,11 +304,12 @@
     ];
     # extraPython3Packages = pyPkgs: with pyPkgs; [
     # ];
+    viAlias = true;
+    vimAlias = true;
+    vimdiffAlias = true;
+
     extraLuaConfig = (compile "main" [
-      (set vim.g.vimsyn_embed "l")
-      (vim.api.nvim_set_hl [ 0 "NormalFloat" {
-        bg = "NONE";
-      }])
+      (set (vimg "vimsyn_embed") "l")
       (bind (vim.api.nvim_create_augroup [ "nvimrc" { clear = true; } ]) (group:
         map (au: let au' = lib.filterAttrs (k: v: k != "event") au;
           in vim.api.nvim_create_autocmd [ au.event ({
@@ -311,10 +318,12 @@
         ) [
           { event = "FileType";
             pattern = ["markdown" "gitcommit"];
+            # must be a string
             callback = defun (set vim.o.colorcolumn "73"); }
           { event = "FileType";
             pattern = ["markdown"];
-            callback = defun (set vim.o.textwidth "72"); }
+            # must be a number...
+            callback = defun (set vim.o.textwidth 72); }
           { event = "BufReadPre";
             callback = defun (set vim.o.foldmethod "syntax"); }
           { event = "BufWinEnter";
@@ -322,13 +331,13 @@
               (bind (vim.filetype.match { inherit buf; }) (filetype: [
                 (vimcmd "folddoc" [ "foldopen!" ])
                 (ifelse [(eq filetype "gitcommit") [
-                  (vim.cmd {
+                  (call vim.cmd {
                     cmd = "normal";
                     bang = true;
                     args = [ "gg" ];
                   })
                 ]]
-                  (vim.cmd {
+                  (call vim.cmd {
                     cmd = "normal";
                     bang = true;
                     args = [ "g`\"" ];
@@ -337,13 +346,10 @@
               ])); }
             ])) # END
     ]);
-    viAlias = true;
-    vimAlias = true;
-    vimdiffAlias = true;
-    plugins = with pkgs.vimPlugins; map (x: if x?config && x?plugin then { type = "lua"; } // x else x) [
-      vim-svelte
+    plugins = let ps = pkgs.vimPlugins; in map (x: if x?config && x?plugin then { type = "lua"; } // x else x) [
+      ps.vim-svelte
       # TODO remove on next nvim update (0.8.3/0.9)
-      vim-nix
+      ps.vim-nix
       { plugin = pkgs.vimUtils.buildVimPluginFrom2Nix {
           pname = "vscode-nvim";
           version = "2023-02-10";
@@ -354,42 +360,47 @@
             sha256 = "sha256-X2IgIjO5NNq7vJdl09hBY1TFqHlsfF1xfllKr4osILI=";
           };
         };
-        config = compile "vscode_nvim" (setup (require "vscode") {
-          transparent = true;
-          color_overrides = {
-            vscGray = "#745b5f";
-            vscViolet = "#${config.colors.magenta}";
-            vscBlue = "#6ddfd8";
-            vscDarkBlue = "#${config.colors.blue}";
-            vscGreen = "#${config.colors.green}";
-            vscBlueGreen = "#73bf88";
-            vscLightGreen = "#6acf6e";
-            vscRed = "#${config.colors.red}";
-            vscOrange = "#e89666";
-            vscLightRed = "#e64e4e";
-            vscYellowOrange = "#e8b166";
-            vscYellow = "#${config.colors.yellow}";
-            vscPink = "#cf83c4";
-          };
-        }); }
-      { plugin = nvim-web-devicons;
-        config = compile "nvim_web_devicons" (setup (require "nvim-web-devicons") {}); }
-      { plugin = nvim-tree-lua;
+        config = compile "vscode_nvim" [
+          ((req "vscode").setup {
+            transparent = true;
+            color_overrides = {
+              vscGray = "#745b5f";
+              vscViolet = "#${config.colors.magenta}";
+              vscBlue = "#6ddfd8";
+              vscDarkBlue = "#${config.colors.blue}";
+              vscGreen = "#${config.colors.green}";
+              vscBlueGreen = "#73bf88";
+              vscLightGreen = "#6acf6e";
+              vscRed = "#${config.colors.red}";
+              vscOrange = "#e89666";
+              vscLightRed = "#e64e4e";
+              vscYellowOrange = "#e8b166";
+              vscYellow = "#${config.colors.yellow}";
+              vscPink = "#cf83c4";
+            };
+          })
+          (vim.api.nvim_set_hl [ 0 "NormalFloat" {
+            bg = "NONE";
+          }])
+        ]; }
+      { plugin = ps.nvim-web-devicons;
+        config = compile "nvim_web_devicons" ((req "nvim-web-devicons").setup {}); }
+      { plugin = ps.nvim-tree-lua;
         config = compile "nvim_tree_lua" [
-          (set vim.g.loaded_netrw 1)
-          (set vim.g.loaded_netrwPlugin 1)
-          (set vim.opt.termguicolors true)
-          (setup (require "nvim-tree") {}) # :help nvim-tree-setup
+          (set (vimg "loaded_netrw") 1)
+          (set (vimg "loaded_netrwPlugin") 1)
+          (set vim.o.termguicolors true)
+          ((req "nvim-tree").setup {}) # :help nvim-tree-setup
           (kmSetNs {
             "<C-N>" = {
-              rhs = prop (require "nvim-tree.api") "tree.toggle";
+              rhs = (req "nvim-tree.api").tree.toggle;
               desc = "Toggle NvimTree";
             };
           })
         ]; }
-      vim-sleuth
-      luasnip
-      { plugin = nvim-cmp;
+      ps.vim-sleuth
+      ps.luasnip
+      { plugin = ps.nvim-cmp;
         config = let
           border = (name: [
             [ "╭" name ]
@@ -401,10 +412,11 @@
             [ "╰" name ]
             [ "│" name ]
           ]);
-        in compile "nvim_cmp" (bind (require "cmp") (cmp:
-          (setup cmp {
+        in compile "nvim_cmp" (reqbind "cmp" (cmp:
+          # call is required because cmp.setup is a table
+          (call cmp.setup {
             snippet = {
-              expand = { body, ... }: call (prop (require "luasnip") "lsp_expand") body;
+              expand = { body, ... }: luasnip.lsp_expand body;
             };
             view = { };
             window = {
@@ -420,85 +432,77 @@
               format = _: vim_item: let kind = prop vim_item "kind"; in [
                 (set
                   kind
-                  (string.format ([
+                  (string.format [
                     "%s %s"
-                    (tableAttr (require "lspkind") kind)
+                    (tableAttr (req "lspkind") kind)
                     kind
-                  ])))
+                  ]))
                 (return vim_item)
               ];
             };
             mapping = {
-              "<C-p>" = call (prop cmp "mapping.select_prev_item") [];
-              "<C-n>" = call (prop cmp "mapping.select_next_item") [];
-              "<C-space>" = call (prop cmp "mapping.complete") [];
-              "<C-e>" = call (prop cmp "mapping.close") [];
-              "<cr>" = call (prop cmp "mapping.confirm") {
-                behavior = prop cmp "ConfirmBehavior.Replace";
+              "<C-p>" = cmp.mapping.select_prev_item [];
+              "<C-n>" = cmp.mapping.select_next_item [];
+              "<C-space>" = cmp.mapping.complete [];
+              "<C-e>" = cmp.mapping.close [];
+              "<cr>" = cmp.mapping.confirm {
+                behavior = cmp.ConfirmBehavior.Replace;
                 select = false;
               };
-              "<tab>" = call (prop cmp "mapping") [(fallback:
-                (ifelse [
-                  [(call (prop cmp "visible") [])
-                    # then
-                    (call (prop cmp "select_next_item") [])]
-                  [(call (prop (require "luasnip") "expand_or_jumpable") [])
-                    # then
-                    (vim.api.nvim_feedkeys [
-                      (vim.api.nvim_replace_termcodes [ "<Plug>luasnip-expand-or-jump" true true true ])
-                      ""
-                      false
-                    ])
-                  ]]
-                    # else
-                    (call fallback [])
+              "<tab>" = call cmp.mapping [(fallback:
+                (ifelse [[(cmp.visible [])
+                  (cmp.select_next_item [])]
+                /*elseif*/ [(luasnip.expand_or_jumpable [])
+                  (vim.api.nvim_feedkeys [
+                    (vim.api.nvim_replace_termcodes [ "<Plug>luasnip-expand-or-jump" true true true ])
+                    ""
+                    false
+                  ])
+                ]] # else
+                  (call fallback [])
                 ))
                 [ "i" "s" ]
               ];
-              "<S-tab>" = call (prop cmp "mapping") [(fallback:
-                (ifelse [
-                  [(call (prop cmp "visible" ) [])
-                    # then
-                    (call (prop cmp "select_prev_item") [])]
-                  [(call (prop (require "luasnip") "jumpable") [ (-1) ])
-                    # then
-                    (vim.api.nvim_feedkeys [
-                      (vim.api.nvim_replace_termcodes [ "<Plug>luasnip-jump-prev" true true true ])
-                      ""
-                      false
-                    ])
-                  ]]
-                    # else
-                    (call fallback [])
+              "<S-tab>" = call cmp.mapping [(fallback:
+                (ifelse [[(cmp.visible [])
+                  (cmp.select_prev_item [])]
+                /*elseif*/ [(luasnip.jumpable [ (-1) ])
+                  (vim.api.nvim_feedkeys [
+                    (vim.api.nvim_replace_termcodes [ "<Plug>luasnip-jump-prev" true true true ])
+                    ""
+                    false
+                  ])
+                ]] # else
+                  (call fallback [])
                 ))
                 [ "i" "s" ]
               ];
             };
-            sources = call (prop cmp "config.sources") [[
+            sources = cmp.config.sources [[
               { name = "nvim_lsp"; }
               { name = "luasnip"; }
             ]];
           })
         )); }
-      lspkind-nvim
-      cmp_luasnip
-      cmp-nvim-lsp
-      { plugin = nvim-autopairs;
-        config = compile "nvim_autopairs" (bind (require "nvim-autopairs.completion.cmp") (cmp_autopairs: [
-          (setup (require "nvim-autopairs") {
+      ps.lspkind-nvim
+      ps.cmp_luasnip
+      ps.cmp-nvim-lsp
+      { plugin = ps.nvim-autopairs;
+        config = compile "nvim_autopairs" (reqbind "nvim-autopairs.completion.cmp" (cmp_autopairs: [
+          ((req "nvim-autopairs").setup {
             disable_filetype = [ "TelescopePrompt" "vim" ];
           })
-          (mcall (prop (require "cmp") "event") "on" [
+          (mcall cmp.event "on" [
             "confirm_done"
-            (call (prop cmp_autopairs "on_confirm_done") [])
+            (cmp_autopairs.on_confirm_done [])
           ])
         ])); }
-      { plugin = comment-nvim;
+      { plugin = ps.comment-nvim;
         config = compile "comment_nvim" [
-          (setup (require "Comment") {})
+          ((req "Comment").setup {})
           (kmSetNs {
             "<space>/" = {
-              rhs = prop (require "Comment.api") "toggle.linewise.current";
+              rhs = prop (req "Comment.api").toggle "linewise.current";
               desc = "Comment current line";
             };
           })
@@ -509,8 +513,8 @@
             };
           })
         ]; }
-      { plugin = nvim-lspconfig;
-        config = compile "nvim_lspconfig" (let setupLsp = lsp: setup (prop (require "lspconfig") lsp); in [
+      { plugin = ps.nvim-lspconfig;
+        config = compile "nvim_lspconfig" (let setupLsp = lsp: builtins.seq (req "lspconfig.server_configurations.${lsp}") (call (prop (req "lspconfig") "${lsp}.setup")); in [
           # See `:help vim.diagnostic.*` for documentation on any of the below functions
           (kmSetNs {
             "<space>e" = {
@@ -561,7 +565,7 @@
                   desc = "Remove a folder from the workspace folders."; };
                 "<space>wl" = {
                   rhs = (defun (print [
-                    (vim.inspect [(vim.lsp.buf.list_workspace_folders [])])
+                    (call vim.inspect [(vim.lsp.buf.list_workspace_folders [])])
                   ]));
                   desc = "List workspace folders."; };
                 "<space>D" = {
@@ -592,7 +596,7 @@
             (vim.tbl_extend [
               "keep"
               (vim.lsp.protocol.make_client_capabilities [])
-              (call (prop (require "cmp_nvim_lsp") "default_capabilities") [])
+              ((req "cmp_nvim_lsp").default_capabilities [])
             ])
           # BEGIN
           ] (on_attach: rust_settings: capabilities: [
@@ -600,12 +604,13 @@
             # LETREC on_attach_rust
             (on_attach_rust: client: bufnr: [
               (vim.api.nvim_create_user_command ["RustAndroid" (opts: [
+                (vim.lsp.set_log_level "debug")
                 (setupLsp "rust_analyzer" {
                   on_attach = on_attach_rust;
                   inherit capabilities;
                   settings = vim.tbl_deep_extend [
                     "keep"
-                    { rust-analyzer.cargo.target = "x86_64-linux-android"; }
+                    config.rustAnalyzerAndroidSettings
                     rust_settings
                   ];
                 })
@@ -642,11 +647,11 @@
             ]))) # END
           ])) # END
         ]); }
-      { plugin = which-key-nvim;
+      { plugin = ps.which-key-nvim;
         config = compile "which_key_nvim" [
           (set vim.o.timeout true)
           (set vim.o.timeoutlen 500)
-          (setup (require "which-key") {})
+          (which-key.setup {})
         ]; }
     ];
   };

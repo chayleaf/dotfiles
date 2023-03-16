@@ -26,7 +26,13 @@
           pkgs = nixpkgs.legacyPackages."x86_64-linux";
           modules = [
             nur.nixosModules.nur
-            { nixpkgs.overlays = [ nix-gaming.overlays.default ]; }
+            { nixpkgs.overlays = [
+              nix-gaming.overlays.default
+              (self: super: {
+                clang_latest = super.clang_15;
+                clang-tools_latest = super.clang-tools_15;
+              })
+            ]; }
             ./hosts/nixmsi.nix
             (getPriv "nixmsi")
           ];

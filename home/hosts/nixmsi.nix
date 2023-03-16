@@ -49,8 +49,14 @@
     '';
   }; in {
     STEAM_EXTRA_COMPAT_TOOLS_PATHS = "${proton-ge}";
+    CARGO_PROFILE_DEV_INCREMENTAL = "true";
+    RUSTC_LINKER = "${pkgs.clang_latest}/bin/clang";
+    RUSTFLAGS = "-C link-arg=--ld-path=${pkgs.mold}/bin/mold";
+    CARGO_TARGET_X86_64_UNKNOWN_LINUX_GNU_LINKER = "${pkgs.clang_latest}/bin/clang";
+    CARGO_TARGET_X86_64_UNKNOWN_LINUX_GNU_RUSTFLAGS = "-C link-arg=--ld-path=${pkgs.mold}/bin/mold";
   };
   home.packages = with pkgs; [
+    mold
     (ghidra.overrideAttrs (old: {
       patches = old.patches ++ [ ../common/ghidra-stdcall.patch ];
     })) cutter
@@ -65,7 +71,7 @@
     virtmanager
     gimp krita blender
     tdesktop
-    clang rustc rustfmt cargo clippy
+    clang_latest rustc rustfmt cargo clippy
     # waiting until the PR gets merged
     (looking-glass-client.overrideAttrs (old: {
       version = "B6";
