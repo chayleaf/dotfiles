@@ -1,5 +1,20 @@
 {
   "nodes": {
+    "flake-utils": {
+      "locked": {
+        "lastModified": 1678901627,
+        "narHash": "sha256-U02riOqrKKzwjsxc/400XnElV+UtPUQWpANPlyazjH0=",
+        "owner": "numtide",
+        "repo": "flake-utils",
+        "rev": "93a2b84fc4b70d9e089d029deacc3583435c2ed6",
+        "type": "github"
+      },
+      "original": {
+        "owner": "numtide",
+        "repo": "flake-utils",
+        "type": "github"
+      }
+    },
     "home-manager": {
       "inputs": {
         "nixpkgs": [
@@ -54,6 +69,28 @@
         "type": "indirect"
       }
     },
+    "notlua": {
+      "inputs": {
+        "flake-utils": "flake-utils",
+        "nixpkgs": [
+          "nixpkgs"
+        ]
+      },
+      "locked": {
+        "lastModified": 1679082335,
+        "narHash": "sha256-x6InD4OI2ACS2j53g0j/ogUFn4q7ZkbhDHd+H/CDWZ4=",
+        "owner": "chayleaf",
+        "repo": "notlua",
+        "rev": "3e1f540ea069861d5f0973a340aabc02e88e9f6c",
+        "type": "github"
+      },
+      "original": {
+        "owner": "chayleaf",
+        "ref": "master",
+        "repo": "notlua",
+        "type": "github"
+      }
+    },
     "nur": {
       "locked": {
         "lastModified": 1678002043,
@@ -74,6 +111,7 @@
         "home-manager": "home-manager",
         "nix-gaming": "nix-gaming",
         "nixpkgs": "nixpkgs",
+        "notlua": "notlua",
         "nur": "nur"
       }
     },

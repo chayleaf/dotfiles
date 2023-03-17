@@ -13,9 +13,13 @@
       url = "github:fufexan/nix-gaming";
       inputs.nixpkgs.follows = "nixpkgs";
     };
+    notlua = {
+      url = "github:chayleaf/notlua/master";
+      inputs.nixpkgs.follows = "nixpkgs";
+    };
   };
 
-  outputs = { self, nixpkgs, home-manager, nur, nix-gaming }:
+  outputs = { self, nixpkgs, home-manager, nur, nix-gaming, notlua }:
     let
       # IRL-related private config
       priv = if builtins.pathExists ./private.nix then (import ./private.nix) else {};
@@ -25,6 +29,7 @@
         "user@nixmsi" = home-manager.lib.homeManagerConfiguration {
           pkgs = nixpkgs.legacyPackages."x86_64-linux";
           modules = [
+            notlua.nixosModules.x86_64-linux.default
             nur.nixosModules.nur
             { nixpkgs.overlays = [
               nix-gaming.overlays.default

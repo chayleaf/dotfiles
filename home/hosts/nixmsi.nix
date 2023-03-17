@@ -4,7 +4,7 @@
     ../common/general.nix
     ../common/firefox
     ../common/i3-sway.nix
-    ../common/nvim
+    ../common/nvim.nix
     ../common/helix.nix
     ../common/kakoune.nix
   ];
