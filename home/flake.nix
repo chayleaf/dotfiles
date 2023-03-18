@@ -29,7 +29,7 @@
         "user@nixmsi" = home-manager.lib.homeManagerConfiguration {
           pkgs = nixpkgs.legacyPackages."x86_64-linux";
           modules = [
-            notlua.nixosModules.x86_64-linux.default
+            notlua.nixosModules.default
             nur.nixosModules.nur
             { nixpkgs.overlays = [
               nix-gaming.overlays.default

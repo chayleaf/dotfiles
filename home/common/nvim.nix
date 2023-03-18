@@ -16,10 +16,10 @@
   programs.neovim = let
     notlua = config.notlua;
     notlua-nvim = notlua.neovim { inherit (config.programs.neovim) plugins extraLuaPackages; };
-    inherit (notlua.keywords) CALL RAW PROP SET LET DEFUN IF APPLY OR EQ RETURN ELSE ATTR MCALL LETREC;
+    inherit (notlua.keywords) CALL RAW PROP SET LET DEFUN IF APPLY OR EQ RETURN ELSE IDX MCALL LETREC;
     inherit (notlua.utils) compile;
     inherit (notlua-nvim.stdlib) vim string require print;
-    inherit (notlua-nvim.keywords) REQ REQ' REQLET;
+    inherit (notlua-nvim.keywords) REQ REQ';
   in let
     vimcmd = name: CALL (RAW "vim.cmd.${name}");
     vimg = name: PROP vim.g name;
@@ -178,7 +178,7 @@
       { plugin = ps.nvim-web-devicons;
         config = compile "nvim_web_devicons" ((REQ "nvim-web-devicons").setup {}); }
       { plugin = ps.nvim-tree-lua;
-        config = compile "nvim_tree_lua" (REQLET "nvim-tree" "nvim-tree.api" (nvim-tree: nvim-tree-api: [
+        config = compile "nvim_tree_lua" (LET (REQ "nvim-tree") (REQ "nvim-tree.api") (nvim-tree: nvim-tree-api: [
           (SET (vimg "loaded_netrw") 1)
           (SET (vimg "loaded_netrwPlugin") 1)
           (SET vim.o.termguicolors true)
@@ -204,7 +204,7 @@
             [ "╰" name ]
             [ "│" name ]
           ]);
-        in compile "nvim_cmp" (REQLET "cmp" "lspkind" (cmp: lspkind:
+        in compile "nvim_cmp" (LET (REQ "cmp") (REQ "lspkind") (cmp: lspkind:
           # call is required because cmp.setup is a table
           (CALL cmp.setup {
             snippet = {
@@ -222,7 +222,7 @@
             };
             formatting = {
               format = _: vim_item: let kind = PROP vim_item "kind"; in [
-                (SET kind (string.format "%s %s" (ATTR lspkind kind) kind))
+                (SET kind (string.format "%s %s" (IDX lspkind kind) kind))
                 (RETURN vim_item)
               ];
             };
@@ -230,7 +230,7 @@
               "<C-p>" = cmp.mapping.select_prev_item {};
               "<C-n>" = cmp.mapping.select_next_item {};
               "<C-space>" = cmp.mapping.complete {};
-              "<C-e>" = cmp.mapping.close {};
+              "<C-e>" = CALL cmp.mapping.close;
               "<cr>" = cmp.mapping.confirm {
                 behavior = cmp.ConfirmBehavior.Replace;
                 select = false;
@@ -270,7 +270,7 @@
       ps.cmp_luasnip
       ps.cmp-nvim-lsp
       { plugin = ps.nvim-autopairs;
-        config = compile "nvim_autopairs" (REQLET "nvim-autopairs.completion.cmp" "nvim-autopairs" (cmp-autopairs: nvim-autopairs: [
+        config = compile "nvim_autopairs" (LET (REQ "nvim-autopairs.completion.cmp") (REQ "nvim-autopairs") (cmp-autopairs: nvim-autopairs: [
           (nvim-autopairs.setup {
             disable_filetype = [ "TelescopePrompt" "vim" ];
           })

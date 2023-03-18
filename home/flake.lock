@@ -1,20 +1,5 @@
 {
   "nodes": {
-    "flake-utils": {
-      "locked": {
-        "lastModified": 1678901627,
-        "narHash": "sha256-U02riOqrKKzwjsxc/400XnElV+UtPUQWpANPlyazjH0=",
-        "owner": "numtide",
-        "repo": "flake-utils",
-        "rev": "93a2b84fc4b70d9e089d029deacc3583435c2ed6",
-        "type": "github"
-      },
-      "original": {
-        "owner": "numtide",
-        "repo": "flake-utils",
-        "type": "github"
-      }
-    },
     "home-manager": {
       "inputs": {
         "nixpkgs": [
@@ -71,17 +56,16 @@
     },
     "notlua": {
       "inputs": {
-        "flake-utils": "flake-utils",
         "nixpkgs": [
           "nixpkgs"
         ]
       },
       "locked": {
-        "lastModified": 1679082335,
-        "narHash": "sha256-x6InD4OI2ACS2j53g0j/ogUFn4q7ZkbhDHd+H/CDWZ4=",
+        "lastModified": 1679159882,
+        "narHash": "sha256-sE3MPfc6nM+8Wha9/nO7esg14HX5FJhyrBoZfS/Fe5I=",
         "owner": "chayleaf",
         "repo": "notlua",
-        "rev": "3e1f540ea069861d5f0973a340aabc02e88e9f6c",
+        "rev": "432a968debd969ef84d78d64bc6e0f31cb54a153",
         "type": "github"
       },
       "original": {
