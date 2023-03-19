@@ -352,46 +352,49 @@
               vim.api.nvim_buf_set_option bufnr "omnifunc" "v:lua.vim.lsp.omnifunc" _
               # Mappings.
               # See `:help vim.lsp.*` for documentation on any of the below functions
-              kmSetNs {
-                "gD" = {
-                  rhs = vim.lsp.buf.declaration;
-                  desc = "Jumps to the declaration of the symbol under the cursor."; };
-                "gd" = {
-                  rhs = vim.lsp.buf.definition;
-                  desc = "Jumps to the definition of the symbol under the cursor."; };
-                "K" = {
-                  rhs = vim.lsp.buf.hover;
-                  desc = "Displays hover information about the symbol under the cursor in a floating window."; };
-                "gi" = {
-                  rhs = vim.lsp.buf.implementation;
-                  desc = "Lists all the implementations for the symbol under the cursor in the quickfix window."; };
-                "<C-h>" = {
-                  rhs = vim.lsp.buf.signature_help;
-                  desc = "Displays signature information about the symbol under the cursor in a floating window."; };
-                "<space>wa" = {
-                  rhs = vim.lsp.buf.add_workspace_folder;
-                  desc = "Add a folder to the workspace folders."; };
-                "<space>wr" = {
-                  rhs = vim.lsp.buf.remove_workspace_folder;
-                  desc = "Remove a folder from the workspace folders."; };
-                "<space>wl" = {
-                  rhs = DEFUN (print (CALL vim.inspect (CALL vim.lsp.buf.list_workspace_folders)));
-                  desc = "List workspace folders."; };
-                "<space>D" = {
-                  rhs = vim.lsp.buf.type_definition;
-                  desc = "Jumps to the definition of the type of the symbol under the cursor."; };
-                "<space>rn" = {
-                  rhs = vim.lsp.buf.rename;
-                  desc = "Rename old_fname to new_fname"; };
-                "<space>ca" = {
-                  rhs = vim.lsp.buf.code_action;
-                  desc = "Selects a code action available at the current cursor position."; };
-                "gr" = {
-                  rhs = vim.lsp.buf.references;
-                  desc = "Lists all the references to the symbol under the cursor in the quickfix window."; };
-                "<space>f" = {
-                  rhs = DEFUN (vim.lsp.buf.format {async = true;});
-                  desc = "Formats a buffer."; };
+              keymapSetNs {
+                buffer = bufnr;
+                keys = {
+                  "gD" = {
+                    rhs = vim.lsp.buf.declaration;
+                    desc = "Jumps to the declaration of the symbol under the cursor."; };
+                  "gd" = {
+                    rhs = vim.lsp.buf.definition;
+                    desc = "Jumps to the definition of the symbol under the cursor."; };
+                  "K" = {
+                    rhs = vim.lsp.buf.hover;
+                    desc = "Displays hover information about the symbol under the cursor in a floating window."; };
+                  "gi" = {
+                    rhs = vim.lsp.buf.implementation;
+                    desc = "Lists all the implementations for the symbol under the cursor in the quickfix window."; };
+                  "<C-h>" = {
+                    rhs = vim.lsp.buf.signature_help;
+                    desc = "Displays signature information about the symbol under the cursor in a floating window."; };
+                  "<space>wa" = {
+                    rhs = vim.lsp.buf.add_workspace_folder;
+                    desc = "Add a folder to the workspace folders."; };
+                  "<space>wr" = {
+                    rhs = vim.lsp.buf.remove_workspace_folder;
+                    desc = "Remove a folder from the workspace folders."; };
+                  "<space>wl" = {
+                    rhs = DEFUN (print (CALL vim.inspect (CALL vim.lsp.buf.list_workspace_folders)));
+                    desc = "List workspace folders."; };
+                  "<space>D" = {
+                    rhs = vim.lsp.buf.type_definition;
+                    desc = "Jumps to the definition of the type of the symbol under the cursor."; };
+                  "<space>rn" = {
+                    rhs = vim.lsp.buf.rename;
+                    desc = "Rename old_fname to new_fname"; };
+                  "<space>ca" = {
+                    rhs = vim.lsp.buf.code_action;
+                    desc = "Selects a code action available at the current cursor position."; };
+                  "gr" = {
+                    rhs = vim.lsp.buf.references;
+                    desc = "Lists all the references to the symbol under the cursor in the quickfix window."; };
+                  "<space>f" = {
+                    rhs = DEFUN (vim.lsp.buf.format {async = true;});
+                    desc = "Formats a buffer."; };
+                };
               } _
             ])
             # LET rust_settings
@@ -411,7 +414,7 @@
             LETREC
             # LETREC on_attach_rust
             (on_attach_rust: client: bufnr: L [
-              vim.api.nvim_create_user_command "RustAndroid" (opts: L [
+              vim.api.nvim_buf_create_user_command bufnr "RustAndroid" (opts: L [
                 vim.lsp.set_log_level "debug" _
                 (lsp "rust_analyzer").setup {
                   on_attach = on_attach_rust;
@@ -430,9 +433,9 @@
             };
             setupLsp = args: setupLsp' (if builtins.isString args then { name = args; } else args);
             in on_attach_rust: L [
-              # (vim.lsp.set_log_level "debug")
+              # vim.lsp.set_log_level "debug" _
+              # see https://github.com/neovim/nvim-lspconfig/blob/master/doc/server_configurations.md
               map setupLsp [
-                # see https://github.com/neovim/nvim-lspconfig/blob/master/doc/server_configurations.md
                 "bashls"
                 "clangd"
                 # https://github.com/python-lsp/python-lsp-server/blob/develop/CONFIGURATION.md
