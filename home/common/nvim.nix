@@ -118,11 +118,12 @@
         lib.mapAttrsToList (k: v: vim.api.nvim_create_autocmd k { inherit group; callback = v; }) {
           BufReadPre = DEFUN (SET vim.o.foldmethod "syntax");
           BufEnter = { buf, ... }:
-            (LET (vim.filetype.match { inherit buf; }) (filetype: L [
+            LET (vim.filetype.match { inherit buf; }) (filetype: L [
               IF (APPLY OR (map (EQ filetype) [ "gitcommit" "markdown" ])) (
                 LET vim.o.colorcolumn (old_colorcolumn: L [
                   SET vim.o.colorcolumn "73" _
                   vim.api.nvim_create_autocmd "BufLeave" {
+                    buffer = buf;
                     callback = DEFUN (L [
                       SET vim.o.colorcolumn old_colorcolumn _
                       # return true = delete autocommand
@@ -132,19 +133,11 @@
                 ])
               ) _
               IF (EQ filetype "markdown") (
-                LET vim.o.textwidth (old_textwidth: L [
-                  SET vim.o.textwidth 72 _
-                  vim.api.nvim_create_autocmd "BufLeave" {
-                    callback = DEFUN (L [
-                      SET vim.o.textwidth old_textwidth _
-                      true
-                    ]);
-                  } _
-                ])
+                SET (PROP (IDX vim.bo buf) "textwidth") 72 _
               ) _
-            ]));
+            ]);
           BufWinEnter = { buf, ... }:
-            (LET (vim.filetype.match { inherit buf; }) (filetype: L [
+            LET (vim.filetype.match { inherit buf; }) (filetype: L [
               CALL (PROP vim.cmd "folddoc") "foldopen!" _
               IF (EQ filetype "gitcommit") (
                 CALL vim.cmd {
@@ -159,7 +152,7 @@
                   args = [ "g`\"" ];
                 }
               ) _
-            ]));
+            ]);
         }
       ) _
     ]);
