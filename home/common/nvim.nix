@@ -133,7 +133,7 @@
                 ])
               ) _
               IF (EQ filetype "markdown") (
-                SET (PROP (IDX vim.bo buf) "textwidth") 72 _
+                (SET (IDX vim.bo buf).textwidth 72)
               ) _
             ]);
           BufWinEnter = { buf, ... }:
@@ -224,7 +224,7 @@
           ]);
         in compile "nvim_cmp" (LET (REQ "cmp") (REQ "lspkind") (cmp: lspkind:
           # call is required because cmp.setup is a table
-          CALL cmp.setup {
+          cmp.setup {
             snippet = {
               expand = { body, ... }: luasnip.lsp_expand body {};
             };
@@ -253,7 +253,7 @@
                 behavior = cmp.ConfirmBehavior.Replace;
                 select = false;
               };
-              "<tab>" = CALL cmp.mapping (fallback:
+              "<tab>" = cmp.mapping (fallback:
                 IF (CALL cmp.visible) (
                   CALL cmp.select_next_item
                 ) (CALL luasnip.expand_or_jumpable) (
@@ -265,7 +265,7 @@
                   CALL fallback
                 )
               ) [ "i" "s" ];
-              "<S-tab>" = CALL cmp.mapping (fallback:
+              "<S-tab>" = cmp.mapping (fallback:
                 IF (CALL cmp.visible) (
                   CALL cmp.select_prev_item
                 ) (luasnip.jumpable (-1)) (
@@ -341,8 +341,7 @@
           LET
             # LET on_attach
             (client: bufnr: L [
-              # Enable completion triggered by <c-x><c-o>
-              vim.api.nvim_buf_set_option bufnr "omnifunc" "v:lua.vim.lsp.omnifunc" _
+              SET (IDX vim.bo bufnr).omnifunc "v:lua.vim.lsp.omnifunc" _
               # Mappings.
               # See `:help vim.lsp.*` for documentation on any of the below functions
               keymapSetNs {
@@ -370,7 +369,7 @@
                     rhs = vim.lsp.buf.remove_workspace_folder;
                     desc = "Remove a folder from the workspace folders."; };
                   "<space>wl" = {
-                    rhs = DEFUN (print (CALL vim.inspect (CALL vim.lsp.buf.list_workspace_folders)));
+                    rhs = DEFUN (print (vim.inspect (CALL vim.lsp.buf.list_workspace_folders) {}));
                     desc = "List workspace folders."; };
                   "<space>D" = {
                     rhs = vim.lsp.buf.type_definition;
