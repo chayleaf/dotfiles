@@ -1,4 +1,19 @@
 {
+    "fastforward": {
+        "cargoLocks": null,
+        "date": null,
+        "extract": null,
+        "name": "fastforward",
+        "passthru": null,
+        "pinned": false,
+        "src": {
+            "name": null,
+            "sha256": "sha256-mrWvbjqUphMKi8ItRFSmRAzMyzsqB9rJbZFm+I7ocSc=",
+            "type": "url",
+            "url": "https://github.com/FastForwardTeam/FastForward/releases/download/0.2237/fastforwardteam-0.2237.xpi"
+        },
+        "version": "0.2237"
+    },
     "proton-ge": {
         "cargoLocks": null,
         "date": null,
@@ -8,11 +23,11 @@
         "pinned": false,
         "src": {
             "name": null,
-            "sha256": "sha256-T+7R+zFMd0yQ0v7/WGym2kzMMulUmATS/LCEQS8whiw=",
+            "sha256": "sha256-tPL8d5fJzT428UJImJgzW9ECI+ENkvbD1fCPmjU7Yhk=",
             "type": "url",
-            "url": "https://github.com/GloriousEggroll/proton-ge-custom/releases/download/GE-Proton7-49/GE-Proton7-49.tar.gz"
+            "url": "https://github.com/GloriousEggroll/proton-ge-custom/releases/download/GE-Proton7-54/GE-Proton7-54.tar.gz"
         },
-        "version": "GE-Proton7-49"
+        "version": "GE-Proton7-54"
     },
     "yomichan": {
         "cargoLocks": null,

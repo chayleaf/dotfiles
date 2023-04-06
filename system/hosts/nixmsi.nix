@@ -88,9 +88,9 @@ in {
   #   zen619.configuration.boot.kernelPackages = pkgs.linuxPackagesFor (zenKernel "6.1.9" "0fsmcjsawxr32fxhpp6sgwfwwj8kqymy0rc6vh4qli42fqmwdjgv");
   # };
   nixpkgs.config.allowUnfreePredicate = pkg: (lib.getName pkg) == "steam-original";
+  console.font = "${pkgs.terminus_font}/share/consolefonts/ter-v32n.psf.gz";
   hardware = {
     steam-hardware.enable = true;
-    video.hidpi.enable = true;
     enableRedistributableFirmware = true;
     opengl.driSupport32Bit = true;
     # sway WLR_RENDERER=vulkan
@@ -356,61 +356,8 @@ in {
   '';
 
   # overlays
-  nixpkgs.overlays = [(self: super: with lib; with pkgs; {
-    system76-scheduler = rustPlatform.buildRustPackage {
-      pname = "system76-scheduler";
-      version = "unstable-2022-10-05";
-      src = fetchFromGitHub {
-        owner = "pop-os";
-        repo = "system76-scheduler";
-        rev = "25a45add4300eab47ceb332b4ec07e1e74e4baaf";
-        sha256 = "sha256-eB1Qm+ITlLM51nn7GG42bydO1SQ4ZKM0wgRl8q522vw=";
-      };
-      cargoPatches = [(pkgs.writeText "system76-scheduler-cargo.patch" ''
-        diff --git i/daemon/Cargo.toml w/daemon/Cargo.toml
-        index 0397788..fbd6202 100644
-        --- i/daemon/Cargo.toml
-        +++ w/daemon/Cargo.toml
-        @@ -33,7 +33,7 @@ clap = { version = "3.1.18", features = ["cargo"] }
-         # Necessary for deserialization of untagged enums in assignments.
-         [dependencies.ron]
-         git = "https://github.com/MomoLangenstein/ron"
-        -branch = "253-untagged-enums"
-        +rev = "a9c5444d74677716f4a8a00504fb1bedbde55156"
-
-         [dependencies.tracing-subscriber]
-         version = "0.3.11"
-        diff --git i/Cargo.lock w/Cargo.lock
-        index a782756..fe56c1f 100644
-        --- i/Cargo.lock
-        +++ w/Cargo.lock
-        @@ -788,7 +788,7 @@ dependencies = [
-         [[package]]
-         name = "ron"
-         version = "0.7.0"
-        -source = "git+https://github.com/MomoLangenstein/ron?branch=253-untagged-enums#a9c5444d74677716f4a8a00504fb1bedbde55156"
-        +source = "git+https://github.com/MomoLangenstein/ron?rev=a9c5444d74677716f4a8a00504fb1bedbde55156#a9c5444d74677716f4a8a00504fb1bedbde55156"
-         dependencies = [
-          "base64",
-          "bitflags",
-      '')];
-      cargoSha256 = "sha256-EzvJEJlJzCzNEJLCE3U167LkaQHzGthPhIJ6fp0aGk8=";
-      nativeBuildInputs = [ pkg-config ];
-      buildInputs = [ dbus ];
-      EXECSNOOP_PATH = "${bcc}/bin/execsnoop";
-      postInstall = ''
-        install -D -m 0644 data/com.system76.Scheduler.conf $out/etc/dbus-1/system.d/com.system76.Scheduler.conf
-        mkdir -p $out/etc/system76-scheduler
-        install -D -m 0644 data/*.ron $out/etc/system76-scheduler/
-      '';
-
-      meta = {
-        description = "System76 Scheduler";
-        homepage = "https://github.com/pop-os/system76-scheduler";
-        license = licenses.mpl20;
-        platforms = [ "i686-linux" "x86_64-linux" ];
-      };
-    };
+  nixpkgs.overlays = [(self: super: {
+    system76-scheduler = super.callPackage ../pkgs/system76-scheduler.nix { };
   })];
 }
 

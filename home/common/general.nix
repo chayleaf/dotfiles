@@ -49,19 +49,13 @@
         # utils
         gnused mktemp fzf coreutils-full findutils xdg-utils git gnupg whois curl
         file mediainfo unzip gnutar man rclone sshfs trash-cli
-        # drag & drop
-        xdragon
-        # xembed
-        tabbed
         # for preview
         exa bat
-        ffmpeg ffmpegthumbnailer nsxiv imagemagick
         libarchive atool
-        libreoffice poppler_utils fontpreview djvulibre
         glow w3m
         # for opening
-        p7zip unrar-wrapper zathura odt2txt
-      ] ++ lib.optionals (!config.programs.mpv.enable) [ mpv ];
+        p7zip unrar-wrapper odt2txt
+      ];
       plugins = {
         src = pluginSrc;
         mappings = {

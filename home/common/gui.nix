@@ -27,6 +27,15 @@
     # a bad idea to set SDL_DYNAMIC_API globally
     SDL2_DYNAMIC_API = "${pkgs.SDL2}/lib/libSDL2.so";
   };
+  programs.nnn.extraPackages = with pkgs; [
+    # drag & drop
+    xdragon
+    # xembed
+    tabbed
+    # for preview
+    ffmpeg ffmpegthumbnailer nsxiv imagemagick
+    zathura /*TODO libreoffice*/ fontpreview djvulibre poppler_utils
+  ] ++ lib.optionals (!config.programs.mpv.enable) [ mpv ];
   xdg.configFile."alsoft.conf".text = ''
     [general]
     hrtf = true

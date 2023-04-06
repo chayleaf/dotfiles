@@ -6,3 +6,7 @@ fetch.url = "https://github.com/GloriousEggroll/proton-ge-custom/releases/downlo
 src.github = "FooSoft/yomichan"
 fetch.url = "https://github.com/FooSoft/yomichan/releases/download/$ver/yomichan-firefox-dev.xpi"
 
+[fastforward]
+# allow prereleases
+src.github_tag = "FastForwardTeam/FastForward"
+fetch.url = "https://github.com/FastForwardTeam/FastForward/releases/download/$ver/fastforwardteam-$ver.xpi"
