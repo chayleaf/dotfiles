@@ -47,7 +47,6 @@
 
   xdg.userDirs.enable = true;
 
-  # TODO sort out this mess with colors
   programs.mpv = {
     enable = true;
     defaultProfiles = [ "gpu-hq" ];
@@ -154,7 +153,8 @@
       # vaapi-device / vulkan-device
       # screen / vulkan-display-display
       audio-device = "pipewire";
-      ao = "pipewire,pulse,alsa,jack,"; 
+      # because ao=pipewire doesn't work for whatever reason...
+      ao = "pulse,alsa,jack,pipewire,"; 
       audio-file-auto = "fuzzy";
       sub-auto = "fuzzy";
       gpu-context = "waylandvk";

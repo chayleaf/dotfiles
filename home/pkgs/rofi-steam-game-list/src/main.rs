@@ -402,14 +402,6 @@ fn write_cache(k: &str, time: SystemTime, ids: &[(u32, String)]) {
     }
 }
 
-struct PendingFut;
-impl std::future::Future for PendingFut {
-    type Output = ();
-    fn poll(self: std::pin::Pin<&mut Self>, _: &mut std::task::Context<'_>) -> std::task::Poll<()> {
-        std::task::Poll::Pending
-    }
-}
-
 fn main() {
     let target_type = std::env::var("STEAM_GAME_LIST_TYPE").map_or_else(
         |_| "game,application".to_owned(),
@@ -484,13 +476,14 @@ fn main() {
         })
         .collect::<Vec<_>>();
     app_info_2.sort_by_key(|x| u32::MAX - history.get(&x.0).unwrap_or(&0));
+    let mut stdout = std::io::stdout().lock();
     for (app_id, n) in &app_info_2 {
         let icon = format!("{xdg_home3}/Steam/appcache/librarycache/{app_id}_icon.jpg");
-        print!("{n}\0info\x1f{app_id}");
         if std::fs::metadata(&icon).is_ok() {
-            print!("\x1ficon\x1f{icon}");
+            writeln!(stdout, "{n}\0info\x1f{app_id}\x1ficon\x1f{icon}").unwrap();
+        } else {
+            writeln!(stdout, "{n}\0info\x1f{app_id}").unwrap();
         }
-        println!();
     }
     let _ = daemon(true, false);
     if is_cache {

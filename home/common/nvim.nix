@@ -239,7 +239,7 @@
               };
             };
             formatting = {
-              format = arg1: vim_item: let kind = PROP vim_item "kind"; in L [
+              format = entry: vim_item: let kind = PROP vim_item "kind"; in L [
                 SET kind (string.format "%s %s" (IDX lspkind kind) kind) _
                 vim_item
               ];

@@ -80,7 +80,7 @@ commonConfig = {
   inherit modifier;
   startup = [
     { command = builtins.toString (with pkgs; writeShellScript "init-wm" ''
-      ${callPackage ../home-daemon {}}/bin/dotfiles-home-daemon system76-scheduler&
+      ${callPackage ../pkgs/home-daemon {}}/bin/dotfiles-home-daemon system76-scheduler&
       ${gnome.zenity}/bin/zenity --password | (${keepassxc}/bin/keepassxc --pw-stdin ~/Nextcloud/keepass.kdbx&)
       # nextcloud and nheko need secret service access
       ${nextcloud-client}/bin/nextcloud --background&
@@ -448,7 +448,7 @@ in
     };
     terminal = config.terminalBin;
     extraConfig = {
-      modi = [ "steam:${pkgs.callPackage ../rofi-steam-game-list {}}/bin/rofi-steam-game-list" "drun" "run" "ssh" ];
+      modi = [ "steam:${pkgs.callPackage ../pkgs/rofi-steam-game-list {}}/bin/rofi-steam-game-list" "drun" "run" "ssh" ];
       icon-theme = "hicolor";
       drun-match-fields = [ "name" "generic" "exec" "keywords" ];
       show-icons = true;

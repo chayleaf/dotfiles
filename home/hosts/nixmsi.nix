@@ -1,4 +1,4 @@
-{ config, pkgs, lib, ... }:
+{ config, pkgs, lib, pkgs-wayland, ... }:
 {
   imports = [
     ../common/general.nix
@@ -62,7 +62,34 @@
     })) cutter
     openrgb piper
     steam-run steam
-    osu-lazer-bin taisei
+    ((osu-lazer-bin.override {
+      gmrun_enable = false;
+    }).overrideAttrs (old: {
+      paths = assert builtins.length old.paths == 2;
+      let
+        osu = builtins.head old.paths;
+        osu' = osu.overrideAttrs (old: {
+          installPhase = builtins.replaceStrings
+            ["runHook postInstall"]
+            ["sed -i 's:exec :exec ${obs-studio-plugins.obs-vkcapture}/bin/obs-gamecapture :g' $out/bin/osu-lazer\nrunHook postInstall"]
+            old.installPhase;
+        });
+      in assert osu.pname == "osu-lazer-bin"; [
+        osu'
+        (makeDesktopItem {
+          name = osu'.pname;
+          exec = "${osu'.outPath}/bin/osu-lazer";
+          icon = "${osu'.outPath}/osu.png";
+          comment = "A free-to-win rhythm game. Rhythm is just a *click* away!";
+          desktopName = "osu!";
+          categories = ["Game"];
+        })
+      ];
+    }))
+    taisei
+    (wrapOBS {
+      plugins = with obs-studio-plugins; [ wlrobs obs-vkcapture ];
+    })
     easyeffects
     # wineWowPackages.waylandFull
     winetricks
@@ -72,6 +99,10 @@
     gimp krita blender
     tdesktop
     clang_latest rustc rustfmt cargo clippy
+    kdenlive
+    mediainfo
+    glaxnimate
+    (pkgs.callPackage ../pkgs/lalrpop { })
     # waiting until the PR gets merged
     (looking-glass-client.overrideAttrs (old: {
       version = "B6";

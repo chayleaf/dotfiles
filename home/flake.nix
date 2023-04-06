@@ -26,8 +26,21 @@
       getPriv = (hostname: with builtins; if hasAttr hostname priv then (getAttr hostname priv) else {});
     in {
       homeConfigurations = {
-        "user@nixmsi" = home-manager.lib.homeManagerConfiguration {
-          pkgs = nixpkgs.legacyPackages."x86_64-linux";
+        "user@nixmsi" = let system = "x86_64-linux"; in home-manager.lib.homeManagerConfiguration {
+          pkgs = import nixpkgs {
+            inherit system;
+            binaryCachePublicKeys = [
+              "cache.nixos.org-1:6NCHdD59X431o0gWypbMrAURkbJ16ZPMQFGspcDShjY="
+              # "nixpkgs-wayland.cachix.org-1:3lwxaILxMRkVhehr5StQprHdEo4IrE8sRho9R9HOLYA="
+            ];
+            binaryCaches = [
+              "https://cache.nixos.org"
+              # "https://nixpkgs-wayland.cachix.org"
+            ];
+          };
+          extraSpecialArgs = {
+            # pkgs-wayland = nixpkgs-wayland.packages.${system};
+          };
           modules = [
             notlua.nixosModules.default
             nur.nixosModules.nur
