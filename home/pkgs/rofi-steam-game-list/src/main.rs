@@ -7,7 +7,6 @@
 use fork::daemon;
 use std::collections::{HashMap, HashSet};
 use std::io::{self, prelude::*};
-use std::sync::mpsc;
 use std::time::{Duration, SystemTime};
 
 fn read_file(p: impl AsRef<std::path::Path>) -> io::Result<Vec<u8>> {
@@ -316,22 +315,6 @@ fn list_appids(s: &str) -> HashSet<u32> {
     ret
 }
 
-fn cache_time(k: &str) -> std::io::Result<SystemTime> {
-    let path = cache_dir() + "/type_" + k;
-    let mut file = std::fs::File::open(path)?;
-    let mut data = Vec::new();
-    file.read_to_end(&mut data)?;
-    if data.len() >= 12 {
-        let (_, data) = data.split_at(4);
-        let (first, _data) = data.split_at(8);
-        let time = SystemTime::UNIX_EPOCH
-            + Duration::from_millis(u64::from_le_bytes(first.try_into().unwrap()));
-        Ok(time)
-    } else {
-        Err(io::Error::from(io::ErrorKind::Other))
-    }
-}
-
 fn read_cache(k: &str) -> io::Result<(SystemTime, Vec<(u32, String)>)> {
     let path = cache_dir() + "/type_" + k;
     let mut file = std::fs::File::open(path)?;
@@ -424,81 +407,44 @@ fn main() {
         let _ = cmd.wait();
         return;
     }
-    /*
-     * Flow1: read app info -> print app info -> write cache
-     * Flow2: read cache -> print cache -> check app info mod time -> write cache
-     * */
     let xdg_home = xdg_home();
-    let xdg_home2 = xdg_home.clone();
-    let xdg_home3 = xdg_home.clone();
     let target_type2 = target_type.clone();
     let target_type3 = target_type.clone();
-    let target_type4 = target_type.clone();
-    let a = std::thread::spawn(move || history(&target_type3));
-    let (tx0, rx0) = mpsc::channel();
-    let (tx2, rx2) = mpsc::channel();
-    let b = std::thread::spawn(move || {
-        let tx1 = tx0.clone();
-        std::thread::spawn(move || {
-            tx0.send(
-                read_appinfo(&target_type2, xdg_home).map_or_else(|_| {
-                    let _ = tx2.send(None);
-                    None
-                }, |info| {
-                    let _ = tx2.send(Some(info.clone()));
-                    Some((info, false))
-                })
-            )
-        });
-        std::thread::spawn(move || tx1.send(read_cache(&target_type4).ok().map(|x| (x, true))));
-        #[allow(clippy::same_functions_in_if_condition)]
-        if let Ok(Some(x)) = rx0.recv() {
-            x
-        } else if let Ok(Some(x)) = rx0.recv() {
-            x
-        } else {
-            panic!()
-        }
+    let history_thread = std::thread::spawn(move || history(&target_type2));
+    let cache_thread = std::thread::spawn(move || {
+        read_cache(&target_type3).ok()
     });
-    let c = std::thread::spawn(move || list_appids(&xdg_home2));
-    let history = a.join().unwrap();
-    let ((time, app_info), is_cache) = b.join().unwrap();
-    let installed_games = c.join().unwrap();
-
-    let mut app_info_2 = app_info
-        .iter()
-        .filter_map(|x| {
-            if installed_games.contains(&x.0) {
-                Some(x.clone())
+    let installed_games = list_appids(&xdg_home);
+    let history = history_thread.join().unwrap();
+    let mut time1 = None;
+    if let Some((time, app_info)) = cache_thread.join().ok().flatten() {
+        time1 = Some(time);
+        let mut app_info_2 = app_info
+            .iter()
+            .filter_map(|x| {
+                if installed_games.contains(&x.0) {
+                    Some(x.clone())
+                } else {
+                    None
+                }
+            })
+            .collect::<Vec<_>>();
+        app_info_2.sort_by_key(|x| u32::MAX - history.get(&x.0).unwrap_or(&0));
+        let mut stdout = std::io::stdout().lock();
+        for (app_id, n) in &app_info_2 {
+            let icon = format!("{xdg_home}/Steam/appcache/librarycache/{app_id}_icon.jpg");
+            if std::fs::metadata(&icon).is_ok() {
+                writeln!(stdout, "{n}\0info\x1f{app_id}\x1ficon\x1f{icon}").unwrap();
             } else {
-                None
+                writeln!(stdout, "{n}\0info\x1f{app_id}").unwrap();
             }
-        })
-        .collect::<Vec<_>>();
-    app_info_2.sort_by_key(|x| u32::MAX - history.get(&x.0).unwrap_or(&0));
-    let mut stdout = std::io::stdout().lock();
-    for (app_id, n) in &app_info_2 {
-        let icon = format!("{xdg_home3}/Steam/appcache/librarycache/{app_id}_icon.jpg");
-        if std::fs::metadata(&icon).is_ok() {
-            writeln!(stdout, "{n}\0info\x1f{app_id}\x1ficon\x1f{icon}").unwrap();
-        } else {
-            writeln!(stdout, "{n}\0info\x1f{app_id}").unwrap();
         }
     }
     let _ = daemon(true, false);
-    if is_cache {
-        if read_time(xdg_home3).unwrap() <= time {
-            return;
-        }
-        if let Some((time, app_info)) = rx2.recv().unwrap() {
-            write_cache(&target_type, time, &app_info);
-        }
-    } else {
-        if let Ok(ctime) = cache_time(&target_type) {
-            if time <= ctime {
-                return;
-            }
-        }
+    if matches!(time1, Some(time) if read_time(xdg_home.clone()).unwrap() <= time) {
+        return;
+    }
+    if let Ok((time, app_info)) = read_appinfo(&target_type, xdg_home) {
         write_cache(&target_type, time, &app_info);
     }
 }
