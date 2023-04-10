@@ -15,9 +15,9 @@
     enable = true;
     path = "${pkgs.fish}/bin/fish";
   };
-  xsession.windowManager.i3.enable = true;
+  # xsession.windowManager.i3.enable = true;
   wayland.windowManager.sway.enable = true;
-  terminals = ["kitty" "urxvt"];
+  terminals = [ "kitty" "urxvt" ];
   services.mpd = {
     enable = true;
     network.startWhenNeeded = true;
