@@ -1,22 +1,29 @@
 { config, lib, pkgs, ... }:
-{
+let
+  cfg = config.vfio;
+in {
   options.vfio = with lib; mkOption {
     type = types.submodule {
       options = {
         enable = mkOption {
           type = types.bool;
           default = false;
-          description = "Enable AMD GPU passthrough config (no intel/nvidia support since I can't test it)";
+          description = "Enable GPU passthrough config (probably no intel/nvidia support since I can't test it)";
         };
         libvirtdGroup = mkOption {
           type = with types; listOf str;
-          default = ["user"];
+          default = [ ];
           description = "Users to add to libvirtd group";
         };
         intelCpu = mkOption {
           type = types.bool;
           default = false;
           description = "Whether the CPU is Intel (untested)";
+        };
+        nvidiaGpu = mkOption {
+          type = types.bool;
+          default = false;
+          description = "Whether the GPU is Nvidia (disables AMD-specific workarounds)";
         };
         passGpuAtBoot = mkOption {
           type = types.bool;
@@ -50,28 +57,43 @@
                     };
                   };
                 });
-                default = [];
-                example = [{ size = 32; owner = "user"; }];
+                default = if builtins.length cfg.libvirtdGroup == 1 then [
+                  { owner = builtins.head cfg.libvirtdGroup; }
+                ] else [ ];
+                example = [ { size = 32; owner = "user"; } ];
                 description = "IVSHMEM/kvmfr config (multiple devices can be created: /dev/kvmfr0, /dev/kvmfr1, and so on)";
               };
             };
           };
-          default = {};
           description = "Looking glass config";
         };
       };
     };
-    default = {};
     description = "VFIO settings";
   };
   config = lib.mkIf config.vfio.enable
   (let
-    cfg = config.vfio;
     gpuIDs = lib.concatStringsSep "," cfg.pciIDs;
     enableIvshmem = config.vfio.lookingGlass.enable && (builtins.length config.vfio.lookingGlass.ivshmem) > 0;
   in {
+    # add a custom kernel param for early loading vfio drivers
+    # because if we change boot.initrd options in a specialization, two initrds will be built
+    # and we don't want to build two initrds
     specialisation.vfio.configuration = lib.mkIf (!cfg.passGpuAtBoot) {
       boot.kernelParams = [ "early_load_vfio" ];
+
+      # I can't enable early KMS with VFIO, so this will have to do
+      # (amdgpu resets the font upon being loaded)
+      systemd.services."systemd-vconsole-setup2" = lib.mkIf (!cfg.nvidiaGpu) {
+        serviceConfig = {
+          Type = "oneshot";
+          RemainAfterExit = true;
+          ExecStart = "${pkgs.systemd}/lib/systemd/systemd-vconsole-setup";
+        };
+        wantedBy = [ "graphical.target" ];
+        wants = [ "multi-user.target" ];
+        after = [ "multi-user.target" ];
+      };
     };
     boot = {
       initrd.postDeviceCommands = lib.mkIf (!cfg.passGpuAtBoot) ''
@@ -86,6 +108,9 @@
           modprobe vfio
           modprobe vfio_iommu_type1
           modprobe vfio_pci
+        ${if cfg.nvidiaGpu then "" else ''
+        else
+          modprobe amdgpu''}
         fi
       '';
       initrd.kernelModules = [
@@ -103,12 +128,12 @@
       extraModulePackages =
         with config.boot.kernelPackages;
           lib.mkIf enableIvshmem [ kvmfr ];
-      extraModprobeConfig = let ivshmemConfig = if enableIvshmem then ''
-          options kvmfr static_size_mb=${lib.concatStringsSep "," (map (x: toString x.size) cfg.lookingGlass.ivshmem)}
-        '' else ""; in ''
+      extraModprobeConfig = ''
           options vfio-pci ids=${gpuIDs} disable_idle_d3=1
           options kvm ignore_msrs=1
-          ${ivshmemConfig}
+          ${if enableIvshmem then ''
+          options kvmfr static_size_mb=${lib.concatStringsSep "," (map (x: toString x.size) cfg.lookingGlass.ivshmem)}''
+          else ""}
         '';
       kernelParams = [
         (if cfg.intelCpu then "intel_iommu=on" else "amd_iommu=on")
@@ -119,7 +144,7 @@
       ] ++ (if enableIvshmem then [ "kvmfr" ] else []);
     };
     services.udev.extraRules = lib.mkIf enableIvshmem
-      (lib.concatStringsSep
+      (builtins.concatStringsSep
         "\n"
         (lib.imap0
           (i: ivshmem: ''
@@ -127,7 +152,7 @@
           '')
           cfg.lookingGlass.ivshmem));
     # disable early KMS so GPU can be properly unbound
-    hardware.amdgpu.loadInInitrd = false;
+    hardware.amdgpu.loadInInitrd = lib.mkIf (!cfg.nvidiaGpu) false;
     hardware.opengl.enable = true;
     # needed for virt-manager
     programs.dconf.enable = true;

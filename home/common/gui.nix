@@ -20,11 +20,11 @@
     # SDL 3
     SDL_AUDIO_DRIVER = "pipewire,pulseaudio,dsound";
     ALSOFT_CONF = "${config.xdg.configHome}/.config/alsoft.conf";
-    # TODO: set to sdl3 compat when SDL3 releases
+    # TODO: set to sdl3 compat when SDL3 releases?
     # this is for steam games, I set the launch options to:
     # `SDL_DYNAMIC_API=$SDL2_DYNAMIC_API %command%`
-    # Steam itself doesn't work with SDL_DYNAMIC_API set, so it's
-    # a bad idea to set SDL_DYNAMIC_API globally
+    # Steam itself doesn't work with SDL2_DYNAMIC_API set, so it's
+    # a bad idea to set SDL2_DYNAMIC_API globally
     SDL2_DYNAMIC_API = "${pkgs.SDL2}/lib/libSDL2.so";
   };
   programs.nnn.extraPackages = with pkgs; [
@@ -176,47 +176,16 @@
       cache-dir = "${config.xdg.cacheHome}/mpv";
       input-default-bindings = false;
     };
-    # profiles = {};
+    # profiles = { };
     package = pkgs.wrapMpv (pkgs.mpv-unwrapped.override {
       # webp support
       ffmpeg_5 = pkgs.ffmpeg_5-full;
     }) {
-      scripts =
-      let subserv = (port: secondary: 
-        (pkgs.stdenv.mkDerivation {
-          pname = "subserv-mpv-plugin";
-          version = "0.1";
-          src = pkgs.fetchFromGitHub {
-            owner = "kaervin";
-            repo = "subserv-mpv-plugin";
-            rev = "08e312f02f3d3608d61944247d39148c34215f75";
-            sha256 = "sha256-CXyp+AAgyocAEbhuMMPVDlAiocozPe8tm/dIUofCRL8=";
-          };
-          buildInputs = with pkgs; [ mpv-unwrapped ];
-          installFlags = [ "SCRIPTS_DIR=$(out)/share/mpv/scripts" ];
-          stripDebugList = [ "share/mpv/scripts" ];
-          passthru.scriptName = "subserv.so";
-          patchPhase = ''
-            sed -i 's%<client.h>%<mpv/client.h>%' subserv.c
-            sed -i 's%printf("Hello%// printf("Hello%' subserv.c
-            sed -i 's%printf("Got event%// printf("Got event%' subserv.c
-            sed -i 's/PORT 8080/PORT ${builtins.toString port}/' subserv.c
-          '' + (if secondary then ''
-            sed -i 's/sub-text/secondary-sub-text/g' subserv.c
-          '' else "");
-          buildPhase = ''
-            gcc -o subserv.so subserv.c -shared -fPIC
-          '';
-          installPhase = ''
-            mkdir -p $out/share/mpv/scripts
-            cp subserv.so $out/share/mpv/scripts
-          '';
-        }));
-      in with pkgs.mpvScripts; [
+      scripts = with pkgs.mpvScripts; [
         thumbnail
         mpris
-        (subserv 1337 false)
-        (subserv 1338 true)
+        (subserv.override { port = 1337; secondary = false; })
+        (subserv.override { port = 1338; secondary = true; })
       ];
     };
   };

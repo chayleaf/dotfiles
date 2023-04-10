@@ -39,7 +39,13 @@
             ];
             overlays = [
               (self: super: import ./pkgs {
+                # can't use callPackage here, idk why
                 pkgs = super;
+                lib = super.lib;
+                nur = import nur {
+                  pkgs = super;
+                  nurpkgs = super;
+                };
               })
               nix-gaming.overlays.default
             ];

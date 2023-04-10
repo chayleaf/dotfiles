@@ -1,4 +1,4 @@
-{ config, lib, pkgs, nixpkgs, ... }:
+{ lib, pkgs, ... }:
 let
   efiPart = "/dev/disk/by-uuid/D77D-8CE0";
 
@@ -13,6 +13,7 @@ in {
   system.stateVersion = "22.11";
 
   ### SECTION 1: HARDWARE/BOOT PARAMETERS ###
+
   boot = {
     initrd = {
       availableKernelModules = [ "nvme" "xhci_pci" ];
@@ -66,6 +67,8 @@ in {
     };
     kernelPackages = lib.mkDefault pkgs.linuxPackages_zen;
   };
+
+  # for testing different zen kernel versions:
   # specialisation = let
   #   zenKernels = pkgs.callPackage "${nixpkgs}/pkgs/os-specific/linux/kernel/zen-kernels.nix";
   #   zenKernel = (version: sha256: (zenKernels {
@@ -87,28 +90,28 @@ in {
   # in {
   #   zen619.configuration.boot.kernelPackages = pkgs.linuxPackagesFor (zenKernel "6.1.9" "0fsmcjsawxr32fxhpp6sgwfwwj8kqymy0rc6vh4qli42fqmwdjgv");
   # };
+
   nixpkgs.config.allowUnfreePredicate = pkg: (lib.getName pkg) == "steam-original";
-  console.font = "${pkgs.terminus_font}/share/consolefonts/ter-v32n.psf.gz";
   hardware = {
     steam-hardware.enable = true;
     enableRedistributableFirmware = true;
     opengl.driSupport32Bit = true;
-    # sway WLR_RENDERER=vulkan
+    # needed for sway WLR_RENDERER=vulkan
     opengl.extraPackages = with pkgs; [ vulkan-validation-layers ];
   };
 
   services.tlp.settings = {
-    USB_DENYLIST = "0bda:8156";
     USB_EXCLUDE_PHONE = 1;
     START_CHARGE_THRESH_BAT0 = 75;
     STOP_CHARGE_THRESH_BAT0 = 80;
+    # fix for my realtek usb ethernet adapter
+    USB_DENYLIST = "0bda:8156";
   };
 
   # see common/vfio.nix
   vfio.enable = true;
   vfio.pciIDs = [ "1002:73df" "1002:ab28" ];
   vfio.libvirtdGroup = [ "user" ];
-  vfio.lookingGlass.ivshmem = [{ owner = "user"; }];
 
   fileSystems = let
     device = cryptroot;
@@ -130,6 +133,7 @@ in {
                 options = [ discard "subvol=@swap" "noatime" ]; };
     "/home" = { inherit device fsType;
                 options = [ discard compress "subvol=@home" ]; };
+    # why am I even bothering with creating this subvolume every time if I don't use snapshots anyway?
     "/.snapshots" =
               { inherit device fsType;
                 options = [ discard compress "subvol=@snapshots" ]; };
@@ -181,23 +185,75 @@ in {
 
   swapDevices = [ { device = "/swap/swapfile"; } ];
 
-  services.ratbagd.enable = true;
+  # dedupe
+  services.beesd = {
+    # i have a lot of ram :tonystark:
+    filesystems.cryptroot = {
+      spec = "UUID=${cryptrootUuid}";
+      hashTableSizeMB = 128;
+      extraOptions = [ "--loadavg-target" "8.0" ];
+    };
+    filesystems.dataroot = {
+      spec = "UUID=${datarootUuid}";
+      hashTableSizeMB = 256;
+      extraOptions = [ "--loadavg-target" "8.0" ];
+    };
+  };
 
   ### SECTION 2: SYSTEM CONFIG/ENVIRONMENT ###
   i18n.defaultLocale = lib.mkDefault "en_US.UTF-8";
-  i18n.supportedLocales = lib.mkDefault [ "en_US.UTF-8/UTF-8" ];
+  i18n.supportedLocales = lib.mkDefault [
+    "C.UTF-8/UTF-8"
+    "en_US.UTF-8/UTF-8"
+    "en_DK.UTF-8/UTF-8"
+  ];
+  # ISO-8601
+  i18n.extraLocaleSettings.LC_TIME = "en_DK.UTF-8";
+
+  console.font = "${pkgs.terminus_font}/share/consolefonts/ter-v32n.psf.gz";
+
   networking.useDHCP = true;
   # networking.firewall.enable = false;
   # KDE connect: 1714-1764
-  networking.firewall.allowedTCPPorts = [ 27015 25565 7777 ] ++ (builtins.genList (x: 1714 + x) (1764 - 1714 + 1));
-  networking.firewall.allowedUDPPorts = (builtins.genList (x: 1714 + x) (1764 - 1714 + 1));
+  networking.firewall.allowedTCPPorts = [
+    27015
+    25565
+    7777
+  ]
+  # kde connect
+  ++ (lib.range 1714 1764);
+  networking.firewall.allowedUDPPorts = lib.range 1714 1764;
   # networking.hostName = "nixmsi";
   networking.wireless.iwd.enable = true;
   #networking.networkmanager.enable = true;
 
+  services.ratbagd.enable = true;
+
   services.mullvad-vpn.enable = true;
   services.mullvad-vpn.package = pkgs.mullvad-vpn;
 
+  # System76 scheduler (not actually a scheduler, just a renice daemon) for improved responsiveness
+  services.dbus.packages = [ pkgs.system76-scheduler ];
+  systemd.services."system76-scheduler" = {
+    description = "Automatically configure CPU scheduler for responsiveness on AC";
+    wantedBy = [ "multi-user.target" ];
+    serviceConfig = {
+      Type = "dbus";
+      BusName= "com.system76.Scheduler";
+      ExecStart = "${pkgs.system76-scheduler}/bin/system76-scheduler daemon";
+      ExecReload = "${pkgs.system76-scheduler}/bin/system76-scheduler daemon reload";
+    };
+  };
+  environment.etc."system76-scheduler/assignments.ron".source =
+    "${pkgs.system76-scheduler}/etc/system76-scheduler/assignments.ron";
+  environment.etc."system76-scheduler/config.ron".source =
+    "${pkgs.system76-scheduler}/etc/system76-scheduler/config.ron";
+  environment.etc."system76-scheduler/exceptions.ron".source =
+    "${pkgs.system76-scheduler}/etc/system76-scheduler/exceptions.ron";
+
+  # i wanted to be able to use both x and wayland... but honestly wayland is enough for me
+  services.xserver.libinput.enable = true;
+  /*
   services.xserver = {
     enable = true;
     libinput.enable = true;
@@ -205,7 +261,7 @@ in {
     # I couldn't get lightdm to start sway, so let's just do this
     displayManager.startx.enable = true;
     windowManager.i3.enable = true;
-  };
+  };*/
   programs.sway.enable = true;
   programs.firejail.enable = true;
   environment.systemPackages = with pkgs; [
@@ -215,8 +271,11 @@ in {
     man-pages man-pages-posix
   ];
   services.dbus.enable = true;
+  # I don't remember whether I really need this...
   security.polkit.enable = true;
   services.printing.enable = true;
+
+  # pipewire:
   security.rtkit.enable = true;
   services.pipewire = {
     enable = true;
@@ -289,57 +348,7 @@ in {
   # why is this not part of base NixOS?
   systemd.tmpfiles.rules = [ "d /var/lib/systemd/pstore 0755 root root 14d" ];
 
-  # dedupe
-
-  services.beesd = {
-    # i have a lot of ram :tonystark:
-    filesystems.cryptroot = {
-      spec = "UUID=${cryptrootUuid}";
-      hashTableSizeMB = 128;
-      extraOptions = [ "--loadavg-target" "8.0" ];
-    };
-    filesystems.dataroot = {
-      spec = "UUID=${datarootUuid}";
-      hashTableSizeMB = 256;
-      extraOptions = [ "--loadavg-target" "8.0" ];
-    };
-  };
-
-  # System76 scheduler (not actually a scheduler, just a renice daemon) for improved responsiveness
-
-  services.dbus.packages = [ pkgs.system76-scheduler ];
-  systemd.services."system76-scheduler" = {
-    description = "Automatically configure CPU scheduler for responsiveness on AC";
-    wantedBy = [ "multi-user.target" ];
-    serviceConfig = {
-      Type = "dbus";
-      BusName= "com.system76.Scheduler";
-      ExecStart = "${pkgs.system76-scheduler}/bin/system76-scheduler daemon";
-      ExecReload = "${pkgs.system76-scheduler}/bin/system76-scheduler daemon reload";
-    };
-  };
-  environment.etc."system76-scheduler/assignments.ron".source =
-    lib.mkOptionDefault "${pkgs.system76-scheduler}/etc/system76-scheduler/assignments.ron";
-  environment.etc."system76-scheduler/config.ron".source =
-    lib.mkOptionDefault "${pkgs.system76-scheduler}/etc/system76-scheduler/config.ron";
-  environment.etc."system76-scheduler/exceptions.ron".source =
-    lib.mkOptionDefault "${pkgs.system76-scheduler}/etc/system76-scheduler/exceptions.ron";
-
-  # I can't enable early KMS with VFIO, so this will have to do
-  # (amdgpu resets the font upon being loaded)
-  systemd.services."systemd-vconsole-setup2" = {
-    serviceConfig = {
-      Type = "oneshot";
-      RemainAfterExit = true;
-      ExecStart = "${pkgs.systemd}/lib/systemd/systemd-vconsole-setup";
-    };
-    wantedBy = ["graphical.target"];
-    wants = ["multi-user.target"];
-    after = ["multi-user.target"];
-  };
-
   # autologin once after boot
-
   # --skip-login means directly call login instead of first asking for username
   # (normally login asks for username too, but getty prefers to do it by itself for whatever reason)
   services.getty.extraArgs = ["--skip-login"];
@@ -354,10 +363,5 @@ in {
       exec ${shadow}/bin/login -f user
     fi
   '';
-
-  # overlays
-  nixpkgs.overlays = [(self: super: {
-    system76-scheduler = super.callPackage ../pkgs/system76-scheduler.nix { };
-  })];
 }
 

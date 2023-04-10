@@ -35,6 +35,7 @@
           generateRegistryFromInputs = true;
           linkInputs = true;
         };
+        nixpkgs.overlays = [(self: super: import ./pkgs { pkgs = super; })];
       }
     ];
     hosts = {

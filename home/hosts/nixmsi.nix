@@ -1,8 +1,8 @@
-{ config, pkgs, lib, pkgs-wayland, ... }:
+{ pkgs, lib, ... }:
 {
   imports = [
     ../common/general.nix
-    ../common/firefox
+    ../common/firefox.nix
     ../common/i3-sway.nix
     ../common/nvim.nix
     ../common/helix.nix
@@ -37,18 +37,8 @@
     "steamcmd"
     "osu-lazer-bin"
   ];
-  home.sessionVariables = let sources = (import ../_sources/generated.nix {
-    inherit (pkgs) fetchgit fetchurl fetchFromGitHub dockerTools;
-  });
-  proton-ge = pkgs.stdenvNoCC.mkDerivation {
-    inherit (sources.proton-ge) pname version src;
-    nativeBuildInputs = [];
-    installPhase = ''
-      mkdir -p $out
-      tar -C $out --strip=1 -x -f $src
-    '';
-  }; in {
-    STEAM_EXTRA_COMPAT_TOOLS_PATHS = "${proton-ge}";
+  home.sessionVariables = {
+    STEAM_EXTRA_COMPAT_TOOLS_PATHS = "${pkgs.proton-ge}";
     CARGO_PROFILE_DEV_INCREMENTAL = "true";
     RUSTC_LINKER = "${pkgs.clang_latest}/bin/clang";
     RUSTFLAGS = "-C link-arg=--ld-path=${pkgs.mold}/bin/mold";
@@ -57,9 +47,7 @@
   };
   home.packages = with pkgs; [
     mold
-    (ghidra.overrideAttrs (old: {
-      patches = old.patches ++ [ ../common/ghidra-stdcall.patch ];
-    })) cutter
+    ghidra cutter
     openrgb piper
     steam-run steam
     ((osu-lazer-bin.override {
@@ -104,19 +92,7 @@
     mediainfo
     glaxnimate
     lalrpop
-    # waiting until the PR gets merged
-    (looking-glass-client.overrideAttrs (old: {
-      version = "B6";
-      src = fetchFromGitHub {
-        owner = "gnif";
-        repo = "LookingGlass";
-        rev = "B6";
-        sha256 = "sha256-6vYbNmNJBCoU23nVculac24tHqH7F4AZVftIjL93WJU=";
-        fetchSubmodules = true;
-      };
-      buildInputs = old.buildInputs ++ (with pkgs; [ pipewire libsamplerate ]);
-      cmakeFlags = old.cmakeFlags ++ [ "-DENABLE_PULSEAUDIO=no" ];
-    }))
+    looking-glass-client
   ];
   xdg.configFile."looking-glass/client.ini".text = ''
     [app]
