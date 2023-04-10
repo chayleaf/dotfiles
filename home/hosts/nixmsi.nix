@@ -87,6 +87,7 @@
       ];
     }))
     taisei
+    techmino
     (wrapOBS {
       plugins = with obs-studio-plugins; [ wlrobs obs-vkcapture ];
     })
