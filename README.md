@@ -1,7 +1,7 @@
 # My Nix config
 
 To install, put `system` to `/etc/nixos`, put `home` to
-`~/.config/nixpkgs`.
+`~/.config/home-manager` (and `overlays.nix` to `~/.config/nixpkgs`)
 
 The reason they are separate is because I want to be able to iterate
 home config quickly, and `nixos-rebuild`'ing the entire sytem for every

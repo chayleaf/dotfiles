@@ -1,5 +1,5 @@
 [package]
-name = "dotfiles-home-daemon"
+name = "home-daemon"
 version = "0.1.0"
 edition = "2021"
 

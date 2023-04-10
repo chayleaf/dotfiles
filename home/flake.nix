@@ -37,6 +37,12 @@
               "https://cache.nixos.org"
               # "https://nixpkgs-wayland.cachix.org"
             ];
+            overlays = [
+              (self: super: import ./pkgs {
+                pkgs = super;
+              })
+              nix-gaming.overlays.default
+            ];
           };
           extraSpecialArgs = {
             # pkgs-wayland = nixpkgs-wayland.packages.${system};
@@ -44,13 +50,6 @@
           modules = [
             notlua.nixosModules.default
             nur.nixosModules.nur
-            { nixpkgs.overlays = [
-              nix-gaming.overlays.default
-              (self: super: {
-                clang_latest = super.clang_15;
-                clang-tools_latest = super.clang-tools_15;
-              })
-            ]; }
             ./hosts/nixmsi.nix
             (getPriv "nixmsi")
           ];

@@ -102,7 +102,7 @@
     kdenlive
     mediainfo
     glaxnimate
-    (pkgs.callPackage ../pkgs/lalrpop { })
+    lalrpop
     # waiting until the PR gets merged
     (looking-glass-client.overrideAttrs (old: {
       version = "B6";
