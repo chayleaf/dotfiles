@@ -17,7 +17,7 @@
     };
   };
 
-  outputs = inputs@{ self, nixpkgs, utils, nixos-hardware, rust-overlay, impermanence, nix-gaming }:
+  outputs = inputs@{ self, nixpkgs, utils, nixos-hardware, impermanence, nix-gaming, ... }:
   let
     hw = nixos-hardware.nixosModules;
     # IRL-related stuff I'd rather not put into git
@@ -26,8 +26,8 @@
   in utils.lib.mkFlake {
     inherit self inputs;
     hostDefaults.modules = [
-      ./common/vfio.nix
-      ./common/ccache.nix
+      ./modules/vfio.nix
+      ./modules/ccache.nix
       {
         # make this flake's nixpkgs available to the whole system
         nix = {
