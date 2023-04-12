@@ -36,6 +36,7 @@ in {
           description = "PCI passthrough IDs";
         };
         lookingGlass = mkOption {
+          default = { };
           type = types.submodule {
             options = {
               enable = mkOption {
@@ -70,12 +71,11 @@ in {
       };
     };
     description = "VFIO settings";
+    default = { };
   };
-  config = lib.mkIf config.vfio.enable
-  (let
-    gpuIDs = lib.concatStringsSep "," cfg.pciIDs;
+  config = let
     enableIvshmem = config.vfio.lookingGlass.enable && (builtins.length config.vfio.lookingGlass.ivshmem) > 0;
-  in {
+  in lib.mkIf config.vfio.enable {
     # add a custom kernel param for early loading vfio drivers
     # because if we change boot.initrd options in a specialization, two initrds will be built
     # and we don't want to build two initrds
@@ -129,10 +129,10 @@ in {
         with config.boot.kernelPackages;
           lib.mkIf enableIvshmem [ kvmfr ];
       extraModprobeConfig = ''
-          options vfio-pci ids=${gpuIDs} disable_idle_d3=1
+          options vfio-pci ids=${builtins.concatStringsSep "," cfg.pciIDs} disable_idle_d3=1
           options kvm ignore_msrs=1
           ${if enableIvshmem then ''
-          options kvmfr static_size_mb=${lib.concatStringsSep "," (map (x: toString x.size) cfg.lookingGlass.ivshmem)}''
+          options kvmfr static_size_mb=${builtins.concatStringsSep "," (map (x: toString x.size) cfg.lookingGlass.ivshmem)}''
           else ""}
         '';
       kernelParams = [
@@ -145,7 +145,7 @@ in {
     };
     services.udev.extraRules = lib.mkIf enableIvshmem
       (builtins.concatStringsSep
-        "\n"
+        ""
         (lib.imap0
           (i: ivshmem: ''
             SUBSYSTEM=="kvmfr", KERNEL=="kvmfr${toString i}", OWNER="${ivshmem.owner}", GROUP="kvm", MODE="0660"
@@ -181,5 +181,5 @@ in {
     };
     virtualisation.spiceUSBRedirection.enable = true;
     users.groups.libvirtd.members = [ "root" ] ++ cfg.libvirtdGroup;
-  });
+  };
 }

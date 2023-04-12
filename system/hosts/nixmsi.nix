@@ -108,10 +108,17 @@ in {
     USB_DENYLIST = "0bda:8156";
   };
 
-  # see common/vfio.nix
+  # see modules/vfio.nix
   vfio.enable = true;
   vfio.pciIDs = [ "1002:73df" "1002:ab28" ];
   vfio.libvirtdGroup = [ "user" ];
+  
+  # because libvirtd's nat is broken for some reason...
+  networking.nat = {
+    enable = true;
+    internalInterfaces = [ "virbr0" ];
+    externalInterface = "enp7s0f4u1c2";
+  };
 
   fileSystems = let
     device = cryptroot;
@@ -214,7 +221,6 @@ in {
 
   networking.useDHCP = true;
   # networking.firewall.enable = false;
-  # KDE connect: 1714-1764
   networking.firewall.allowedTCPPorts = [
     27015
     25565
@@ -223,6 +229,7 @@ in {
   # kde connect
   ++ (lib.range 1714 1764);
   networking.firewall.allowedUDPPorts = lib.range 1714 1764;
+
   # networking.hostName = "nixmsi";
   networking.wireless.iwd.enable = true;
   #networking.networkmanager.enable = true;
