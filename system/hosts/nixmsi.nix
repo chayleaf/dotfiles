@@ -46,7 +46,6 @@ in {
       "fbcon=font:TER16x32"
       "consoleblank=60"
     ];
-    cleanTmpDir = true;
     loader = {
       grub = {
         enable = true;
@@ -153,41 +152,9 @@ in {
                 options = [ discard compress ]; };
   };
 
-  environment.persistence."/persist" = {
-    hideMounts = true;
-    directories = [
-      # nixos files
-      "/etc/nixos"
-      "/var/lib/nixos"
-
-      # mullvad vpn
-      "/etc/mullvad-vpn"
-      "/var/cache/mullvad-vpn"
-
-      # as weird as it sounds, I won't use tmpfs for /tmp in case I'll have to put files over 2GB there
-      "/tmp"
-
-      # qemu/libvirt
-      "/var/cache/libvirt"
-      "/var/lib/libvirt"
-      "/var/lib/swtpm-localca"
-
-      # stored network info
-      "/var/lib/iwd"
-      "/var/db/dhcpcd"
-
-      # persist this since everything here is cleaned up by systemd-tmpfiles over time anyway
-      # ...or so I'd like to believe
-      "/var/lib/systemd"
-
-      "/var/db/sudo/lectured"
-      "/var/log"
-    ];
-    files = [
-      # hardware-related
-      "/etc/adjtime"
-      "/etc/machine-id"
-    ];
+  impermanence = {
+    enable = true;
+    path = /persist;
   };
 
   swapDevices = [ { device = "/swap/swapfile"; } ];
@@ -293,7 +260,8 @@ in {
     # from nix-gaming
     lowLatency = {
       enable = true;
-      # 96 is mostly fine but has just a little xruns
+      # 96 is mostly fine but has some xruns
+      # 128 has xruns every now and then too, but is overall fine
       quantum = 128;
       rate = 48000;
     };
@@ -303,10 +271,10 @@ in {
   programs.fish = {
     enable = true;
   };
-  programs.zsh = {
+  /*programs.zsh = {
     enable = true;
     enableBashCompletion = true;
-  };
+  };*/
 
   programs.fuse.userAllowOther = true;
 
@@ -358,15 +326,14 @@ in {
   # autologin once after boot
   # --skip-login means directly call login instead of first asking for username
   # (normally login asks for username too, but getty prefers to do it by itself for whatever reason)
-  services.getty.extraArgs = ["--skip-login"];
-  services.getty.loginProgram = with pkgs; writeScript "login-once" ''
-    #! ${bash}/bin/bash
-    LOCKFILE=/tmp/login-once.lock
-    if [ -f $LOCKFILE ]
-    then
+  services.getty.extraArgs = [ "--skip-login" ];
+  services.getty.loginProgram = let
+    lockfile = "/tmp/login-once.lock";
+  in with pkgs; writeShellScript "login-once" ''
+    if [ -f '${lockfile}' ]; then
       exec ${shadow}/bin/login $@
     else
-      ${coreutils}/bin/touch $LOCKFILE
+      ${coreutils}/bin/touch '${lockfile}'
       exec ${shadow}/bin/login -f user
     fi
   '';

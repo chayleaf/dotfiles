@@ -21,13 +21,14 @@
   let
     hw = nixos-hardware.nixosModules;
     # IRL-related stuff I'd rather not put into git
-    priv = if builtins.pathExists ./private.nix then (import ./private.nix) else {};
-    getPriv = (hostname: with builtins; if hasAttr hostname priv then getAttr hostname priv else {});
+    priv = if builtins.pathExists ./private.nix then (import ./private.nix) else { };
+    getPriv = (hostname: with builtins; if hasAttr hostname priv then getAttr hostname priv else { });
   in utils.lib.mkFlake {
     inherit self inputs;
     hostDefaults.modules = [
       ./modules/vfio.nix
       ./modules/ccache.nix
+      ./modules/impermanence.nix
       {
         # make this flake's nixpkgs available to the whole system
         nix = {
@@ -35,7 +36,7 @@
           generateRegistryFromInputs = true;
           linkInputs = true;
         };
-        nixpkgs.overlays = [(self: super: import ./pkgs { pkgs = super; })];
+        nixpkgs.overlays = [ (self: super: import ./pkgs { pkgs = super; }) ];
       }
     ];
     hosts = {

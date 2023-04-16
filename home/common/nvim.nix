@@ -113,6 +113,12 @@
     vimdiffAlias = true;
 
     extraLuaConfig = (compile' "main" [
+      kmSetNs {
+        "<C-X>" = {
+          rhs = DEFUN (vim.fn.system [ "chmod" "+x" (vim.fn.expand "%") ]);
+          desc = "chmod +x %";
+        };
+      } _
       SET (vimg "vimsyn_embed") "l" _
       LET (vim.api.nvim_create_augroup "nvimrc" { clear = true; }) (group:
         lib.mapAttrsToList (k: v: vim.api.nvim_create_autocmd k { inherit group; callback = v; }) {
