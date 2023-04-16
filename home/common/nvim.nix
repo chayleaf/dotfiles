@@ -262,24 +262,24 @@
               "<tab>" = cmp.mapping (fallback:
                 IF (CALL cmp.visible) (
                   CALL cmp.select_next_item
-                ) (CALL luasnip.expand_or_jumpable) (
+                ) /*(CALL luasnip.expand_or_jumpable) (
                   vim.api.nvim_feedkeys
                     (vim.api.nvim_replace_termcodes "<Plug>luasnip-expand-or-jump" true true true)
                     ""
                     false
-                ) ELSE (
+                )*/ ELSE (
                   CALL fallback
                 )
               ) [ "i" "s" ];
               "<S-tab>" = cmp.mapping (fallback:
                 IF (CALL cmp.visible) (
                   CALL cmp.select_prev_item
-                ) (luasnip.jumpable (-1)) (
+                ) /*(luasnip.jumpable (-1)) (
                   vim.api.nvim_feedkeys
                     (vim.api.nvim_replace_termcodes "<Plug>luasnip-jump-prev" true true true)
                     ""
                     false
-                ) ELSE (
+                )*/ ELSE (
                   CALL fallback
                 )
               ) [ "i" "s" ];
