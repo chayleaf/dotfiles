@@ -1,0 +1,50 @@
+diff --git a/subserv.c b/subserv.c
+index 82f76a4..bd74cef 100644
+--- a/subserv.c
++++ b/subserv.c
+@@ -16,10 +16,11 @@
+ #include <unistd.h>
+ 
+ #include <pthread.h>
+-#include <client.h>
++#include <mpv/client.h>
+ 
+ #define MAX(a,b) (((a)>(b))?(a):(b))
+-#define PORT 8080
++#define PORT @port@
++#define SUB_TEXT "@sub_text@"
+ 
+ // modifies the buffer, so watch out
+ // return the number of words in the line and stores pointers to the individual words in word_pointers
+@@ -206,7 +207,6 @@ void send_subs(int client_socket) {
+         if (reccnt == 0) {
+             return;
+         }
+-        printf("read_buf %s\n\n", read_buf);
+         
+         char * words[3];
+         int num_words = split_line_into_words(read_buf, words, 3);
+@@ -305,13 +305,10 @@ int mpv_open_cplugin(mpv_handle *handle) {
+         return 0;
+     }
+     
+-    printf("Hello world from C plugin '%s'!\n", mpv_client_name(handle));
+-    
+-    int obs_ret = mpv_observe_property(handle, 0, "sub-text", MPV_FORMAT_STRING);
++    int obs_ret = mpv_observe_property(handle, 0, SUB_TEXT, MPV_FORMAT_STRING);
+     
+     while (1) {
+         mpv_event *event = mpv_wait_event(handle, -1);
+-        printf("Got event: %d\n", event->event_id);
+         
+         if (event->event_id == MPV_EVENT_SHUTDOWN)
+             break;
+@@ -319,7 +316,7 @@ int mpv_open_cplugin(mpv_handle *handle) {
+         if (event->event_id == MPV_EVENT_PROPERTY_CHANGE) {
+             mpv_event_property* event_prop = (mpv_event_property*)event->data;
+             
+-            if (strcmp(event_prop->name, "sub-text") == 0) {
++            if (strcmp(event_prop->name, SUB_TEXT) == 0) {
+                 if (event_prop->data == NULL)
+                     continue;
+                 

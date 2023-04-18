@@ -1,0 +1,22 @@
+diff --git a/subserv.html b/subserv.html
+index 1fcb5a8..d4b65f8 100644
+--- a/subserv.html
++++ b/subserv.html
+@@ -51,6 +51,7 @@ function updateText() {
+         return;
+     }
+     
++    new_subs_elem.innerHTML = resp.subs[resp.subs.length-1];
+     if (new_subs_elem.innerHTML != "") {
+         old_subs_new_node = document.createElement("div");
+         old_subs_new_node.classList.add("old-sub-el");
+@@ -63,8 +64,8 @@ function updateText() {
+         old_subs_new_node.innerHTML = new_subs_elem.innerHTML; 
+         old_subs_elem.appendChild(old_subs_new_node);
+         old_subs_new_node.scrollIntoView();
++        new_subs_elem.innerHTML = "";
+     }
+-    new_subs_elem.innerHTML = resp.subs[resp.subs.length-1];
+ 
+     for (i = 0; i < resp.subs.length-1; i++) {
+         if (resp.subs[i] != "") {

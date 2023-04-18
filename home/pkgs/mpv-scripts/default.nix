@@ -2,5 +2,5 @@
 , ... }:
 
 {
-  subserv = callPackage ./subserv.nix { };
+  subserv = callPackage ./subserv { };
 }
