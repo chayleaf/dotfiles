@@ -92,6 +92,7 @@
       extraConfig = {
         core.askPass = "";
         credential.helper = "${pkgs.gitAndTools.gitFull}/bin/git-credential-libsecret";
+        init.defaultBranch = "master";
       };
     };
     bat = {

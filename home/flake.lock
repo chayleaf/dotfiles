@@ -61,11 +61,11 @@
         ]
       },
       "locked": {
-        "lastModified": 1680277516,
-        "narHash": "sha256-ACq/VPe+nuqlm0RNrNho/y1yijNAERSSW81epV71MGU=",
+        "lastModified": 1682122379,
+        "narHash": "sha256-AxO/KWnMuxTA/WrRitIwUJzc7F90BPjxdej6jLJi0So=",
         "owner": "chayleaf",
         "repo": "notlua",
-        "rev": "95fd2ccfda749044ed0bcc0cb0cedbda5bd46e62",
+        "rev": "5b8280bc82fd0b4624af9256388f0f7804a1bb4d",
         "type": "github"
       },
       "original": {

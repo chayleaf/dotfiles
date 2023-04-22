@@ -243,7 +243,7 @@
     keepassxc nheko qbittorrent mumble
     nextcloud-client gnome.zenity kdeconnect
     # cli tools
-    imagemagick ffmpeg_5-full
+    imagemagick ffmpeg_5-full xdg-utils
     # fonts
     noto-fonts noto-fonts-cjk-sans noto-fonts-cjk-serif
     noto-fonts-emoji noto-fonts-extra
