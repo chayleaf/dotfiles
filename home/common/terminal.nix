@@ -15,6 +15,7 @@ in {
   terminalBin = getTerminalBin (builtins.head config.terminals);
   terminalBinX = getTerminalBin (lib.lists.findFirst (term: term != "foot") null config.terminals);
   colors = {
+    # dont forget to change waybar.css (yes I'm lazy like that)
     base = [
       "523b3f" # black
       "e66e6e" # red
@@ -35,8 +36,7 @@ in {
     ];
     foreground = "ebdadd";
     background = "24101a";
-    # 0.75 with opengl sway
-    alpha = 0.95;
+    alpha = if config.wayland.windowManager.sway.vulkan then 0.97 else 0.85;
   };
   programs.tmux.shell = shell;
   programs.alacritty = {

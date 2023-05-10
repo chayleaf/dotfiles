@@ -1,4 +1,4 @@
-{ config, pkgs, lib, ... }:
+{ config, pkgs, lib, notlua, ... }:
 {
   imports = [ ./options.nix ];
   /*
@@ -14,9 +14,8 @@
 
   # welcome to my cursed DSL
   programs.neovim = let
-    notlua = config.notlua;
     notlua-nvim = notlua.neovim { inherit (config.programs.neovim) plugins extraLuaPackages; };
-    inherit (notlua.keywords) CALL PROP SET LET DEFUN IF APPLY OR EQ RETURN ELSE IDX MCALL LETREC;
+    inherit (notlua.keywords) CALL PROP SET LET DEFUN IF APPLY OR EQ RETURN ELSE IDX LETREC;
     inherit (notlua.utils) compile;
     inherit (notlua-nvim.stdlib) vim string require print;
     inherit (notlua-nvim.keywords) REQ REQ';
@@ -294,11 +293,14 @@
       ps.cmp_luasnip
       ps.cmp-nvim-lsp
       { plugin = ps.nvim-autopairs;
-        config = compile "nvim_autopairs" (LET (REQ "nvim-autopairs.completion.cmp") (REQ "nvim-autopairs") (cmp-autopairs: nvim-autopairs: L [
+        config = compile "nvim_autopairs" (LET
+          (REQ "cmp") (REQ "nvim-autopairs.completion.cmp") (REQ "nvim-autopairs")
+          (cmp: cmp-autopairs: nvim-autopairs:
+        L [
           nvim-autopairs.setup {
             disable_filetype = [ "TelescopePrompt" "vim" ];
           } _
-          MCALL cmp.event "on" "confirm_done" (cmp-autopairs.on_confirm_done {}) _
+          cmp.event.on cmp.event "confirm_done" (cmp-autopairs.on_confirm_done {}) _
         ])); }
       { plugin = ps.comment-nvim;
         config = compile' "comment_nvim" [

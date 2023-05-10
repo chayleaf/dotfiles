@@ -10,10 +10,15 @@ with lib; {
       };
     };
   };
+  options.wayland.windowManager.sway.vulkan = mkOption {
+    type = types.bool;
+    default = false;
+    description = "set WLR_RENDERER to vulkan";
+  };
   options.terminals = mkOption {
     type = with types; listOf str;
     description = "terminal kinds (possible values are alacritty, urxvt, kitty, foot)";
-    default = ["alacritty"];
+    default = [ "alacritty" ];
   };
   options.terminalBin = mkOption {
     type = types.str;

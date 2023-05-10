@@ -9,6 +9,27 @@ let
   dataPart = "/dev/disk/by-uuid/f1447692-fa7c-4bd6-9cb5-e44c13fddfe3";
   datarootUuid = "fa754b1e-ac83-4851-bf16-88efcd40b657";
   dataroot = "/dev/disk/by-uuid/${datarootUuid}";
+  /*
+  # for old kernel versions
+  zenKernels = pkgs.callPackage "${nixpkgs}/pkgs/os-specific/linux/kernel/zen-kernels.nix";
+  zenKernel = (version: sha256: (zenKernels {
+    kernelPatches = [
+      pkgs.linuxKernel.kernelPatches.bridge_stp_helper
+      pkgs.linuxKernel.kernelPatches.request_key_helper
+    ];
+    argsOverride = {
+      src = pkgs.fetchFromGitHub {
+        owner = "zen-kernel";
+        repo = "zen-kernel";
+        rev = "v${version}-zen1";
+        inherit sha256;
+      };
+      inherit version;
+      modDirVersion = lib.versions.pad 3 "${version}-zen1";
+    };
+  }).zen);
+  zenKernelPackages = version: sha256: pkgs.linuxPackagesFor (zenKernel version sha256);
+  */
 in {
   system.stateVersion = "22.11";
 
@@ -45,6 +66,11 @@ in {
       "resume_offset=533760"
       "fbcon=font:TER16x32"
       "consoleblank=60"
+      # disable PSR to *hopefully* avoid random hangs
+      # this one didnt help
+      "amdgpu.dcdebugmask=0x10"
+      # maybe this one will?
+      "amdgpu.noretry=0"
     ];
     loader = {
       grub = {
@@ -65,29 +91,12 @@ in {
       "vm.swappiness" = 40;
     };
     kernelPackages = lib.mkDefault pkgs.linuxPackages_zen;
+    /*kernelPackages = zenKernelPackages "6.1.9" "0fsmcjsawxr32fxhpp6sgwfwwj8kqymy0rc6vh4qli42fqmwdjgv";*/
   };
 
   # for testing different zen kernel versions:
-  # specialisation = let
-  #   zenKernels = pkgs.callPackage "${nixpkgs}/pkgs/os-specific/linux/kernel/zen-kernels.nix";
-  #   zenKernel = (version: sha256: (zenKernels {
-  #     kernelPatches = [
-  #       pkgs.linuxKernel.kernelPatches.bridge_stp_helper
-  #       pkgs.linuxKernel.kernelPatches.request_key_helper
-  #     ];
-  #     argsOverride = {
-  #       src = pkgs.fetchFromGitHub {
-  #         owner = "zen-kernel";
-  #         repo = "zen-kernel";
-  #         rev = "v${version}-zen1";
-  #         inherit sha256;
-  #       };
-  #       inherit version;
-  #       modDirVersion = lib.versions.pad 3 "${version}-zen1";
-  #     };
-  #   }).zen);
-  # in {
-  #   zen619.configuration.boot.kernelPackages = pkgs.linuxPackagesFor (zenKernel "6.1.9" "0fsmcjsawxr32fxhpp6sgwfwwj8kqymy0rc6vh4qli42fqmwdjgv");
+  # specialisation = {
+  #   zen619.configuration.boot.kernelPackages = zenKernelPackages "6.1.9" "0fsmcjsawxr32fxhpp6sgwfwwj8kqymy0rc6vh4qli42fqmwdjgv";
   # };
 
   nixpkgs.config.allowUnfreePredicate = pkg: (lib.getName pkg) == "steam-original";
@@ -99,6 +108,7 @@ in {
     opengl.extraPackages = with pkgs; [ vulkan-validation-layers ];
   };
 
+  services.tlp.enable = true;
   services.tlp.settings = {
     USB_EXCLUDE_PHONE = 1;
     START_CHARGE_THRESH_BAT0 = 75;
@@ -235,9 +245,14 @@ in {
     # I couldn't get lightdm to start sway, so let's just do this
     displayManager.startx.enable = true;
     windowManager.i3.enable = true;
-  };*/
+  };
+  */
+
   programs.sway.enable = true;
   programs.firejail.enable = true;
+  # doesn't work:
+  # programs.wireshark.enable = true;
+  # users.groups.wireshark.members = [ "user "];
   environment.systemPackages = with pkgs; [
     vim
     wget

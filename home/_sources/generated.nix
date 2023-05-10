@@ -11,10 +11,10 @@
   };
   proton-ge = {
     pname = "proton-ge";
-    version = "GE-Proton7-54";
+    version = "GE-Proton8-2";
     src = fetchurl {
-      url = "https://github.com/GloriousEggroll/proton-ge-custom/releases/download/GE-Proton7-54/GE-Proton7-54.tar.gz";
-      sha256 = "sha256-tPL8d5fJzT428UJImJgzW9ECI+ENkvbD1fCPmjU7Yhk=";
+      url = "https://github.com/GloriousEggroll/proton-ge-custom/releases/download/GE-Proton8-2/GE-Proton8-2.tar.gz";
+      sha256 = "sha256-gof4yL5sHPKXDC4mDfPyBIvPtWxxxVy6gHx58yoTEbQ=";
     };
   };
   yomichan = {

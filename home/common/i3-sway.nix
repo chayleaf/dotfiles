@@ -324,8 +324,10 @@ in
       };
       menu = "${rofiSway}/bin/rofi -show drun";
     }; in commonConfig // swayConfig;
-    extraSessionCommands = ''
+    # export WLR_RENDERER=vulkan
+    extraSessionCommands = (lib.optionalString config.wayland.windowManager.sway.vulkan ''
       export WLR_RENDERER=vulkan
+    '') + ''
       export SDL_VIDEODRIVER=wayland,x11,kmsdrm,windows,directx
       # SDL3
       export SDL_VIDEO_DRIVER=wayland,x11,kmsdrm,windows

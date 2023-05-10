@@ -37,7 +37,7 @@ in {
   };
   config = lib.mkIf cfg.enable {
     # as weird as it sounds, I won't use tmpfs for /tmp in case I'll have to put files over 2GB there
-    boot.cleanTmpDir = lib.mkIf cfg.persistTmp true;
+    boot.tmp.cleanOnBoot = lib.mkIf cfg.persistTmp true;
     environment.persistence.${toString cfg.path} = {
       hideMounts = true;
       directories = map toString ([

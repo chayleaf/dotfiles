@@ -13,9 +13,9 @@ in
   clang-tools_latest = pkgs.clang-tools_15;
   clang_latest = pkgs.clang_15;
   home-daemon = callPackage ./home-daemon { };
-  ghidra = pkgs.ghidra.overrideAttrs (old: {
+  /*ghidra = pkgs.ghidra.overrideAttrs (old: {
     patches = old.patches ++ [ ./ghidra-stdcall.patch ];
-  });
+  });*/
   lalrpop = callPackage ./lalrpop { };
   # pin version
   looking-glass-client = pkgs.looking-glass-client.overrideAttrs (old: {

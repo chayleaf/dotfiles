@@ -51,10 +51,10 @@
             ];
           };
           extraSpecialArgs = {
+            notlua = notlua.lib.${system};
             # pkgs-wayland = nixpkgs-wayland.packages.${system};
           };
           modules = [
-            notlua.nixosModules.default
             nur.nixosModules.nur
             ./hosts/nixmsi.nix
             (getPriv "nixmsi")
