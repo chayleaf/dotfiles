@@ -108,6 +108,11 @@ in {
     opengl.extraPackages = with pkgs; [ vulkan-validation-layers ];
   };
 
+  services.openssh = {
+    enable = true;
+    settings.PasswordAuthentication = false;
+  };
+
   services.tlp.enable = true;
   services.tlp.settings = {
     USB_EXCLUDE_PHONE = 1;
@@ -207,7 +212,6 @@ in {
   ++ (lib.range 1714 1764);
   networking.firewall.allowedUDPPorts = lib.range 1714 1764;
 
-  # networking.hostName = "nixmsi";
   networking.wireless.iwd.enable = true;
   #networking.networkmanager.enable = true;
 
@@ -326,17 +330,6 @@ in {
   systemd.services.nix-daemon.serviceConfig.LimitSTACKSoft = "infinity";
 
   documentation.dev.enable = true;
-
-  ### RANDOM PATCHES ###
-
-  # I've had some weird issues with the entire system breaking after
-  # suspend because of /dev/shm getting nuked, maybe this'll help
-  services.logind.extraConfig = ''
-    RemoveIPC=no
-  '';
-
-  # why is this not part of base NixOS?
-  systemd.tmpfiles.rules = [ "d /var/lib/systemd/pstore 0755 root root 14d" ];
 
   # autologin once after boot
   # --skip-login means directly call login instead of first asking for username

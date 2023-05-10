@@ -1,4 +1,4 @@
-{ config, lib, pkgs, ... }:
+{ options, config, lib, pkgs, ... }:
 let
   cfg = config.vfio;
 in {
@@ -73,9 +73,10 @@ in {
     description = "VFIO settings";
     default = { };
   };
+  # compatibility so this module loads on non-amd hardware
   config = let
-    enableIvshmem = config.vfio.lookingGlass.enable && (builtins.length config.vfio.lookingGlass.ivshmem) > 0;
-  in lib.mkIf config.vfio.enable {
+    enableIvshmem = cfg.lookingGlass.enable && (builtins.length cfg.lookingGlass.ivshmem) > 0;
+  in lib.mkIf cfg.enable {
     # add a custom kernel param for early loading vfio drivers
     # because if we change boot.initrd options in a specialization, two initrds will be built
     # and we don't want to build two initrds
@@ -151,9 +152,13 @@ in {
             SUBSYSTEM=="kvmfr", KERNEL=="kvmfr${toString i}", OWNER="${ivshmem.owner}", GROUP="kvm", MODE="0660"
           '')
           cfg.lookingGlass.ivshmem));
-    # disable early KMS so GPU can be properly unbound
-    hardware.amdgpu.loadInInitrd = lib.mkIf (!cfg.nvidiaGpu) false;
-    hardware.opengl.enable = true;
+    hardware = {
+      opengl.enable = true;
+    } // (lib.optionalAttrs (cfg.enable && !(cfg.nvidiaGpu)) {
+      # disable early KMS so GPU can be properly unbound
+      # can't use mkif because the option may not even exist
+      amdgpu.loadInInitrd = false;
+    });
     # needed for virt-manager
     programs.dconf.enable = true;
     virtualisation.libvirtd = {

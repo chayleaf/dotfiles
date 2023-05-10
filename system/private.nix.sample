@@ -1,5 +1,0 @@
-{
-  nixmsi = { ... }: {
-    # insert private config here
-  };
-}

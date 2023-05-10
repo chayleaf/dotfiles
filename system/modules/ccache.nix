@@ -4,7 +4,7 @@
     config.programs.ccache.cacheDir
     "/var/cache/sccache"
   ];
-  environment.persistence."/persist".directories = lib.mkIf config.programs.ccache.enable [
+  impermanence.directories = lib.mkIf config.programs.ccache.enable [
     config.programs.ccache.cacheDir
     "/var/cache/sccache"
   ];

@@ -15,14 +15,25 @@
       url = "github:fufexan/nix-gaming";
       inputs.nixpkgs.follows = "nixpkgs";
     };
+    nixos-mailserver = {
+      url = "gitlab:simple-nixos-mailserver/nixos-mailserver";
+      inputs.nixpkgs.follows = "nixpkgs";
+      inputs.nixpkgs-22_11.follows = "nixpkgs";
+    };
   };
 
-  outputs = inputs@{ self, nixpkgs, utils, nixos-hardware, impermanence, nix-gaming, ... }:
+  outputs = inputs@{ self, nixpkgs, utils, nixos-hardware, impermanence, nix-gaming, nixos-mailserver, ... }:
   let
     hw = nixos-hardware.nixosModules;
     # IRL-related stuff I'd rather not put into git
-    priv = if builtins.pathExists ./private.nix then (import ./private.nix) else { };
-    getPriv = (hostname: with builtins; if hasAttr hostname priv then getAttr hostname priv else { });
+    priv = if builtins.pathExists ./private/default.nix then (import ./private)
+           else if builtins.pathExists ./private.nix then (import ./private.nix)
+           else { };
+    getPriv = hostname: with builtins; if hasAttr hostname priv then getAttr hostname priv else { };
+    common = hostname: [ (getPriv hostname) impermanence.nixosModule ];
+    extraArgs = {
+      inherit nixpkgs;
+    };
   in utils.lib.mkFlake {
     inherit self inputs;
     hostDefaults.modules = [
@@ -44,18 +55,24 @@
         system = "x86_64-linux";
         modules = [
           ./hosts/nixmsi.nix
-          impermanence.nixosModule
           nix-gaming.nixosModules.pipewireLowLatency
           hw.common-pc-ssd # enables fstrim
           hw.common-cpu-amd # microcode
           hw.common-cpu-amd-pstate # amd-pstate
           hw.common-gpu-amd # configures drivers
           hw.common-pc-laptop # enables tlp
-          (getPriv "nixmsi")
-        ];
-        extraArgs = {
-          inherit nixpkgs;
-        };
+        ] ++ common "nixmsi";
+        inherit extraArgs;
+      };
+      nixserver = {
+        system = "x86_64-linux";
+        modules = [
+          ./hosts/nixserver
+          nixos-mailserver.nixosModules.default
+          hw.common-pc-hdd
+          hw.common-cpu-intel
+        ] ++ common "nixserver";
+        inherit extraArgs;
       };
     };
   };
