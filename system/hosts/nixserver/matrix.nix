@@ -1,12 +1,9 @@
 { config
-, pkgs
 , lib
 , ... }:
 
 let
   cfg = config.server;
-  quotePotentialIpV6 = addr:
-    if lib.hasInfix ":" addr then "[${addr}]" else addr;
   matrixServerJson = {
     "m.server" = "matrix.${cfg.domainName}:443";
   };
@@ -42,7 +39,7 @@ in {
     locations = {
       "= /.well-known/matrix/server".extraConfig = matrixServerConfigResponse;
       "= /.well-known/matrix/client".extraConfig = matrixClientConfigResponse;
-      "/".proxyPass = "http://${quotePotentialIpV6 matrixAddr}:${toString matrixPort}";
+      "/".proxyPass = "http://${lib.quotePotentialIpV6 matrixAddr}:${toString matrixPort}";
     };
   };
 
@@ -50,7 +47,7 @@ in {
   systemd.services.heisenbridge.after = [ "matrix-synapse.service" ];
   services.heisenbridge = {
     enable = true;
-    homeserver = "http://${quotePotentialIpV6 matrixAddr}:${toString matrixPort}/";
+    homeserver = "http://${lib.quotePotentialIpV6 matrixAddr}:${toString matrixPort}/";
   };
   # so synapse can read the registration
   users.groups.heisenbridge.members = [ "matrix-synapse" ];
@@ -91,32 +88,5 @@ in {
         }];
       }];
     };
-  };
-
-  # maubot
-  users.users.maubot = {
-    home = "/var/lib/maubot";
-    group = "maubot";
-    isSystemUser = true;
-  };
-  users.groups.maubot = { };
-  systemd.services.maubot = {
-    description = "Maubot";
-    wants = [ "matrix-synapse.service" "nginx.service" ];
-    after = [ "matrix-synapse.service" "nginx.service" ];
-    wantedBy = [ "multi-user.target" ];
-    environment = {
-      LD_LIBRARY_PATH = "${pkgs.stdenv.cc.cc.lib}/lib";
-    };
-    serviceConfig = {
-      User = "maubot";
-      Group = "maubot";
-      WorkingDirectory = "/var/lib/maubot/data";
-    };
-    script = "${pkgs.python3.withPackages (pks: with pks; [
-      pkgs.maubot (pkgs.pineapplebot.override {
-        magic = cfg.pizzabotMagic;
-      }) feedparser levenshtein python-dateutil pytz
-    ])}/bin/python3 -m maubot";
   };
 }

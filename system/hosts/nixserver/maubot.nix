@@ -5,15 +5,13 @@
 
 let
   cfg = config.server;
-  quotePotentialIpV6 = addr:
-    if lib.hasInfix ":" addr then "[${addr}]" else addr;
   # i've yet to create a maubot module so this is hardcoded
   maubotAddr = "127.0.0.1";
   maubotPort = 29316;
 in {
   services.nginx.virtualHosts."matrix.${cfg.domainName}".locations = {
     "/_matrix/maubot/" = {
-      proxyPass = "http://${quotePotentialIpV6 maubotAddr}:${toString maubotPort}";
+      proxyPass = "http://${lib.quotePotentialIpV6 maubotAddr}:${toString maubotPort}";
       proxyWebsockets = true;
     };
   };

@@ -26,20 +26,32 @@
   let
     hw = nixos-hardware.nixosModules;
     # IRL-related stuff I'd rather not put into git
-    priv = if builtins.pathExists ./private/default.nix then (import ./private)
-           else if builtins.pathExists ./private.nix then (import ./private.nix)
-           else { };
+    priv =
+      if builtins.pathExists ./private.nix then (import ./private.nix)
+      else if builtins.pathExists ./private/default.nix then (import ./private)
+      else { };
     getPriv = hostname: with builtins; if hasAttr hostname priv then getAttr hostname priv else { };
-    common = hostname: [ (getPriv hostname) impermanence.nixosModule ];
+    common = hostname: [ (getPriv hostname) ];
     extraArgs = {
       inherit nixpkgs;
     };
+    lib = nixpkgs.lib // {
+      quotePotentialIpV6 = addr:
+        if nixpkgs.lib.hasInfix ":" addr then "[${addr}]" else addr;
+    };
+    specialArgs = {
+      inherit lib;
+    };
+    mkHost = args @ { system ? "x86_64-linux", modules, ... }: {
+      inherit system extraArgs specialArgs;
+    } // args;
   in utils.lib.mkFlake {
     inherit self inputs;
     hostDefaults.modules = [
       ./modules/vfio.nix
       ./modules/ccache.nix
       ./modules/impermanence.nix
+      impermanence.nixosModule 
       {
         # make this flake's nixpkgs available to the whole system
         nix = {
@@ -47,12 +59,11 @@
           generateRegistryFromInputs = true;
           linkInputs = true;
         };
-        nixpkgs.overlays = [ (self: super: import ./pkgs { pkgs = super; }) ];
+        nixpkgs.overlays = [ (self: super: import ./pkgs { pkgs = super; inherit lib; }) ];
       }
     ];
     hosts = {
-      nixmsi = {
-        system = "x86_64-linux";
+      nixmsi = mkHost {
         modules = [
           ./hosts/nixmsi.nix
           nix-gaming.nixosModules.pipewireLowLatency
@@ -62,17 +73,14 @@
           hw.common-gpu-amd # configures drivers
           hw.common-pc-laptop # enables tlp
         ] ++ common "nixmsi";
-        inherit extraArgs;
       };
-      nixserver = {
-        system = "x86_64-linux";
+      nixserver = mkHost {
         modules = [
           ./hosts/nixserver
           nixos-mailserver.nixosModules.default
           hw.common-pc-hdd
           hw.common-cpu-intel
         ] ++ common "nixserver";
-        inherit extraArgs;
       };
     };
   };

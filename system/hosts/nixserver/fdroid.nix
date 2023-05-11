@@ -1,12 +1,9 @@
 { config
 , pkgs
-, lib
 , ... }:
 
 let
   cfg = config.server;
-  quotePotentialIpV6 = addr:
-    if lib.hasInfix ":" addr then "[${addr}]" else addr;
 in {
   services.nginx.virtualHosts."${cfg.domainName}" = {
     locations."/fdroid/".alias = "/var/lib/fdroid/repo/";

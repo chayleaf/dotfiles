@@ -5,9 +5,6 @@
 
 let
   cfg = config.server;
-  # TODO: move to lib
-  quotePotentialIpV6 = addr:
-    if lib.hasInfix ":" addr then "[${addr}]" else addr;
 
   efiPart = "/dev/disk/by-uuid/3E2A-A5CB";
   rootUuid = "6aace237-9b48-4294-8e96-196759a5305b";
@@ -221,7 +218,7 @@ in {
   # SSH
   services.openssh = {
     enable = true;
-    settings.PermitRootLogin = "no";
+    # settings.PermitRootLogin = "no";
     settings.PasswordAuthentication = false;
     listenAddresses = [{
       addr = "0.0.0.0";
@@ -243,7 +240,7 @@ in {
   });
   services.searx.runInUwsgi = true;
   services.searx.uwsgiConfig = let inherit (config.services.searx) settings; in {
-    socket = "${quotePotentialIpV6 settings.server.bind_address}:${toString settings.server.port}";
+    socket = "${lib.quotePotentialIpV6 settings.server.bind_address}:${toString settings.server.port}";
   };
   users.groups.searx.members = [ "nginx" ];
   services.searx.environmentFile = "/etc/nixos/private/searx.env";
@@ -284,9 +281,9 @@ in {
   services.nginx.virtualHosts."search.${cfg.domainName}" = let inherit (config.services.searx) settings; in {
     enableACME = true;
     forceSSL = true;
-    # locations."/".proxyPass = "http://${quotePotentialIpV6 settings.server.bind_address}:${toString settings.server.port}";
+    # locations."/".proxyPass = "http://${lib.quotePotentialIpV6 settings.server.bind_address}:${toString settings.server.port}";
     locations."/".extraConfig = ''
-      uwsgi_pass "${quotePotentialIpV6 settings.server.bind_address}:${toString settings.server.port}";
+      uwsgi_pass "${lib.quotePotentialIpV6 settings.server.bind_address}:${toString settings.server.port}";
       include ${config.services.nginx.package}/conf/uwsgi_params;
     '';
   };
@@ -389,7 +386,7 @@ in {
   services.nginx.virtualHosts."git.${cfg.domainName}" = let inherit (config.services.gitea) settings; in {
     enableACME = true;
     forceSSL = true;
-    locations."/".proxyPass = "http://${quotePotentialIpV6 settings.server.HTTP_ADDR}:${toString settings.server.HTTP_PORT}";
+    locations."/".proxyPass = "http://${lib.quotePotentialIpV6 settings.server.HTTP_ADDR}:${toString settings.server.HTTP_PORT}";
   };
   services.gitea = {
     enable = true;
@@ -449,6 +446,13 @@ in {
     https = true;
   };
 
+  services.pleroma = {
+    enable = true;
+    secretConfigFile = "/var/lib/pleroma/secrets.exs";
+    configs = [ ''
+      import Config
+    '' ];
+  };
   systemd.services.pleroma.path = [ pkgs.exiftool pkgs.gawk ];
   services.nginx.virtualHosts."pleroma.${cfg.domainName}" = {
     enableACME = true;
