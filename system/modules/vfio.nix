@@ -1,4 +1,8 @@
-{ options, config, lib, pkgs, ... }:
+{ config
+, lib
+, pkgs
+, ... }:
+
 let
   cfg = config.vfio;
 in {
@@ -166,6 +170,7 @@ in {
       onBoot = "ignore";
       onShutdown = "shutdown";
       qemu = {
+        package = pkgs.qemu_kvm;
         ovmf.enable = true;
         # Full is needed for TPM and secure boot emulation
         ovmf.packages = [ pkgs.OVMFFull.fd ];
@@ -186,5 +191,8 @@ in {
     };
     virtualisation.spiceUSBRedirection.enable = true;
     users.groups.libvirtd.members = [ "root" ] ++ cfg.libvirtdGroup;
+    environment.systemPackages = with pkgs; [
+      virtiofsd
+    ];
   };
 }
