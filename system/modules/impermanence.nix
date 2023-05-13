@@ -36,6 +36,7 @@ in {
     default = { };
   };
   config = lib.mkIf cfg.enable {
+    users.mutableUsers = false;
     # why is this not part of base NixOS?
     systemd.tmpfiles.rules = [ "d /var/lib/systemd/pstore 0755 root root 14d" ];
     # as weird as it sounds, I won't use tmpfs for /tmp in case I'll have to put files over 2GB there
@@ -100,6 +101,8 @@ in {
         { directory = /var/lib/postgresql; user = "postgres"; group = "postgres"; mode = "0755"; }
       ]) ++ (lib.optionals config.services.unbound.enable [
         { directory = /var/lib/unbound; user = "unbound"; group = "unbound"; mode = "0755"; }
+      ]) ++ (lib.optionals config.services.searx.enable [
+        { directory = /var/lib/searx; user = "searx"; group = "searx"; mode = "0700"; }
       ]) ++ (lib.optionals config.services.roundcube.enable [
         { directory = /var/lib/roundcube; user = "roundcube"; group = "roundcube"; mode = "0700"; }
       ]) ++ (lib.optionals config.services.rspamd.enable [

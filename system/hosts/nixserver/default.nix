@@ -43,9 +43,6 @@ in {
       availableKernelModules = [ "xhci_pci" "ehci_pci" "ahci" "usb_storage" "sd_mod" "sr_mod" "rtsx_pci_sdmmc" ];
     };
     kernelModules = [ "kvm-intel" ];
-    kernelParams = [
-      "consoleblank=60"
-    ];
     loader = {
       grub = {
         enable = true;
@@ -59,7 +56,6 @@ in {
       efi.efiSysMountPoint = "/boot/efi";
     };
   };
-  hardware.enableRedistributableFirmware = true;
   fileSystems = {
     "/" =    { device = "none"; fsType = "tmpfs"; neededForBoot = true;
                options = [ "defaults" "size=2G" "mode=755" ]; };
@@ -95,14 +91,6 @@ in {
       extraOptions = [ "--loadavg-target" "8.0" ];
     };
   };
-  i18n.defaultLocale = lib.mkDefault "en_US.UTF-8";
-  i18n.supportedLocales = lib.mkDefault [
-    "C.UTF-8/UTF-8"
-    "en_US.UTF-8/UTF-8"
-    "en_DK.UTF-8/UTF-8"
-  ];
-  # ISO-8601
-  i18n.extraLocaleSettings.LC_TIME = "en_DK.UTF-8";
   console.font = "${pkgs.terminus_font}/share/consolefonts/ter-v24n.psf.gz";
   networking.useDHCP = true;
   networking.resolvconf.extraConfig = ''
@@ -178,55 +166,30 @@ in {
     startWhenNeeded = false;
   };
 
-  programs.fish.enable = true;
-  users.defaultUserShell = pkgs.fish;
-  users.users.user = {
-    isNormalUser = true;
-    extraGroups = [ "wheel" config.services.unbound.group ];
-  };
-
-  environment.systemPackages = with pkgs; [
-    comma
-    git
-    vim
-    wget
-    # rxvt-unicode-unwrapped.terminfo
-    kitty.terminfo
-    tmux
-  ];
+  users.users.user.extraGroups = [ config.services.unbound.group ];
 
   services.postgresql.enable = true;
   services.postgresql.package = pkgs.postgresql_13;
 
-  nix = {
-    settings = {
-      allowed-users = [ "user" ];
-      auto-optimise-store = true;
-    };
-    gc = {
-      automatic = true;
-      dates = "weekly";
-      options = "--delete-older-than 30d";
-    };
-    package = pkgs.nixFlakes;
-    extraOptions = ''
-      experimental-features = nix-command flakes
-    '';
-  };
-  systemd.services.nix-daemon.serviceConfig.LimitSTACKSoft = "infinity";
-
   # SSH
   services.openssh = {
     enable = true;
-    # settings.PermitRootLogin = "no";
-    settings.PasswordAuthentication = false;
-    listenAddresses = [{
+    # settings.PermitRootLogin = false;
+    /*listenAddresses = [{
       addr = "0.0.0.0";
     } {
       addr = "::";
-    }];
+    }];*/
   };
-  services.fail2ban.enable = true;
+  services.fail2ban = {
+    enable = true;
+    ignoreIP = lib.optionals (cfg.lanCidrV4 != "0.0.0.0/0") [ cfg.lanCidrV4 ]
+                ++ (lib.optionals (cfg.lanCidrV6 != "::/0") [ cfg.lanCidrV6 ]);
+    jails.dovecot = ''
+      enabled = true
+      filter = dovecot
+    '';
+  };
 
   # SEARXNG
   services.searx.enable = true;
@@ -242,14 +205,13 @@ in {
   services.searx.uwsgiConfig = let inherit (config.services.searx) settings; in {
     socket = "${lib.quotePotentialIpV6 settings.server.bind_address}:${toString settings.server.port}";
   };
-  users.groups.searx.members = [ "nginx" ];
-  services.searx.environmentFile = "/etc/nixos/private/searx.env";
+  services.searx.environmentFile = /var/lib/searx/searx.env;
   services.searx.settings = {
     use_default_settings = true;
     search = {
-        safe_search = 0; # Filter results. 0: None, 1: Moderate, 2: Strict
-        autocomplete = "duckduckgo"; # Existing autocomplete backends: "dbpedia", "duckduckgo", "google", "startpage", "swisscows", "qwant", "wikipedia" - leave blank to turn it off by default
-        default_lang = ""; # Default search language - leave blank to detect from browser information or use codes from 'languages.py'
+        safe_search = 0;
+        autocomplete = "duckduckgo"; # dbpedia, duckduckgo, google, startpage, swisscows, qwant, wikipedia - leave blank to turn off
+        default_lang = ""; # leave blank to detect from browser info or use codes from languages.py
     };
 
     server = {
@@ -273,10 +235,6 @@ in {
       pool_maxsize = 10;           # Number of allowable keep-alive connections, or null
       enable_http2 = true;         # See https://www.python-httpx.org/http2/
     };
-    /* = {
-      name = "soundcloud";
-      disabled = true;
-    };*/
   };
   services.nginx.virtualHosts."search.${cfg.domainName}" = let inherit (config.services.searx) settings; in {
     enableACME = true;
@@ -292,9 +250,7 @@ in {
   services.nginx.enable = true;
   services.nginx.streamConfig =
     let
-      cert = config.security.acme.certs."${cfg.domainName}".directory + "/fullchain.pem";
-      certKey = config.security.acme.certs."${cfg.domainName}".directory + "/key.pem";
-      trustedCert = config.security.acme.certs."${cfg.domainName}".directory + "/chain.pem";
+      inherit (config.security.acme.certs."${cfg.domainName}") directory;
     in ''
       upstream dns {
         zone dns 64k;
@@ -302,9 +258,9 @@ in {
       }
       server {
         listen 853 ssl;
-        ssl_certificate ${cert};
-        ssl_certificate_key ${certKey};
-        ssl_trusted_certificate ${trustedCert};
+        ssl_certificate ${directory}/fullchain.pem;
+        ssl_certificate_key ${directory}/key.pem;
+        ssl_trusted_certificate ${directory}/chain.pem;
         proxy_pass dns;
       }
     '';
@@ -333,7 +289,7 @@ in {
       '';
     };
   };
-    
+
   services.nginx.virtualHosts."www.${cfg.domainName}" = {
     enableACME = true;
     globalRedirect = cfg.domainName;
@@ -372,7 +328,8 @@ in {
     sendOnly = true;
   };
   services.dovecot2.extraConfig =
-    let passwd = builtins.toFile "dovecot2-local-passwd" ''
+    let
+      passwd = builtins.toFile "dovecot2-local-passwd" ''
         noreply@${cfg.domainName}:{plain}${cfg.unhashedNoreplyPassword}::::::allow_nets=local,127.0.0.0/8,::1
       '';
     in ''

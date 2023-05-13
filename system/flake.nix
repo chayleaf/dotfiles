@@ -51,16 +51,8 @@
       ./modules/vfio.nix
       ./modules/ccache.nix
       ./modules/impermanence.nix
+      ./modules/common.nix
       impermanence.nixosModule 
-      {
-        # make this flake's nixpkgs available to the whole system
-        nix = {
-          generateNixPathFromInputs = true;
-          generateRegistryFromInputs = true;
-          linkInputs = true;
-        };
-        nixpkgs.overlays = [ (self: super: import ./pkgs { pkgs = super; inherit lib; }) ];
-      }
     ];
     hosts = {
       nixmsi = mkHost {

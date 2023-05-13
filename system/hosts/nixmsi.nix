@@ -65,7 +65,6 @@ in {
       # resume_offset = $(btrfs inspect-internal map-swapfile -r path/to/swapfile)
       "resume_offset=533760"
       "fbcon=font:TER16x32"
-      "consoleblank=60"
       # disable PSR to *hopefully* avoid random hangs
       # this one didnt help
       "amdgpu.dcdebugmask=0x10"
@@ -102,25 +101,16 @@ in {
   nixpkgs.config.allowUnfreePredicate = pkg: (lib.getName pkg) == "steam-original";
   hardware = {
     steam-hardware.enable = true;
-    enableRedistributableFirmware = true;
     opengl.driSupport32Bit = true;
     # needed for sway WLR_RENDERER=vulkan
     opengl.extraPackages = with pkgs; [ vulkan-validation-layers ];
   };
 
-  services.openssh = {
-    enable = true;
-    settings.PasswordAuthentication = false;
-  };
+  # services.openssh.enable = true;
 
   services.tlp.enable = true;
-  services.tlp.settings = {
-    USB_EXCLUDE_PHONE = 1;
-    START_CHARGE_THRESH_BAT0 = 75;
-    STOP_CHARGE_THRESH_BAT0 = 80;
-    # fix for my realtek usb ethernet adapter
-    USB_DENYLIST = "0bda:8156";
-  };
+  # fix for my realtek usb ethernet adapter
+  services.tlp.settings.USB_DENYLIST = "0bda:8156";
 
   # see modules/vfio.nix
   vfio.enable = true;
@@ -190,15 +180,6 @@ in {
   };
 
   ### SECTION 2: SYSTEM CONFIG/ENVIRONMENT ###
-  i18n.defaultLocale = lib.mkDefault "en_US.UTF-8";
-  i18n.supportedLocales = lib.mkDefault [
-    "C.UTF-8/UTF-8"
-    "en_US.UTF-8/UTF-8"
-    "en_DK.UTF-8/UTF-8"
-  ];
-  # ISO-8601
-  i18n.extraLocaleSettings.LC_TIME = "en_DK.UTF-8";
-
   console.font = "${pkgs.terminus_font}/share/consolefonts/ter-v32n.psf.gz";
 
   networking.useDHCP = true;
@@ -213,7 +194,6 @@ in {
   networking.firewall.allowedUDPPorts = lib.range 1714 1764;
 
   networking.wireless.iwd.enable = true;
-  #networking.networkmanager.enable = true;
 
   services.ratbagd.enable = true;
 
@@ -239,111 +219,22 @@ in {
   environment.etc."system76-scheduler/exceptions.ron".source =
     "${pkgs.system76-scheduler}/etc/system76-scheduler/exceptions.ron";
 
-  # i wanted to be able to use both x and wayland... but honestly wayland is enough for me
-  services.xserver.libinput.enable = true;
-  /*
-  services.xserver = {
-    enable = true;
-    libinput.enable = true;
-    desktopManager.xterm.enable = false;
-    # I couldn't get lightdm to start sway, so let's just do this
-    displayManager.startx.enable = true;
-    windowManager.i3.enable = true;
-  };
-  */
-
-  programs.sway.enable = true;
-  programs.firejail.enable = true;
+  common.workstation = true;
+  common.gettyAutologin = true;
+  # programs.firejail.enable = true;
   # doesn't work:
   # programs.wireshark.enable = true;
   # users.groups.wireshark.members = [ "user "];
-  environment.systemPackages = with pkgs; [
-    vim
-    wget
-    git
-    man-pages man-pages-posix
-  ];
-  services.dbus.enable = true;
-  # I don't remember whether I really need this...
-  security.polkit.enable = true;
   services.printing.enable = true;
-
-  # pipewire:
-  security.rtkit.enable = true;
-  services.pipewire = {
+  # from nix-gaming
+  services.pipewire.lowLatency = {
     enable = true;
-    alsa.enable = true;
-    alsa.support32Bit = true;
-    pulse.enable = true;
-    jack.enable = true;
-    # from nix-gaming
-    lowLatency = {
-      enable = true;
-      # 96 is mostly fine but has some xruns
-      # 128 has xruns every now and then too, but is overall fine
-      quantum = 128;
-      rate = 48000;
-    };
+    # 96 is mostly fine but has some xruns
+    # 128 has xruns every now and then too, but is overall fine
+    quantum = 128;
+    rate = 48000;
   };
-
-  # environment.pathsToLink = [ "/share/zsh" "/share/fish" ];
-  programs.fish = {
-    enable = true;
-  };
-  /*programs.zsh = {
-    enable = true;
-    enableBashCompletion = true;
-  };*/
-
-  programs.fuse.userAllowOther = true;
 
   programs.ccache.enable = true;
-
-  xdg.portal = {
-    enable = true;
-    extraPortals = with pkgs; [ xdg-desktop-portal-gtk xdg-desktop-portal-wlr ];
-  };
-
-  users.mutableUsers = false;
-  users.users.user = {
-    uid = 1000;
-    isNormalUser = true;
-    extraGroups = [ "networkmanager" "wheel" ];
-    # initialHashedPassword = ...set in private.nix;
-  };
-  # users.users.root.initialHashedPassword = ...set in private.nix;
-  nix = {
-    settings = {
-      allowed-users = [ "user" ];
-      auto-optimise-store = true;
-    };
-    gc = {
-      automatic = true;
-      dates = "weekly";
-      options = "--delete-older-than 30d";
-    };
-    package = pkgs.nixFlakes;
-    extraOptions = ''
-      experimental-features = nix-command flakes
-    '';
-  };
-  systemd.services.nix-daemon.serviceConfig.LimitSTACKSoft = "infinity";
-
-  documentation.dev.enable = true;
-
-  # autologin once after boot
-  # --skip-login means directly call login instead of first asking for username
-  # (normally login asks for username too, but getty prefers to do it by itself for whatever reason)
-  services.getty.extraArgs = [ "--skip-login" ];
-  services.getty.loginProgram = let
-    lockfile = "/tmp/login-once.lock";
-  in with pkgs; writeShellScript "login-once" ''
-    if [ -f '${lockfile}' ]; then
-      exec ${shadow}/bin/login $@
-    else
-      ${coreutils}/bin/touch '${lockfile}'
-      exec ${shadow}/bin/login -f user
-    fi
-  '';
 }
 
