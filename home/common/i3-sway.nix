@@ -287,7 +287,9 @@ in
       // (forAllModifiers
         "--inhibited --no-repeat --release "
         "Scroll_Lock"
-        "exec ${pkgs.mumble}/bin/mumble rpc stoptalking")
+        # mumble remembers the amount of times starttalking has been called,
+        # and if stoptalking isn't called for some reason, calling it one time stops being enough
+        "exec ${pkgs.mumble}/bin/mumble rpc stoptalking && ${pkgs.mumble}/bin/mumble rpc stoptalking")
       // {
         "${modifier}+c" = "exec ${rofiSway}/bin/rofi -show calc -no-show-match -no-sort -no-persist-history";
         "${modifier}+Print" = "exec ${grimshot}/bin/grimshot copy area";
