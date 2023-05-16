@@ -5,6 +5,9 @@
 let
   cfg = config.server;
 in {
+  impermanence.directories = [
+    { directory = /var/lib/fdroid; user = "fdroid"; group = "fdroid"; mode = "0755"; }
+  ];
   services.nginx.virtualHosts."${cfg.domainName}" = {
     locations."/fdroid/".alias = "/var/lib/fdroid/repo/";
   };

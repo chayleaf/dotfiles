@@ -33,7 +33,7 @@ in {
     forceSSL = true;
     globalRedirect = cfg.domainName;
     locations."/music".extraConfig = "return 301 https://mumble.${cfg.domainName}/music/;";
-    locations."/music/".proxyPass = "http://${lib.quotePotentialIpV6 settings.webinterface.listening_addr}:${toString settings.webinterface.listening_port}/";
+    locations."/music/".proxyPass = "http://${lib.quoteListenAddr settings.webinterface.listening_addr}:${toString settings.webinterface.listening_port}/";
   };
 
   services.botamusique = {

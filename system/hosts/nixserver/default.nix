@@ -34,6 +34,7 @@ in {
     ./matrix.nix
     ./fdroid.nix
     ./mumble.nix
+    ./mailserver.nix
   ];
 
   system.stateVersion = "22.11";
@@ -75,11 +76,7 @@ in {
     path = /persist;
     directories = [
       { directory = /var/www/${cfg.domainName}; }
-      { directory = /var/lib/maubot; }
-      { directory = /var/lib/fdroid; }
-      { directory = config.mailserver.dkimKeyDirectory; }
-      { directory = config.mailserver.mailDirectory; }
-      { directory = /home/user; }
+      { directory = /home/${config.common.mainUsername}; }
       { directory = /root; }
       { directory = /nix; }
     ];
@@ -109,12 +106,12 @@ in {
     allowedUDPPorts = [
       # dns
       53 853
-      # wireguard
-      # 5553
     ];
   };
 
   # UNBOUND
+  users.users.${config.common.mainUsername}.extraGroups = [ config.services.unbound.group ];
+
   services.unbound = {
     enable = true;
     package = pkgs.unbound-with-systemd.override {
@@ -166,8 +163,6 @@ in {
     startWhenNeeded = false;
   };
 
-  users.users.user.extraGroups = [ config.services.unbound.group ];
-
   services.postgresql.enable = true;
   services.postgresql.package = pkgs.postgresql_13;
 
@@ -203,7 +198,7 @@ in {
   });
   services.searx.runInUwsgi = true;
   services.searx.uwsgiConfig = let inherit (config.services.searx) settings; in {
-    socket = "${lib.quotePotentialIpV6 settings.server.bind_address}:${toString settings.server.port}";
+    socket = "${lib.quoteListenAddr settings.server.bind_address}:${toString settings.server.port}";
   };
   services.searx.environmentFile = /var/lib/searx/searx.env;
   services.searx.settings = {
@@ -239,9 +234,9 @@ in {
   services.nginx.virtualHosts."search.${cfg.domainName}" = let inherit (config.services.searx) settings; in {
     enableACME = true;
     forceSSL = true;
-    # locations."/".proxyPass = "http://${lib.quotePotentialIpV6 settings.server.bind_address}:${toString settings.server.port}";
+    # locations."/".proxyPass = "http://${lib.quoteListenAddr settings.server.bind_address}:${toString settings.server.port}";
     locations."/".extraConfig = ''
-      uwsgi_pass "${lib.quotePotentialIpV6 settings.server.bind_address}:${toString settings.server.port}";
+      uwsgi_pass "${lib.quoteListenAddr settings.server.bind_address}:${toString settings.server.port}";
       include ${config.services.nginx.package}/conf/uwsgi_params;
     '';
   };
@@ -295,55 +290,11 @@ in {
     globalRedirect = cfg.domainName;
   };
 
-  # MAILSERVER
-  # roundcube
-  services.nginx.virtualHosts."mail.${cfg.domainName}" = {
-    enableACME = true;
-  };
-  services.roundcube = {
-    enable = true;
-    package = pkgs.roundcube.withPlugins (plugins: [ plugins.persistent_login ]);
-    dicts = with pkgs.aspellDicts; [ en ru ];
-    hostName = "mail.${cfg.domainName}";
-    maxAttachmentSize = 100;
-    plugins = [ "persistent_login" ];
-  };
-  mailserver = {
-    enable = true;
-    fqdn = "mail.${cfg.domainName}";
-    domains = [ cfg.domainName ];
-    certificateScheme = 1;
-    certificateFile = config.security.acme.certs."mail.${cfg.domainName}".directory + "/fullchain.pem";
-    keyFile = config.security.acme.certs."mail.${cfg.domainName}".directory + "/key.pem";
-    localDnsResolver = false;
-    recipientDelimiter = "-";
-    lmtpSaveToDetailMailbox = "no";
-    hierarchySeparator = "/";
-  };
-
-  # Only allow local connections to noreply account
-  mailserver.loginAccounts."noreply@${cfg.domainName}" = {
-    # password is set in private.nix
-    hashedPassword = cfg.hashedNoreplyPassword;
-    sendOnly = true;
-  };
-  services.dovecot2.extraConfig =
-    let
-      passwd = builtins.toFile "dovecot2-local-passwd" ''
-        noreply@${cfg.domainName}:{plain}${cfg.unhashedNoreplyPassword}::::::allow_nets=local,127.0.0.0/8,::1
-      '';
-    in ''
-      passdb {
-        driver = passwd-file
-        args = ${passwd}
-      }
-    '';
-
   # GITEA
   services.nginx.virtualHosts."git.${cfg.domainName}" = let inherit (config.services.gitea) settings; in {
     enableACME = true;
     forceSSL = true;
-    locations."/".proxyPass = "http://${lib.quotePotentialIpV6 settings.server.HTTP_ADDR}:${toString settings.server.HTTP_PORT}";
+    locations."/".proxyPass = "http://${lib.quoteListenAddr settings.server.HTTP_ADDR}:${toString settings.server.HTTP_PORT}";
   };
   services.gitea = {
     enable = true;

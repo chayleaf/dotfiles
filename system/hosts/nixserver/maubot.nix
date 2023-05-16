@@ -9,9 +9,12 @@ let
   maubotAddr = "127.0.0.1";
   maubotPort = 29316;
 in {
+  impermanence.directories = [
+    { directory = /var/lib/maubot; user = "maubot"; group = "maubot"; mode = "0755"; }
+  ];
   services.nginx.virtualHosts."matrix.${cfg.domainName}".locations = {
     "/_matrix/maubot/" = {
-      proxyPass = "http://${lib.quotePotentialIpV6 maubotAddr}:${toString maubotPort}";
+      proxyPass = "http://${lib.quoteListenAddr maubotAddr}:${toString maubotPort}";
       proxyWebsockets = true;
     };
   };

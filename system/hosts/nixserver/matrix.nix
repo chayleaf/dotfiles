@@ -39,7 +39,7 @@ in {
     locations = {
       "= /.well-known/matrix/server".extraConfig = matrixServerConfigResponse;
       "= /.well-known/matrix/client".extraConfig = matrixClientConfigResponse;
-      "/".proxyPass = "http://${lib.quotePotentialIpV6 matrixAddr}:${toString matrixPort}";
+      "/".proxyPass = "http://${lib.quoteListenAddr matrixAddr}:${toString matrixPort}";
     };
   };
 
@@ -47,7 +47,7 @@ in {
   systemd.services.heisenbridge.after = [ "matrix-synapse.service" ];
   services.heisenbridge = {
     enable = true;
-    homeserver = "http://${lib.quotePotentialIpV6 matrixAddr}:${toString matrixPort}/";
+    homeserver = "http://${lib.quoteListenAddr matrixAddr}:${toString matrixPort}/";
   };
   # so synapse can read the registration
   users.groups.heisenbridge.members = [ "matrix-synapse" ];

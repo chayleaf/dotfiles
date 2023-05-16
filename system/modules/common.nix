@@ -10,7 +10,7 @@
         workstation = mkOption {
           type = types.bool;
           default = false;
-          description = "whether this device is a workstation (meaning a device for personal use rather than a server)";
+          description = "whether this device is a workstation (meaning a device for personal use rather than a server/embedded device)";
         };
         mainUsername = mkOption {
           type = types.str;

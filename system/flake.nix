@@ -36,7 +36,7 @@
       inherit nixpkgs;
     };
     lib = nixpkgs.lib // {
-      quotePotentialIpV6 = addr:
+      quoteListenAddr = addr:
         if nixpkgs.lib.hasInfix ":" addr then "[${addr}]" else addr;
     };
     specialArgs = {
