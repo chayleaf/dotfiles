@@ -22,6 +22,11 @@
           default = false;
           description = "make getty autologin to the main user";
         };
+        resolution = mkOption {
+          type = with types; nullOr str;
+          default = null;
+          description = "resolution (none/1280x720/1920x1080)";
+        };
       };
     };
     default = { };
@@ -49,9 +54,15 @@
       linkInputs = true;
     };
     systemd.services.nix-daemon.serviceConfig.LimitSTACKSoft = "infinity";
-    boot.kernelParams = [
+    boot.kernelParams = lib.optionals (cfg.resolution != null) [
       "consoleblank=60"
-    ];
+    ] ++ (lib.optionals (cfg.resolution == "1920x1080") [
+      "fbcon=font:TER16x32"
+    ]);
+    boot.loader.grub = lib.mkIf (cfg.resolution != null) {
+      gfxmodeEfi = cfg.resolution;
+      gfxmodeBios = cfg.resolution;
+    };
 
     nixpkgs.overlays = [ (self: super: import ../pkgs { pkgs = super; inherit lib; }) ];
     hardware.enableRedistributableFirmware = true;
@@ -92,7 +103,8 @@
       isNormalUser = true;
       extraGroups = [ "wheel" ];
     };
-    services.xserver.libinput.enable = lib.mkIf cfg.workstation true;
+    # nixos-hardware uses mkDefault here, so we use slightly higher priority
+    services.xserver.libinput.enable = lib.mkOverride 999 cfg.workstation;
     /*
     services.xserver = {
       enable = true;

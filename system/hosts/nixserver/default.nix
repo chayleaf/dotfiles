@@ -40,10 +40,6 @@ in {
   system.stateVersion = "22.11";
 
   boot = {
-    initrd = {
-      availableKernelModules = [ "xhci_pci" "ehci_pci" "ahci" "usb_storage" "sd_mod" "sr_mod" "rtsx_pci_sdmmc" ];
-    };
-    kernelModules = [ "kvm-intel" ];
     loader = {
       grub = {
         enable = true;
@@ -51,8 +47,6 @@ in {
         version = 2;
         efiSupport = true;
         efiInstallAsRemovable = true;
-        gfxmodeEfi = "1920x1080";
-        gfxmodeBios = "1920x1080";
       };
       efi.efiSysMountPoint = "/boot/efi";
     };
@@ -71,6 +65,7 @@ in {
   };
   zramSwap.enable = true;
   swapDevices = [ ];
+  services.tlp.enable = false;
   impermanence = {
     enable = true;
     path = /persist;

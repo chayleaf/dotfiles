@@ -24,7 +24,6 @@
 
   outputs = inputs@{ self, nixpkgs, utils, nixos-hardware, impermanence, nix-gaming, nixos-mailserver, ... }:
   let
-    hw = nixos-hardware.nixosModules;
     # IRL-related stuff I'd rather not put into git
     priv =
       if builtins.pathExists ./private.nix then (import ./private.nix)
@@ -32,18 +31,19 @@
       else { };
     getPriv = hostname: with builtins; if hasAttr hostname priv then getAttr hostname priv else { };
     common = hostname: [ (getPriv hostname) ];
-    extraArgs = {
-      inherit nixpkgs;
-    };
     lib = nixpkgs.lib // {
       quoteListenAddr = addr:
         if nixpkgs.lib.hasInfix ":" addr then "[${addr}]" else addr;
     };
-    specialArgs = {
-      inherit lib;
-    };
     mkHost = args @ { system ? "x86_64-linux", modules, ... }: {
-      inherit system extraArgs specialArgs;
+      inherit system;
+      extraArgs = {
+        inherit nixpkgs;
+      };
+      specialArgs = {
+        inherit lib;
+        hardware = nixos-hardware.nixosModules;
+      };
     } // args;
   in utils.lib.mkFlake {
     inherit self inputs;
@@ -54,24 +54,19 @@
       ./modules/common.nix
       impermanence.nixosModule 
     ];
-    hosts = {
-      nixmsi = mkHost {
+    hosts = builtins.mapAttrs (_: mkHost) {
+      nixmsi = {
         modules = [
-          ./hosts/nixmsi.nix
           nix-gaming.nixosModules.pipewireLowLatency
-          hw.common-pc-ssd # enables fstrim
-          hw.common-cpu-amd # microcode
-          hw.common-cpu-amd-pstate # amd-pstate
-          hw.common-gpu-amd # configures drivers
-          hw.common-pc-laptop # enables tlp
+          ./hardware/msi_delta_15.nix
+          ./hosts/nixmsi.nix
         ] ++ common "nixmsi";
       };
-      nixserver = mkHost {
+      nixserver = {
         modules = [
-          ./hosts/nixserver
           nixos-mailserver.nixosModules.default
-          hw.common-pc-hdd
-          hw.common-cpu-intel
+          ./hardware/hp_probook_g0.nix
+          ./hosts/nixserver
         ] ++ common "nixserver";
       };
     };

@@ -1,4 +1,8 @@
-{ lib, pkgs, ... }:
+{ lib
+, pkgs
+, config
+, ... }:
+
 let
   efiPart = "/dev/disk/by-uuid/D77D-8CE0";
 
@@ -37,7 +41,6 @@ in {
 
   boot = {
     initrd = {
-      availableKernelModules = [ "nvme" "xhci_pci" ];
       # insert crypto_keyfile into initrd so that grub can tell the kernel the
       # encryption key once I unlock the /boot partition
       secrets."/crypto_keyfile.bin" = "/boot/initrd/crypto_keyfile.bin";
@@ -64,12 +67,6 @@ in {
       "resume=/@swap/swapfile"
       # resume_offset = $(btrfs inspect-internal map-swapfile -r path/to/swapfile)
       "resume_offset=533760"
-      "fbcon=font:TER16x32"
-      # disable PSR to *hopefully* avoid random hangs
-      # this one didnt help
-      "amdgpu.dcdebugmask=0x10"
-      # maybe this one will?
-      "amdgpu.noretry=0"
     ];
     loader = {
       grub = {
@@ -78,8 +75,6 @@ in {
         efiSupport = true;
         # nodev = disable bios support 
         device = "nodev";
-        gfxmodeEfi = "1920x1080";
-        gfxmodeBios = "1920x1080";
       };
       efi.canTouchEfiVariables = true;
       efi.efiSysMountPoint = "/boot/efi";
@@ -114,8 +109,7 @@ in {
 
   # see modules/vfio.nix
   vfio.enable = true;
-  vfio.pciIDs = [ "1002:73df" "1002:ab28" ];
-  vfio.libvirtdGroup = [ "user" ];
+  vfio.libvirtdGroup = [ config.common.mainUsername ];
   
   # because libvirtd's nat is broken for some reason...
   networking.nat = {
@@ -224,7 +218,7 @@ in {
   # programs.firejail.enable = true;
   # doesn't work:
   # programs.wireshark.enable = true;
-  # users.groups.wireshark.members = [ "user "];
+  # users.groups.wireshark.members = [ config.common.mainUsername"];
   services.printing.enable = true;
   # from nix-gaming
   services.pipewire.lowLatency = {

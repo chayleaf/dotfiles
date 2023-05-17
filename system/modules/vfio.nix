@@ -36,7 +36,7 @@ in {
         };
         pciIDs = mkOption {
           type = with types; listOf str;
-          default = [];
+          default = [ ];
           description = "PCI passthrough IDs";
         };
         lookingGlass = mkOption {
