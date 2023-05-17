@@ -69,6 +69,13 @@
           ./hosts/nixserver
         ] ++ common "nixserver";
       };
+      router = {
+        system = "aarch64-linux";
+        modules = [
+          ./hardware/bpi_r3.nix
+          ./hosts/router
+        ];
+      };
     };
   };
 }

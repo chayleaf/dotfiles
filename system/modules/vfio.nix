@@ -12,7 +12,7 @@ in {
         enable = mkOption {
           type = types.bool;
           default = false;
-          description = "Enable GPU passthrough config (probably no intel/nvidia support since I can't test it)";
+          description = "Enable GPU passthrough + VM config (probably no intel/nvidia support since I can't test it)";
         };
         libvirtdGroup = mkOption {
           type = with types; listOf str;
