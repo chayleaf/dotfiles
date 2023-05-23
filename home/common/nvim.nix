@@ -80,7 +80,6 @@
 
     which-key = REQ "which-key";
     luasnip = REQ "luasnip";
-    cmp = REQ "cmp";
     compile' = name: stmts: compile name (L stmts);
   in {
     enable = true;
@@ -428,33 +427,40 @@
               on_attach client bufnr _
             ])
             # BEGIN
-            (let setupLsp' = { name, settings ? {} }: (lsp name).setup {
-              inherit on_attach capabilities settings;
-            };
-            setupLsp = args: setupLsp' (if builtins.isString args then { name = args; } else args);
+            (let setupLsp = name: args: (lsp name).setup ({
+              inherit on_attach capabilities;
+              settings = { };
+            } // args);
             in on_attach_rust: L [
               # vim.lsp.set_log_level "debug" _
               # see https://github.com/neovim/nvim-lspconfig/blob/master/doc/server_configurations.md
-              map setupLsp [
-                "bashls"
-                "clangd"
+              lib.mapAttrsToList setupLsp {
+                bashls = {};
+                clangd = {};
                 # https://github.com/python-lsp/python-lsp-server/blob/develop/CONFIGURATION.md
-                { name = "pylsp"; settings = {
-                  pylsp.plugins.pylsp_mypy.enabled = true;
-                }; }
-                "svelte"
-                "html"
-                "cssls"
-                "tsserver"
-                "jsonls"
-                "nil_ls"
-                "taplo"
-                "marksman"
-              ] _
-              (lsp "rust_analyzer").setup {
-                on_attach = on_attach_rust;
-                settings = rust_settings;
-                inherit capabilities;
+                pylsp = {
+                  settings = {
+                    pylsp.plugins.pylsp_mypy.enabled = true;
+                  };
+                };
+                svelte = { };
+                html = { };
+                cssls = { };
+                tsserver = { };
+                jsonls = { };
+                nil_ls = {
+                  settings = {
+                    nil.nix.binary = "${pkgs.writeShellScript "nil-nix-wrapper" ''
+                      nix --allow-import-from-derivation "$@"
+                    ''}";
+                  };
+                };
+                taplo = { };
+                marksman = { };
+                rust_analyzer = {
+                  on_attach = on_attach_rust;
+                  settings = rust_settings;
+                };
               } _
             ]) # END
           ) _ # END

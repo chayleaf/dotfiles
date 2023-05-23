@@ -1,4 +1,5 @@
 { config
+, pkgs
 , lib
 , ... }:
 
@@ -38,9 +39,23 @@ in {
 
   services.botamusique = {
     enable = true;
+    # TODO: remove after next nixpkgs version bump
+    package = pkgs.botamusique.override {
+      python3Packages = pkgs.python3Packages // {
+        pymumble = pkgs.python3Packages.pymumble.overrideAttrs (old: rec {
+          version = "1.6.1";
+          src = pkgs.fetchFromGitHub {
+            owner = "azlux";
+            repo = "pymumble";
+            rev = "refs/tags/${version}";
+            hash = "sha256-+sT5pqdm4A2rrUcUUmvsH+iazg80+/go0zM1vr9oeuE=";
+          };
+        });
+      };
+    };
     settings = {
       youtube_dl = {
-        cookiefile = "/var/lib/botamusique/cookie_ydl";
+        cookiefile = "/var/lib/private/botamusique/cookie_ydl";
       };
       webinterface = {
         enabled = true;
@@ -59,7 +74,7 @@ in {
         ducking = true;
         ducking_volume = 0.75;
       };
-      server.certificate = "/var/lib/botamusique/cert.pem";
+      server.certificate = "/var/lib/private/botamusique/botamusique.pem";
     };
   };
   systemd.services.botamusique.wants = [ "murmur.service" ];

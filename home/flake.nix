@@ -14,7 +14,7 @@
       inputs.nixpkgs.follows = "nixpkgs";
     };
     notlua = {
-      url = "github:chayleaf/notlua/master";
+      url = "github:chayleaf/notlua/469652092f4f2e951b0db29027b05346b32d8122";
       inputs.nixpkgs.follows = "nixpkgs";
     };
   };

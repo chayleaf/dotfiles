@@ -60,17 +60,17 @@
         ]
       },
       "locked": {
-        "lastModified": 1682202201,
-        "narHash": "sha256-3r5izcrgfO2RxV1gU7aWQnGAky5Ek3wyzM+9eQtG4M4=",
+        "lastModified": 1684668267,
+        "narHash": "sha256-AKnX12OwVEqXDv8Th2QDT96MPvC8Zv5KCtVdqc7l3hY=",
         "owner": "chayleaf",
         "repo": "notlua",
-        "rev": "cd89a08083cc43a07ac1f6ced0594fa7f49c5cf2",
+        "rev": "469652092f4f2e951b0db29027b05346b32d8122",
         "type": "github"
       },
       "original": {
         "owner": "chayleaf",
-        "ref": "master",
         "repo": "notlua",
+        "rev": "469652092f4f2e951b0db29027b05346b32d8122",
         "type": "github"
       }
     },

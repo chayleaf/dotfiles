@@ -1,0 +1,111 @@
+diff --git a/include/sway/config.h b/include/sway/config.h
+index aa58da53..223efae0 100644
+--- a/include/sway/config.h
++++ b/include/sway/config.h
+@@ -50,6 +50,7 @@ enum binding_flags {
+ 	BINDING_INHIBITED = 1 << 7, // keyboard only: ignore shortcut inhibitor
+ 	BINDING_NOREPEAT = 1 << 8, // keyboard only; do not trigger when repeating a held key
+ 	BINDING_EXACT = 1 << 9, // gesture only; only trigger on exact match
++	BINDING_ALLOWOTHER = 1 << 10, // keyboard only; allow other keys to be pressed at the same time
+ };
+ 
+ /**
+diff --git a/sway/commands/bind.c b/sway/commands/bind.c
+index 979e178f..d17458ea 100644
+--- a/sway/commands/bind.c
++++ b/sway/commands/bind.c
+@@ -377,6 +377,8 @@ static struct cmd_results *cmd_bindsym_or_bindcode(int argc, char **argv,
+ 			warn = false;
+ 		} else if (strcmp("--no-repeat", argv[0]) == 0) {
+ 			binding->flags |= BINDING_NOREPEAT;
++		} else if (strcmp("--allow-other", argv[0]) == 0) {
++			binding->flags |= BINDING_ALLOWOTHER;
+ 		} else {
+ 			break;
+ 		}
+diff --git a/sway/input/keyboard.c b/sway/input/keyboard.c
+index c3bf4fbb..78ef8e61 100644
+--- a/sway/input/keyboard.c
++++ b/sway/input/keyboard.c
+@@ -162,8 +162,9 @@ static void get_active_binding(const struct sway_shortcut_state *state,
+ 		bool binding_locked = (binding->flags & BINDING_LOCKED) != 0;
+ 		bool binding_inhibited = (binding->flags & BINDING_INHIBITED) != 0;
+ 		bool binding_release = binding->flags & BINDING_RELEASE;
++		bool binding_allowother = (binding->flags & BINDING_ALLOWOTHER) != 0;
+ 
+-		if (modifiers ^ binding->modifiers ||
++		if ((binding_allowother ? (binding->modifiers & modifiers) : modifiers) ^ binding->modifiers ||
+ 				release != binding_release ||
+ 				locked > binding_locked ||
+ 				inhibited > binding_inhibited ||
+@@ -175,7 +176,42 @@ static void get_active_binding(const struct sway_shortcut_state *state,
+ 		}
+ 
+ 		bool match = false;
+-		if (state->npressed == (size_t)binding->keys->length) {
++		if (binding_allowother) {
++			/*
++			 * Make sure all keys match, but also allow other keys to be pressed.
++			 * In case of a press (as opposed to release), make sure at least one
++			 * of the keys is the current key, otherwise the binding would be
++			 * triggered twice. In case of release, the keys are considered released
++			 * all at once so no check is necessary.
++			 */
++			bool one_key_is_current = false;
++
++			match = binding->keys->length != 0;
++
++			for (int j = 0; j < binding->keys->length; j++) {
++				bool key_match = false;
++				uint32_t key = *(uint32_t *)binding->keys->items[j];
++
++				for (size_t k = 0; k < state->npressed; k++) {
++					if (key == state->pressed_keys[k]) {
++						key_match = true;
++						break;
++					}
++				}
++
++				if (!key_match) {
++					match = false;
++					break;
++				}
++				if (key == state->current_key) {
++					one_key_is_current = true;
++				}
++			}
++
++			if (!release && !one_key_is_current) {
++				match = false;
++			}
++		} else if (state->npressed == (size_t)binding->keys->length) {
+ 			match = true;
+ 			for (size_t j = 0; j < state->npressed; j++) {
+ 				uint32_t key = *(uint32_t *)binding->keys->items[j];
+diff --git a/sway/sway.5.scd b/sway/sway.5.scd
+index 25082c41..268e0526 100644
+--- a/sway/sway.5.scd
++++ b/sway/sway.5.scd
+@@ -389,8 +389,8 @@ runtime.
+ 		for_window <criteria> move container to output <output>
+ 
+ *bindsym* [--whole-window] [--border] [--exclude-titlebar] [--release] [--locked] \
+-[--to-code] [--input-device=<device>] [--no-warn] [--no-repeat] [Group<1-4>+]<key combo> \
+-<command>
++[--to-code] [--input-device=<device>] [--no-warn] [--no-repeat] [--allow-other] \
++[Group<1-4>+]<key combo> <command>
+ 	Binds _key combo_ to execute the sway command _command_ when pressed. You
+ 	may use XKB key names here (*wev*(1) is a good tool for discovering these).
+ 	With the flag _--release_, the command is executed when the key combo is
+@@ -419,6 +419,11 @@ runtime.
+ 	repeatedly when the key is held, according to the repeat
+ 	settings specified in the input configuration.
+ 
++	If _--allow-other_ is set, any key sequence containing this key sequence
++	may trigger this binding. For example, a single-key binding with
++	_--allow-other_ set may be executed upon the simultaneous press of one
++	or more keys, one of which is the binding's key.
++
+ 	Bindings to keysyms are layout-dependent. This can be changed with the
+ 	_--to-code_ flag. In this case, the keysyms will be translated into the
+ 	corresponding keycodes in the first configured layout.

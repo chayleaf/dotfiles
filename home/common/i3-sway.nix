@@ -220,6 +220,15 @@ in
   '';
   wayland.windowManager.sway = {
     wrapperFeatures.gtk = true;
+    package = pkgs.sway-unwrapped.overrideAttrs (old: {
+      patches = old.patches or [] ++ [
+        ./sway.patch
+        /*(pkgs.fetchpatch {
+          url = "https://patch-diff.githubusercontent.com/raw/swaywm/sway/pull/6920.patch";
+          sha256 = "sha256-XgkysduhHbmprE334yeL65txpK0HNXeCmgCZMxpwsgU=";
+        })*/
+      ];
+    });
     extraConfig = ''
       title_align center
     '';
@@ -248,7 +257,7 @@ in
         "3" = [{ app_id = "org.keepassxc.KeePassXC"; }];
       };
       keybindings = genKeybindings options.wayland.windowManager.sway (with pkgs.sway-contrib;
-      let
+      /*let
         modifiers = [
           "shift"
           "lock" # caps lock
@@ -290,7 +299,9 @@ in
         # mumble remembers the amount of times starttalking has been called,
         # and if stoptalking isn't called for some reason, calling it one time stops being enough
         "exec ${pkgs.mumble}/bin/mumble rpc stoptalking && ${pkgs.mumble}/bin/mumble rpc stoptalking")
-      // {
+      //*/ {
+        "--inhibited --no-repeat --allow-other Scroll_Lock" = "exec ${pkgs.mumble}/bin/mumble rpc starttalking";
+        "--inhibited --no-repeat --allow-other --release Scroll_Lock" = "exec ${pkgs.mumble}/bin/mumble rpc stoptalking";
         "${modifier}+c" = "exec ${rofiSway}/bin/rofi -show calc -no-show-match -no-sort -no-persist-history";
         "${modifier}+Print" = "exec ${grimshot}/bin/grimshot copy area";
         "${modifier}+Mod1+Print" = "exec ${grimshot}/bin/grimshot copy window";
@@ -354,8 +365,8 @@ in
     ];
     timeouts = [
       { timeout = 300; 
-        command = "${pkgs.sway}/bin/swaymsg \"output * power off\"";
-        resumeCommand = "${pkgs.sway}/bin/swaymsg \"output * power on\""; }
+        command = "${config.wayland.windowManager.sway.package}/bin/swaymsg \"output * power off\"";
+        resumeCommand = "${config.wayland.windowManager.sway.package}/bin/swaymsg \"output * power on\""; }
       { timeout = 600;
         command = swaylock-start; }
     ];
