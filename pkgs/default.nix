@@ -5,7 +5,7 @@
 , ... }:
 let
   inherit (pkgs) callPackage;
-  sources = import ../_sources/generated.nix {
+  sources = import ./_sources/generated.nix {
     inherit (pkgs) fetchgit fetchurl fetchFromGitHub dockerTools;
   };
 in
@@ -30,6 +30,8 @@ in
       fetchSubmodules = true;
     };
   });
+  maubot = callPackage ./maubot.nix { };
+  pineapplebot = callPackage ./pineapplebot.nix { };
   proton-ge = pkgs.stdenvNoCC.mkDerivation {
     inherit (sources.proton-ge) pname version src;
     installPhase = ''
@@ -38,6 +40,7 @@ in
     '';
   };
   rofi-steam-game-list = callPackage ./rofi-steam-game-list { };
+  system76-scheduler = callPackage ./system76-scheduler.nix { };
   techmino = callPackage ./techmino { };
 
   firefox-addons = lib.recurseIntoAttrs (callPackage ./firefox-addons { inherit nur sources; });

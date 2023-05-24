@@ -29,14 +29,6 @@
     enable = true;
   };
   services.kdeconnect.enable = true;
-  nixpkgs.config.allowUnfreePredicate = pkg: builtins.elem (lib.getName pkg) [
-    "steam-run"
-    "steam"
-    "steam-original"
-    "steam-runtime"
-    "steamcmd"
-    "osu-lazer-bin"
-  ];
   home.sessionVariables = {
     STEAM_EXTRA_COMPAT_TOOLS_PATHS = "${pkgs.proton-ge}";
     CARGO_PROFILE_DEV_INCREMENTAL = "true";

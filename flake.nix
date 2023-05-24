@@ -36,56 +36,35 @@
       if builtins.pathExists ./private.nix then (import ./private.nix)
       else if builtins.pathExists ./private/default.nix then (import ./private)
       else { };
+    # if x has key s, get it. Otherwise return def
     getOr = def: s: x: with builtins; if hasAttr s x then getAttr s x else def;
+    # All private config for hostname
     getPriv = hostname: getOr { } hostname priv;
+    # Private NixOS config for hostname
     getPrivSys = hostname: getOr { } "system" (getPriv hostname);
+    # Private home-manager config for hostname and username
     getPrivUser = hostname: user: getOr { } user (getPriv hostname);
+    # extended lib
     lib = nixpkgs.lib // {
       quoteListenAddr = addr:
         if nixpkgs.lib.hasInfix ":" addr then "[${addr}]" else addr;
     };
-    config = {
-      nixmsi = rec {
-        system = "x86_64-linux";
-        modules = [
-          nix-gaming.nixosModules.pipewireLowLatency
-          ./system/hardware/msi_delta_15.nix
-          ./system/hosts/nixmsi.nix
-        ];
-        home.user = {
-          pkgs = import nixpkgs {
-            inherit system;
-            binaryCachePublicKeys = [
-              "cache.nixos.org-1:6NCHdD59X431o0gWypbMrAURkbJ16ZPMQFGspcDShjY="
-              # "nixpkgs-wayland.cachix.org-1:3lwxaILxMRkVhehr5StQprHdEo4IrE8sRho9R9HOLYA="
-            ];
-            binaryCaches = [
-              "https://cache.nixos.org"
-              # "https://nixpkgs-wayland.cachix.org"
-            ];
-            overlays = [
-              (self: super: import ./home/pkgs {
-                # can't use callPackage here, idk why
-                pkgs = super;
-                lib = super.lib;
-                nur = import nur {
-                  pkgs = super;
-                  nurpkgs = super;
-                };
-                nix-gaming = nix-gaming.packages.${system};
-              })
-            ];
-          };
-          extraSpecialArgs = {
-            notlua = notlua.lib.${system};
-            # pkgs-wayland = nixpkgs-wayland.packages.${system};
-          };
-          modules = [
-            nur.nixosModules.nur
-            ./home/hosts/nixmsi.nix
-          ];
-        };
+    # can't use callPackage here, idk why; use import instead
+    overlay = self: super: import ./pkgs {
+      pkgs = super;
+      lib = super.lib;
+      nur = import nur {
+        pkgs = super;
+        nurpkgs = super;
       };
+      nix-gaming = nix-gaming.packages.${super.system};
+    };
+    # I override some settings down the line, but overlays always stay the same
+    mkPkgs = config: import nixpkgs (config // {
+      overlays = (if config?overlays then config.overlays else [ ]) ++ [ overlay ];
+    });
+    # this is actual config, it gets processed later
+    config = {
       nixserver = {
         modules = [
           nixos-mailserver.nixosModules.default
@@ -100,11 +79,55 @@
           ./system/hosts/router
         ];
       };
+      nixmsi = rec {
+        system = "x86_64-linux";
+        nixpkgs.config.allowUnfreePredicate = pkg: (lib.getName pkg) == "steam-original";
+        modules = [
+          nix-gaming.nixosModules.pipewireLowLatency
+          ./system/hardware/msi_delta_15.nix
+          ./system/hosts/nixmsi.nix
+        ];
+        home.common.pkgs = mkPkgs {
+          inherit system;
+          config.allowUnfreePredicate = pkg: builtins.elem (lib.getName pkg) [
+            "steam-run"
+            "steam"
+            "steam-original"
+            "steam-runtime"
+            "steamcmd"
+            "osu-lazer-bin"
+          ];
+          binaryCachePublicKeys = [
+            "cache.nixos.org-1:6NCHdD59X431o0gWypbMrAURkbJ16ZPMQFGspcDShjY="
+            # "nixpkgs-wayland.cachix.org-1:3lwxaILxMRkVhehr5StQprHdEo4IrE8sRho9R9HOLYA="
+          ];
+          binaryCaches = [
+            "https://cache.nixos.org"
+            # "https://nixpkgs-wayland.cachix.org"
+          ];
+        };
+        home.common.extraSpecialArgs = {
+          notlua = notlua.lib.${system};
+        };
+        home.user = [
+          nur.nixosModules.nur
+          ./home/hosts/nixmsi.nix
+        ];
+      };
     };
   in {
-    nixosConfigurations = builtins.mapAttrs (hostname: args @ { system ? "x86_64-linux", modules, ... }:
+    overlays.default = overlay;
+    packages = lib.genAttrs [
+      "x86_64-linux"
+      "aarch64-linux"
+    ] (system: let self = overlay self (import nixpkgs { inherit system; }); in self );
+    # this is the system config part
+    nixosConfigurations = builtins.mapAttrs (hostname: args @ { system ? "x86_64-linux", modules, nixpkgs ? {}, home ? {}, ... }:
       lib.nixosSystem ({
         inherit system;
+        pkgs = mkPkgs ({
+          inherit system;
+        } // nixpkgs);
         modules = modules ++ [
           { networking.hostName = hostname; }
           ./system/modules/vfio.nix
@@ -128,27 +151,48 @@
               (lib.filterAttrs (_: v: builtins.pathExists "${v}/default.nix") inputs);
             nix.nixPath = [ "/etc/nix/inputs" ];
           }
-        ];
+        ] ++ (lib.optionals (home != {} && (!(home?common) || !(home.common?pkgs))) [
+          # only use NixOS HM module if same nixpkgs as system nixpkgs is used for user
+          # why? because it seems that HM lacks the option to override pkgs, only change nixpkgs.* settings
+          home-manager.nixosModules.home-manager
+          {
+            home-manager = builtins.removeAttrs (getOr { } "common" home) [ "nixpkgs" ];
+          }
+          {
+            home-manager.useGlobalPkgs = true;
+            home-manager.useUserPackages = true;
+            home-manager.users = builtins.mapAttrs (k: v: {
+              imports = v ++ [ {
+                nixpkgs = getOr { } "nixpkgs" (getOr { } "common" home);
+              } ];
+            }) (builtins.removeAttrs home [ "common" ]);
+          }
+        ]);
         specialArgs = {
           inherit lib nixpkgs;
           hardware = nixos-hardware.nixosModules;
         };
-      } // (builtins.removeAttrs args [ "home" "modules" ])))
+      } // (builtins.removeAttrs args [ "home" "modules" "nixpkgs" ])))
       config;
+    # for each hostname, for each user, generate an attribute "${user}@${hostname}"
     homeConfigurations =
       builtins.foldl'
         (a: b: a // b)
         { }
         (builtins.concatLists
           (lib.mapAttrsToList
-            (hostname: config:
+            (hostname: sysConfig:
+            let common = builtins.removeAttrs (getOr { } "common" sysConfig.home) [ "nixpkgs" ]; in 
               lib.mapAttrsToList
-                (user: config@{ modules, ... }: {
-                  "${user}@${hostname}" = home-manager.lib.homeManagerConfiguration (config // {
-                    modules = config.modules ++ [ (getPrivUser hostname user) ];
+                # this is where actual config takes place
+                (user: homeConfig: {
+                  "${user}@${hostname}" = home-manager.lib.homeManagerConfiguration (common // {
+                    modules = homeConfig ++ [
+                      (getPrivUser hostname user)
+                    ];
                   });
                 })
-                (getOr { } "home" config))
+                (builtins.removeAttrs (getOr { } "home" sysConfig) [ "common" ]))
             config));
   };
 }

@@ -1,12 +1,9 @@
 # My Nix config
 
 To install, simply run `nixos-rebuild switch --flake .` and
-`home-manager switch --flake .`.
+`home-manager switch --flake .`... just kidding, this config relies on a
+bunch of secrets that I'm too lazy to make defaults for (such as initial
+root password for impermanence), so you won't be able to run it as-is.
 
-The reason I don't use the NixOS home-manager module is is because I
-want to be able to iterate home config quickly, and `nixos-rebuild`'ing
-the entire system for every little change is pretty annoying (not to
-mention the necessity of `sudo`). I'll probably merge them later,
-especially after [Tvix](https://tvl.fyi/blog/rewriting-nix) becomes
-feature-complete.
-
+Home-manager config and modules are in `./home`, NixOS config and
+modules are in `./system`.
