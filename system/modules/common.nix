@@ -60,7 +60,6 @@
       gfxmodeBios = cfg.resolution;
     };
 
-    nixpkgs.overlays = [ (self: super: import ../pkgs { pkgs = super; inherit lib; }) ];
     hardware.enableRedistributableFirmware = true;
     services.openssh.settings.PasswordAuthentication = false;
     services.tlp.settings.USB_EXCLUDE_PHONE = 1;
