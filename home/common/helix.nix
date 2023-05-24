@@ -29,7 +29,7 @@ in {
       ];
       extraPython3Packages = (pypkgs: with pypkgs; [ python-lsp-server ]);
     };
-    languages = [];
+    # languages = [];
     settings = {
       theme = "base16_terminal";
     };

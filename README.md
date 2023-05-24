@@ -1,11 +1,12 @@
 # My Nix config
 
-To install, put `system` to `/etc/nixos`, put `home` to
-`~/.config/home-manager` (and `overlays.nix` to `~/.config/nixpkgs`)
+To install, simply run `nixos-rebuild switch --flake .` and
+`home-manager switch --flake .`.
 
-The reason they are separate is because I want to be able to iterate
-home config quickly, and `nixos-rebuild`'ing the entire system for every
-little change is pretty annoying (not to mention the necessity of
-`sudo`). I'll probably merge them later, especially after
-[Tvix](https://tvl.fyi/blog/rewriting-nix) becomes feature-complete.
+The reason I don't use the NixOS home-manager module is is because I
+want to be able to iterate home config quickly, and `nixos-rebuild`'ing
+the entire system for every little change is pretty annoying (not to
+mention the necessity of `sudo`). I'll probably merge them later,
+especially after [Tvix](https://tvl.fyi/blog/rewriting-nix) becomes
+feature-complete.
 

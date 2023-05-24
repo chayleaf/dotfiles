@@ -1,6 +1,7 @@
 { pkgs
 , lib
 , nur
+, nix-gaming
 , ... }:
 let
   inherit (pkgs) callPackage;
@@ -10,6 +11,7 @@ let
 in
 
 {
+  osu-lazer-bin = nix-gaming.osu-lazer-bin;
   clang-tools_latest = pkgs.clang-tools_15;
   clang_latest = pkgs.clang_15;
   home-daemon = callPackage ./home-daemon { };
