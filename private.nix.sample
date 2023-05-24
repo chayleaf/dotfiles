@@ -1,0 +1,19 @@
+{
+  nixmsi = {
+    system = { pkgs, ... }: {
+      # insert private config here
+      time.timeZone = ...;
+      users.users.root.initialHashedPassword = ...;
+      users.users.user.initialHashedPassword = ...;
+    };
+    username = { pkgs, ... }: {
+      # insert private user config for username here
+    };
+  };
+  nixserver.system = { ... }: {
+    server.localIpV4 = ...;
+    server.lanCidrV4 = ...;
+    server.localIpV6 = ...;
+    server.lanCidrV6 = ...;
+  };
+}

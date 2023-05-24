@@ -30,125 +30,125 @@
   };
 
   outputs = inputs@{ self, nixpkgs, nixos-hardware, impermanence, home-manager, nur, nix-gaming, notlua, nixos-mailserver, ... }:
-    let
-      # IRL-related stuff I'd rather not put into git
-      priv =
-        if builtins.pathExists ./private.nix then (import ./private.nix)
-        else if builtins.pathExists ./private/default.nix then (import ./private)
-        else { };
-      getOr = def: s: x: with builtins; if hasAttr s x then getAttr s x else def;
-      getPriv = hostname: getOr { } hostname priv;
-      getPrivSys = hostname: getOr { } "system" (getPriv hostname);
-      getPrivUser = hostname: user: getOr { } user (getPriv hostname);
-      lib = nixpkgs.lib // {
-        quoteListenAddr = addr:
-          if nixpkgs.lib.hasInfix ":" addr then "[${addr}]" else addr;
-      };
-      config = {
-        nixmsi = rec {
-          system = "x86_64-linux";
-          modules = [
-            nix-gaming.nixosModules.pipewireLowLatency
-            ./system/hardware/msi_delta_15.nix
-            ./system/hosts/nixmsi.nix
-          ];
-          home.user = {
-            pkgs = import nixpkgs {
-              inherit system;
-              binaryCachePublicKeys = [
-                "cache.nixos.org-1:6NCHdD59X431o0gWypbMrAURkbJ16ZPMQFGspcDShjY="
-                # "nixpkgs-wayland.cachix.org-1:3lwxaILxMRkVhehr5StQprHdEo4IrE8sRho9R9HOLYA="
-              ];
-              binaryCaches = [
-                "https://cache.nixos.org"
-                # "https://nixpkgs-wayland.cachix.org"
-              ];
-              overlays = [
-                (self: super: import ./home/pkgs {
-                  # can't use callPackage here, idk why
+  let
+    # IRL-related stuff I'd rather not put into git
+    priv =
+      if builtins.pathExists ./private.nix then (import ./private.nix)
+      else if builtins.pathExists ./private/default.nix then (import ./private)
+      else { };
+    getOr = def: s: x: with builtins; if hasAttr s x then getAttr s x else def;
+    getPriv = hostname: getOr { } hostname priv;
+    getPrivSys = hostname: getOr { } "system" (getPriv hostname);
+    getPrivUser = hostname: user: getOr { } user (getPriv hostname);
+    lib = nixpkgs.lib // {
+      quoteListenAddr = addr:
+        if nixpkgs.lib.hasInfix ":" addr then "[${addr}]" else addr;
+    };
+    config = {
+      nixmsi = rec {
+        system = "x86_64-linux";
+        modules = [
+          nix-gaming.nixosModules.pipewireLowLatency
+          ./system/hardware/msi_delta_15.nix
+          ./system/hosts/nixmsi.nix
+        ];
+        home.user = {
+          pkgs = import nixpkgs {
+            inherit system;
+            binaryCachePublicKeys = [
+              "cache.nixos.org-1:6NCHdD59X431o0gWypbMrAURkbJ16ZPMQFGspcDShjY="
+              # "nixpkgs-wayland.cachix.org-1:3lwxaILxMRkVhehr5StQprHdEo4IrE8sRho9R9HOLYA="
+            ];
+            binaryCaches = [
+              "https://cache.nixos.org"
+              # "https://nixpkgs-wayland.cachix.org"
+            ];
+            overlays = [
+              (self: super: import ./home/pkgs {
+                # can't use callPackage here, idk why
+                pkgs = super;
+                lib = super.lib;
+                nur = import nur {
                   pkgs = super;
-                  lib = super.lib;
-                  nur = import nur {
-                    pkgs = super;
-                    nurpkgs = super;
-                  };
-                  nix-gaming = nix-gaming.packages.${system};
-                })
-              ];
-            };
-            extraSpecialArgs = {
-              notlua = notlua.lib.${system};
-              # pkgs-wayland = nixpkgs-wayland.packages.${system};
-            };
-            modules = [
-              nur.nixosModules.nur
-              ./home/hosts/nixmsi.nix
+                  nurpkgs = super;
+                };
+                nix-gaming = nix-gaming.packages.${system};
+              })
             ];
           };
-        };
-        nixserver = {
+          extraSpecialArgs = {
+            notlua = notlua.lib.${system};
+            # pkgs-wayland = nixpkgs-wayland.packages.${system};
+          };
           modules = [
-            nixos-mailserver.nixosModules.default
-            ./system/hardware/hp_probook_g0.nix
-            ./system/hosts/nixserver
-          ];
-        };
-        router = {
-          system = "aarch64-linux";
-          modules = [
-            ./system/hardware/bpi_r3.nix
-            ./system/hosts/router
+            nur.nixosModules.nur
+            ./home/hosts/nixmsi.nix
           ];
         };
       };
-    in {
-      nixosConfigurations = builtins.mapAttrs (hostname: args @ { system ? "x86_64-linux", modules, ... }:
-        lib.nixosSystem ({
-          inherit system;
-          modules = modules ++ [
-            { networking.hostName = hostname; }
-            ./system/modules/vfio.nix
-            ./system/modules/ccache.nix
-            ./system/modules/impermanence.nix
-            ./system/modules/common.nix
-            impermanence.nixosModule 
-            (getPrivSys hostname)
-            {
-              nix.registry =
-                builtins.mapAttrs
-                (_: v: { flake = v; })
-                (lib.filterAttrs (_: v: v?outputs) inputs);
-
-              # add import'able flakes (like nixpkgs) to nix path
-              environment.etc = lib.mapAttrs'
-                (name: value: {
-                  name = "nix/inputs/${name}";
-                  value = { source = value.outPath; };
-                })
-                (lib.filterAttrs (_: v: builtins.pathExists "${v}/default.nix") inputs);
-              nix.nixPath = [ "/etc/nix/inputs" ];
-            }
-          ];
-          specialArgs = {
-            inherit lib nixpkgs;
-            hardware = nixos-hardware.nixosModules;
-          };
-        } // (builtins.removeAttrs args [ "home" "modules" ])))
-        config;
-      homeConfigurations =
-        builtins.foldl'
-          (a: b: a // b)
-          { }
-          (builtins.concatLists
-            (lib.mapAttrsToList
-              (hostname: config:
-                lib.mapAttrsToList
-                  (user: config@{ modules, ... }: {
-                    "${user}@${hostname}" = home-manager.lib.homeManagerConfiguration (config // {
-                      modules = config.modules ++ [ (getPrivUser hostname user) ];
-                    });
-                  })
-                  (getOr { } "home" config))
-              config));
+      nixserver = {
+        modules = [
+          nixos-mailserver.nixosModules.default
+          ./system/hardware/hp_probook_g0.nix
+          ./system/hosts/nixserver
+        ];
+      };
+      router = {
+        system = "aarch64-linux";
+        modules = [
+          ./system/hardware/bpi_r3.nix
+          ./system/hosts/router
+        ];
+      };
     };
+  in {
+    nixosConfigurations = builtins.mapAttrs (hostname: args @ { system ? "x86_64-linux", modules, ... }:
+      lib.nixosSystem ({
+        inherit system;
+        modules = modules ++ [
+          { networking.hostName = hostname; }
+          ./system/modules/vfio.nix
+          ./system/modules/ccache.nix
+          ./system/modules/impermanence.nix
+          ./system/modules/common.nix
+          impermanence.nixosModule 
+          (getPrivSys hostname)
+          {
+            nix.registry =
+              builtins.mapAttrs
+              (_: v: { flake = v; })
+              (lib.filterAttrs (_: v: v?outputs) inputs);
+
+            # add import'able flakes (like nixpkgs) to nix path
+            environment.etc = lib.mapAttrs'
+              (name: value: {
+                name = "nix/inputs/${name}";
+                value = { source = value.outPath; };
+              })
+              (lib.filterAttrs (_: v: builtins.pathExists "${v}/default.nix") inputs);
+            nix.nixPath = [ "/etc/nix/inputs" ];
+          }
+        ];
+        specialArgs = {
+          inherit lib nixpkgs;
+          hardware = nixos-hardware.nixosModules;
+        };
+      } // (builtins.removeAttrs args [ "home" "modules" ])))
+      config;
+    homeConfigurations =
+      builtins.foldl'
+        (a: b: a // b)
+        { }
+        (builtins.concatLists
+          (lib.mapAttrsToList
+            (hostname: config:
+              lib.mapAttrsToList
+                (user: config@{ modules, ... }: {
+                  "${user}@${hostname}" = home-manager.lib.homeManagerConfiguration (config // {
+                    modules = config.modules ++ [ (getPrivUser hostname user) ];
+                  });
+                })
+                (getOr { } "home" config))
+            config));
+  };
 }
