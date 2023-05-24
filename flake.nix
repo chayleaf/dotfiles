@@ -3,7 +3,6 @@
 
   inputs = {
     nixpkgs.url = "github:nixos/nixpkgs/nixos-unstable";
-    utils.url = "github:gytis-ivaskevicius/flake-utils-plus";
     nixos-hardware.url = "github:NixOS/nixos-hardware";
     impermanence.url = "github:nix-community/impermanence";
     nur.url = "github:nix-community/NUR";
@@ -30,7 +29,7 @@
     };
   };
 
-  outputs = inputs@{ self, nixpkgs, utils, nixos-hardware, impermanence, home-manager, nur, nix-gaming, notlua, nixos-mailserver, ... }:
+  outputs = inputs@{ self, nixpkgs, nixos-hardware, impermanence, home-manager, nur, nix-gaming, notlua, nixos-mailserver, ... }:
     let
       # IRL-related stuff I'd rather not put into git
       priv =
@@ -102,28 +101,40 @@
           ];
         };
       };
-    in utils.lib.mkFlake {
-      inherit self inputs;
-      hostDefaults.modules = [
-        ./system/modules/vfio.nix
-        ./system/modules/ccache.nix
-        ./system/modules/impermanence.nix
-        ./system/modules/common.nix
-        impermanence.nixosModule 
-      ];
-      hosts = builtins.mapAttrs (hostname: args @ { system ? "x86_64-linux", modules, ... }: {
+    in {
+      nixosConfigurations = builtins.mapAttrs (hostname: args @ { system ? "x86_64-linux", modules, ... }:
+        lib.nixosSystem ({
           inherit system;
-          modules = modules ++ [ (getPrivSys hostname) ];
-          extraArgs = {
-            inherit nixpkgs;
-          };
+          modules = modules ++ [
+            { networking.hostName = hostname; }
+            ./system/modules/vfio.nix
+            ./system/modules/ccache.nix
+            ./system/modules/impermanence.nix
+            ./system/modules/common.nix
+            impermanence.nixosModule 
+            (getPrivSys hostname)
+            {
+              nix.registry =
+                builtins.mapAttrs
+                (_: v: { flake = v; })
+                (lib.filterAttrs (_: v: v?outputs) inputs);
+
+              # add import'able flakes (like nixpkgs) to nix path
+              environment.etc = lib.mapAttrs'
+                (name: value: {
+                  name = "nix/inputs/${name}";
+                  value = { source = value.outPath; };
+                })
+                (lib.filterAttrs (_: v: builtins.pathExists "${v}/default.nix") inputs);
+              nix.nixPath = [ "/etc/nix/inputs" ];
+            }
+          ];
           specialArgs = {
-            inherit lib;
+            inherit lib nixpkgs;
             hardware = nixos-hardware.nixosModules;
           };
-        } // (builtins.removeAttrs args [ "home" "modules" ]))
+        } // (builtins.removeAttrs args [ "home" "modules" ])))
         config;
-    } // {
       homeConfigurations =
         builtins.foldl'
           (a: b: a // b)

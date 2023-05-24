@@ -48,10 +48,6 @@
       extraOptions = ''
         experimental-features = nix-command flakes
       '';
-      # from flake-utils-plus: make this flake's nixpkgs available to the whole system
-      generateNixPathFromInputs = true;
-      generateRegistryFromInputs = true;
-      linkInputs = true;
     };
     systemd.services.nix-daemon.serviceConfig.LimitSTACKSoft = "infinity";
     boot.kernelParams = lib.optionals (cfg.resolution != null) [
