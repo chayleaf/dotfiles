@@ -40,6 +40,7 @@ in
     '';
   };
   rofi-steam-game-list = callPackage ./rofi-steam-game-list { };
+  system76-scheduler = callPackage ./system76-scheduler.nix { };
   techmino = callPackage ./techmino { };
 
   firefox-addons = lib.recurseIntoAttrs (callPackage ./firefox-addons { inherit nur sources; });

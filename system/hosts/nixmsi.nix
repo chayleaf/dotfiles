@@ -195,7 +195,23 @@ in {
   services.mullvad-vpn.package = pkgs.mullvad-vpn;
 
   # System76 scheduler (not actually a scheduler, just a renice daemon) for improved responsiveness
-  services.system76-scheduler.enable = true;
+  services.dbus.packages = [ pkgs.system76-scheduler ];
+  systemd.services."system76-scheduler" = {
+    description = "Automatically configure CPU scheduler for responsiveness on AC";
+    wantedBy = [ "multi-user.target" ];
+    serviceConfig = {
+      Type = "dbus";
+      BusName= "com.system76.Scheduler";
+      ExecStart = "${pkgs.system76-scheduler}/bin/system76-scheduler daemon";
+      ExecReload = "${pkgs.system76-scheduler}/bin/system76-scheduler daemon reload";
+    };
+  };
+  environment.etc."system76-scheduler/assignments.ron".source =
+    "${pkgs.system76-scheduler}/etc/system76-scheduler/assignments.ron";
+  environment.etc."system76-scheduler/config.ron".source =
+    "${pkgs.system76-scheduler}/etc/system76-scheduler/config.ron";
+  environment.etc."system76-scheduler/exceptions.ron".source =
+    "${pkgs.system76-scheduler}/etc/system76-scheduler/exceptions.ron";
 
   common.workstation = true;
   common.gettyAutologin = true;
