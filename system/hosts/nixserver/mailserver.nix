@@ -27,7 +27,7 @@ in {
     enable = true;
     fqdn = "mail.${cfg.domainName}";
     domains = [ cfg.domainName ];
-    certificateScheme = 1;
+    certificateScheme = "acme";
     certificateFile = config.security.acme.certs."mail.${cfg.domainName}".directory + "/fullchain.pem";
     keyFile = config.security.acme.certs."mail.${cfg.domainName}".directory + "/key.pem";
     localDnsResolver = false;

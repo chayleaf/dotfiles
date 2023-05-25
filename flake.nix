@@ -32,21 +32,21 @@
   outputs = inputs@{ self, nixpkgs, nixos-hardware, impermanence, home-manager, nur, nix-gaming, notlua, nixos-mailserver, ... }:
   let
     # IRL-related stuff I'd rather not put into git
-    priv = pkgs:
-      if builtins.pathExists ./private.nix then (import ./private.nix)
-      else if builtins.pathExists ./private/default.nix then (import ./private)
+    priv =
+      if builtins.pathExists ./private.nix then (import ./private.nix { })
+      else if builtins.pathExists ./private/default.nix then (import ./private { })
       # workaround for git flakes not having access to non-checked out files
-      else if builtins?extraBuiltins.secrets then builtins.extraBuiltins.secrets pkgs
+      else if builtins?extraBuiltins.secrets then builtins.extraBuiltins.secrets
       # yes, this is impure, this is a last ditch effort at getting access to secrets
-      else import /etc/nixos/private;
+      else import /etc/nixos/private { };
     # if x has key s, get it. Otherwise return def
     getOr = def: s: x: with builtins; if hasAttr s x then getAttr s x else def;
     # All private config for hostname
-    getPriv = pkgs: hostname: getOr { } hostname (priv pkgs);
+    getPriv = hostname: getOr { } hostname priv;
     # Private NixOS config for hostname
-    getPrivSys = pkgs: hostname: getOr { } "system" (getPriv pkgs hostname);
+    getPrivSys = hostname: getOr { } "system" (getPriv hostname);
     # Private home-manager config for hostname and username
-    getPrivUser = pkgs: hostname: user: getOr { } user (getPriv pkgs hostname);
+    getPrivUser = hostname: user: getOr { } user (getPriv hostname);
     # extended lib
     lib = nixpkgs.lib // {
       quoteListenAddr = addr:
@@ -116,7 +116,7 @@
           ./system/modules/impermanence.nix
           ./system/modules/common.nix
           impermanence.nixosModule 
-          (getPrivSys (import inputs.nixpkgs { inherit system; }) hostname)
+          (getPrivSys hostname)
           ({ config, pkgs, ... }: {
             nixpkgs.overlays = [ overlay ];
             nix.extraOptions = ''
@@ -160,7 +160,7 @@
                     plugin-files = ${pkgs.nix-plugins.override { nix = config.nix.package; }}/lib/nix/plugins/libnix-extra-builtins.so
                   '';
                 })
-                (getPrivUser (import nixpkgs { inherit system; }) hostname username)
+                (getPrivUser hostname username)
               ];
             }) (builtins.removeAttrs home [ "common" ]);
           }
@@ -190,7 +190,7 @@
                 (user: homeConfig: {
                   "${user}@${hostname}" = home-manager.lib.homeManagerConfiguration (common' // {
                     modules = homeConfig ++ [
-                      (getPrivUser (import nixpkgs { inherit system; }) hostname user)
+                      (getPrivUser hostname user)
                       ({ config, pkgs, lib, ... }: {
                         nixpkgs.overlays = [ overlay ];
                         nix.package = lib.mkDefault pkgs.nixFlakes;

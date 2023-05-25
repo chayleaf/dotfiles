@@ -44,7 +44,6 @@ in {
       grub = {
         enable = true;
         device = "nodev";
-        version = 2;
         efiSupport = true;
         efiInstallAsRemovable = true;
       };
