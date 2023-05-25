@@ -81,31 +81,12 @@
       };
       nixmsi = rec {
         system = "x86_64-linux";
-        nixpkgs.config.allowUnfreePredicate = pkg: (lib.getName pkg) == "steam-original";
         modules = [
           nix-gaming.nixosModules.pipewireLowLatency
           ./system/hardware/msi_delta_15.nix
           ./system/hosts/nixmsi.nix
         ];
-        home.common.pkgs = mkPkgs {
-          inherit system;
-          config.allowUnfreePredicate = pkg: builtins.elem (lib.getName pkg) [
-            "steam-run"
-            "steam"
-            "steam-original"
-            "steam-runtime"
-            "steamcmd"
-            "osu-lazer-bin"
-          ];
-          binaryCachePublicKeys = [
-            "cache.nixos.org-1:6NCHdD59X431o0gWypbMrAURkbJ16ZPMQFGspcDShjY="
-            # "nixpkgs-wayland.cachix.org-1:3lwxaILxMRkVhehr5StQprHdEo4IrE8sRho9R9HOLYA="
-          ];
-          binaryCaches = [
-            "https://cache.nixos.org"
-            # "https://nixpkgs-wayland.cachix.org"
-          ];
-        };
+        home.common.enableNixosModule = false;
         home.common.extraSpecialArgs = {
           notlua = notlua.lib.${system};
         };
@@ -125,9 +106,6 @@
     nixosConfigurations = builtins.mapAttrs (hostname: args @ { system ? "x86_64-linux", modules, nixpkgs ? {}, home ? {}, ... }:
       lib.nixosSystem ({
         inherit system;
-        pkgs = mkPkgs ({
-          inherit system;
-        } // nixpkgs);
         modules = modules ++ [
           { networking.hostName = hostname; }
           ./system/modules/vfio.nix
@@ -137,6 +115,8 @@
           impermanence.nixosModule 
           (getPrivSys hostname)
           {
+            nixpkgs.overlays = [ overlay ];
+
             nix.registry =
               builtins.mapAttrs
               (_: v: { flake = v; })
@@ -151,20 +131,27 @@
               (lib.filterAttrs (_: v: builtins.pathExists "${v}/default.nix") inputs);
             nix.nixPath = [ "/etc/nix/inputs" ];
           }
-        ] ++ (lib.optionals (home != {} && (!(home?common) || !(home.common?pkgs))) [
+        ] ++ (lib.optionals (home != {} && (getOr true "enableNixosModule" (getOr {} "common" home))) [
           # only use NixOS HM module if same nixpkgs as system nixpkgs is used for user
           # why? because it seems that HM lacks the option to override pkgs, only change nixpkgs.* settings
           home-manager.nixosModules.home-manager
           {
-            home-manager = builtins.removeAttrs (getOr { } "common" home) [ "nixpkgs" ];
+            home-manager = builtins.removeAttrs (getOr { } "common" home) [ "nixpkgs" "nix" "enableNixosModule" ];
           }
           {
-            home-manager.useGlobalPkgs = true;
-            home-manager.useUserPackages = true;
-            home-manager.users = builtins.mapAttrs (k: v: {
-              imports = v ++ [ {
-                nixpkgs = getOr { } "nixpkgs" (getOr { } "common" home);
-              } ];
+            home-manager.useGlobalPkgs = false;
+            home-manager.useUserPackages = false;
+            home-manager.users = builtins.mapAttrs (username: modules: {
+              imports = modules ++ [
+                {
+                  nixpkgs = getOr { } "nixpkgs" (getOr { } "common" home);
+                  nix = getOr { } "nix" (getOr { } "common" home);
+                }
+                ({ pkgs, ...}: {
+                  nixpkgs.overlays = [ overlay ];
+                })
+                (getPrivUser hostname username)
+              ];
             }) (builtins.removeAttrs home [ "common" ]);
           }
         ]);
@@ -182,13 +169,21 @@
         (builtins.concatLists
           (lib.mapAttrsToList
             (hostname: sysConfig:
-            let common = builtins.removeAttrs (getOr { } "common" sysConfig.home) [ "nixpkgs" ]; in 
+            let
+              common = builtins.removeAttrs (getOr { } "common" sysConfig.home) [ "nixpkgs" "enableNixosModule" ];
+              pkgs = getOr (mkPkgs { system = if sysConfig?system then sysConfig.system else "x86_64-linux"; }) "pkgs" common;
+              common' = common // { inherit pkgs; };
+            in 
               lib.mapAttrsToList
                 # this is where actual config takes place
                 (user: homeConfig: {
-                  "${user}@${hostname}" = home-manager.lib.homeManagerConfiguration (common // {
+                  "${user}@${hostname}" = home-manager.lib.homeManagerConfiguration (common' // {
                     modules = homeConfig ++ [
                       (getPrivUser hostname user)
+                      ({ pkgs, ... }: {
+                        nixpkgs.overlays = [ overlay ];
+                        nix.package = pkgs.nixFlakes;
+                      })
                     ];
                   });
                 })

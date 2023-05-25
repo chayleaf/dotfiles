@@ -93,6 +93,7 @@ in {
   #   zen619.configuration.boot.kernelPackages = zenKernelPackages "6.1.9" "0fsmcjsawxr32fxhpp6sgwfwwj8kqymy0rc6vh4qli42fqmwdjgv";
   # };
 
+  nixpkgs.config.allowUnfreePredicate = pkg: (lib.getName pkg) == "steam-original";
   hardware = {
     steam-hardware.enable = true;
     opengl.driSupport32Bit = true;
