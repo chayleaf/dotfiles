@@ -28,8 +28,7 @@ in {
     fqdn = "mail.${cfg.domainName}";
     domains = [ cfg.domainName ];
     certificateScheme = "acme";
-    certificateFile = config.security.acme.certs."mail.${cfg.domainName}".directory + "/fullchain.pem";
-    keyFile = config.security.acme.certs."mail.${cfg.domainName}".directory + "/key.pem";
+    # actually this just means don't run kresd, unbound is used as the local dns resolver instead
     localDnsResolver = false;
     recipientDelimiter = "-";
     lmtpSaveToDetailMailbox = "no";
