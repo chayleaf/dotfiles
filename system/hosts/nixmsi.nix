@@ -84,7 +84,7 @@ in {
       "vm.dirty_background_ratio" = 2;
       "vm.swappiness" = 40;
     };
-    kernelPackages = lib.mkDefault pkgs.linuxPackages_zen;
+    kernelPackages = lib.mkDefault pkgs.linuxPackages_latest;
     /*kernelPackages = zenKernelPackages "6.1.9" "0fsmcjsawxr32fxhpp6sgwfwwj8kqymy0rc6vh4qli42fqmwdjgv";*/
   };
 
@@ -195,7 +195,7 @@ in {
   services.mullvad-vpn.package = pkgs.mullvad-vpn;
 
   # System76 scheduler (not actually a scheduler, just a renice daemon) for improved responsiveness
-  services.dbus.packages = [ pkgs.system76-scheduler ];
+  /*services.dbus.packages = [ pkgs.system76-scheduler ];
   systemd.services."system76-scheduler" = {
     description = "Automatically configure CPU scheduler for responsiveness on AC";
     wantedBy = [ "multi-user.target" ];
@@ -211,7 +211,8 @@ in {
   environment.etc."system76-scheduler/config.ron".source =
     "${pkgs.system76-scheduler}/etc/system76-scheduler/config.ron";
   environment.etc."system76-scheduler/exceptions.ron".source =
-    "${pkgs.system76-scheduler}/etc/system76-scheduler/exceptions.ron";
+    "${pkgs.system76-scheduler}/etc/system76-scheduler/exceptions.ron";*/
+  services.system76-scheduler.enable = true;
 
   common.workstation = true;
   common.gettyAutologin = true;

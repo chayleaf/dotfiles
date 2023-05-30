@@ -40,19 +40,18 @@
       # yes, this is impure, this is a last ditch effort at getting access to secrets
       else import /etc/nixos/private { };
     # if x has key s, get it. Otherwise return def
-    getOr = def: s: x: with builtins; if hasAttr s x then getAttr s x else def;
     # All private config for hostname
-    getPriv = hostname: getOr { } hostname priv;
+    getPriv = hostname: priv.${hostname} or { };
     # Private NixOS config for hostname
-    getPrivSys = hostname: getOr { } "system" (getPriv hostname);
+    getPrivSys = hostname: (getPriv hostname).system or { };
     # Private home-manager config for hostname and username
-    getPrivUser = hostname: user: getOr { } user (getPriv hostname);
+    getPrivUser = hostname: user: (getPriv hostname).${user} or { };
     # extended lib
     lib = nixpkgs.lib // {
       quoteListenAddr = addr:
         if nixpkgs.lib.hasInfix ":" addr then "[${addr}]" else addr;
     };
-    # can't use callPackage here, idk why; use import instead
+    # can't use callPackage ./pkgs here, idk why; use import instead
     overlay = self: super: import ./pkgs {
       pkgs = super;
       lib = super.lib;
@@ -109,26 +108,37 @@
     nixosConfigurations = builtins.mapAttrs (hostname: args @ { system ? "x86_64-linux", modules, nixpkgs ? {}, home ? {}, ... }:
       lib.nixosSystem ({
         inherit system;
+        # allow modules to access nixpkgs directly, use customized lib,
+        # and pass nixos-harware to let hardware modules import parts of nixos-hardware
+        specialArgs = {
+          inherit lib nixpkgs;
+          hardware = nixos-hardware.nixosModules;
+        };
         modules = modules ++ [
-          { networking.hostName = hostname; }
+          # Third-party NixOS modules
+          impermanence.nixosModule 
+          # My custom NixOS modules
           ./system/modules/vfio.nix
           ./system/modules/ccache.nix
           ./system/modules/impermanence.nix
           ./system/modules/common.nix
-          impermanence.nixosModule 
           (getPrivSys hostname)
+          # The common configuration that isn't part of common.nix
           ({ config, pkgs, ... }: {
+            networking.hostName = hostname;
             nixpkgs.overlays = [ overlay ];
             nix.extraOptions = ''
               plugin-files = ${pkgs.nix-plugins.override { nix = config.nix.package; }}/lib/nix/plugins/libnix-extra-builtins.so
             '';
 
+            # registry is used for the new flaky nix command
             nix.registry =
               builtins.mapAttrs
               (_: v: { flake = v; })
               (lib.filterAttrs (_: v: v?outputs) inputs);
 
-            # add import'able flakes (like nixpkgs) to nix path
+            # add import'able flake inputs (like nixpkgs) to nix path
+            # nix path is used for old nix commands (like nix-build, nix-shell)
             environment.etc = lib.mapAttrs'
               (name: value: {
                 name = "nix/inputs/${name}";
@@ -137,21 +147,22 @@
               (lib.filterAttrs (_: v: builtins.pathExists "${v}/default.nix") inputs);
             nix.nixPath = [ "/etc/nix/inputs" ];
           })
-        ] ++ (lib.optionals (home != {} && (getOr true "enableNixosModule" (getOr {} "common" home))) [
-          # only use NixOS HM module if same nixpkgs as system nixpkgs is used for user
-          # why? because it seems that HM lacks the option to override pkgs, only change nixpkgs.* settings
+        ]
+        # the following is NixOS home-manager module configuration. Currently unused, but I might start using it for some hosts later.
+        ++ (lib.optionals (home != {} && ((home.common or {}).enableNixosModule or true)) [
           home-manager.nixosModules.home-manager
           {
-            home-manager = builtins.removeAttrs (getOr { } "common" home) [ "nixpkgs" "nix" "enableNixosModule" ];
+            home-manager = builtins.removeAttrs (home.common or { }) [ "nixpkgs" "nix" "enableNixosModule" ];
           }
           {
+            # set both to false to match behavior with standalone home-manager
             home-manager.useGlobalPkgs = false;
             home-manager.useUserPackages = false;
             home-manager.users = builtins.mapAttrs (username: modules: {
               imports = modules ++ [
                 {
-                  nixpkgs = getOr { } "nixpkgs" (getOr { } "common" home);
-                  nix = getOr { } "nix" (getOr { } "common" home);
+                  nixpkgs = (home.common or { }).nixpkgs or { };
+                  nix = (home.common or { }).nix or { };
                 }
                 ({ config, pkgs, lib, ...}: {
                   nixpkgs.overlays = [ overlay ];
@@ -165,12 +176,9 @@
             }) (builtins.removeAttrs home [ "common" ]);
           }
         ]);
-        specialArgs = {
-          inherit lib nixpkgs;
-          hardware = nixos-hardware.nixosModules;
-        };
       } // (builtins.removeAttrs args [ "home" "modules" "nixpkgs" ])))
       config;
+
     # for each hostname, for each user, generate an attribute "${user}@${hostname}"
     homeConfigurations =
       builtins.foldl'
@@ -181,14 +189,14 @@
             (hostname: sysConfig:
             let
               system = if sysConfig?system then sysConfig.system else "x86_64-linux";
-              common = builtins.removeAttrs (getOr { } "common" sysConfig.home) [ "nixpkgs" "enableNixosModule" ];
-              pkgs = getOr (mkPkgs { inherit system; }) "pkgs" common;
-              common' = common // { inherit pkgs; };
+              common' = builtins.removeAttrs (sysConfig.home.common or { }) [ "nix" "nixpkgs" "enableNixosModule" ];
+              pkgs = mkPkgs ({ inherit system; } // ((sysConfig.home.common or { }).nixpkgs or {}));
+              common = common' // { inherit pkgs; };
             in 
               lib.mapAttrsToList
                 # this is where actual config takes place
                 (user: homeConfig: {
-                  "${user}@${hostname}" = home-manager.lib.homeManagerConfiguration (common' // {
+                  "${user}@${hostname}" = home-manager.lib.homeManagerConfiguration (common // {
                     modules = homeConfig ++ [
                       (getPrivUser hostname user)
                       ({ config, pkgs, lib, ... }: {
@@ -201,7 +209,7 @@
                     ];
                   });
                 })
-                (builtins.removeAttrs (getOr { } "home" sysConfig) [ "common" ]))
+                (builtins.removeAttrs (sysConfig.home or { }) [ "common" ]))
             config));
   };
 }

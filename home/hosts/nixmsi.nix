@@ -98,7 +98,7 @@
     protontricks # proton-caller
     # bottles
     virtmanager
-    gimp krita blender
+    gimp krita blender-hip
     tdesktop
     clang_latest rustc rustfmt cargo clippy
     kdenlive
