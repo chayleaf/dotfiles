@@ -207,7 +207,7 @@ rec {
       IP_SET = module;
       NF_CONNTRACK = module;
       NF_CONNTRACK_BRIDGE = module;
-      NF_CONNTRACK_MARK = module;
+      NF_CONNTRACK_MARK = yes;
       NF_NAT = module;
       NF_FLOW_TABLE = module;
       NF_FLOW_TABLE_INET = module;
@@ -260,7 +260,7 @@ rec {
       NET_CLS_CGROUP = module;
       NET_CLS_FLOWER = module;
       NET_CLS_MATCHALL = module;
-      NET_EMATCH = module;
+      NET_EMATCH = yes;
       NET_EMATCH_CMP = module;
       NET_EMATCH_NBYTE = module;
       NET_EMATCH_U32 = module;
