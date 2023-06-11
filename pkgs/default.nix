@@ -165,11 +165,140 @@ rec {
     buildPackages = pkgs'.buildPackages // {
       stdenv = pkgs'.buildPackages.ccacheStdenv;
     };
+    # there's probably more enabled-by-default configs that are better left disabled, but whatever
     structuredExtraConfig = with lib.kernel; {
-      COMMON_CLK_MEDIATEK = yes;
-      COMMON_CLK_MT7986 = yes;
-      COMMON_CLK_MT7986_ETHSYS = yes;
-      MEDIATEK_GE_PHY = yes;
+      /* "Select this option if you are building a kernel for a server or
+          scientific/computation system, or if you want to maximize the
+          raw processing power of the kernel, irrespective of scheduling
+          latencies." */
+      PREEMPT_NONE = yes;
+      # disable the other preempts
+      PREEMPTION = no;
+      PREEMPT_VOLUNTARY = lib.mkForce no;
+      PREEMPT = no;
+
+      CPU_FREQ_GOV_ONDEMAND = yes;
+      CPU_FREQ_DEFAULT_GOV_ONDEMAND = yes;
+      CPU_FREQ_DEFAULT_GOV_PERFORMANCE = lib.mkForce no;
+      CPU_FREQ_GOV_CONSERVATIVE = yes;
+      # disable virtualisation stuff
+      PARAVIRT = lib.mkForce no;
+      VIRTUALIZATION = no;
+      XEN = lib.mkForce no;
+      # zstd
+      KERNEL_ZSTD = yes;
+      MODULE_COMPRESS_ZSTD = yes;
+      MODULE_DECOMPRESS = yes;
+      FW_LOADER_COMPRESS_ZSTD = yes;
+      # zram
+      ZRAM_DEF_COMP_ZSTD = yes;
+      CRYPTO_ZSTD = yes;
+      ZRAM_MEMORY_TRACKING = yes;
+      # router stuff
+      IP_FIB_TRIE_STATS = yes;
+      IP_ROUTE_CLASSID = yes;
+      # adds sysctl net.ipv4.tcp_syncookies
+      SYN_COOKIES = yes;
+      WIREGUARD = yes;
+      INET = yes;
+      # stuff for ss
+      NETLINK_DIAG = yes;
+      # nftables features
+      IP_SET = module;
+      NF_CONNTRACK = module;
+      NF_CONNTRACK_BRIDGE = module;
+      NF_CONNTRACK_MARK = module;
+      NF_NAT = module;
+      NF_FLOW_TABLE = module;
+      NF_FLOW_TABLE_INET = module;
+      NF_LOG_ARP = module;
+      NF_LOG_IPV4 = module;
+      NF_LOG_IPV6 = module;
+      NETFILTER_NETLINK_QUEUE = module;
+      NFT_BRIDGE_META = module;
+      NFT_BRIDGE_REJECT = module;
+      NFT_CONNLIMIT = module;
+      NFT_CT = module;
+      NFT_DUP_IPV4 = module;
+      NFT_DUP_IPV6 = module;
+      NFT_DUP_NETDEV = module;
+      NFT_FIB = module;
+      NFT_FIB_IPV4 = module;
+      NFT_FIB_IPV6 = module;
+      NFT_FIB_INET = module;
+      NFT_FIB_NETDEV = module;
+      NFT_FLOW_OFFLOAD = module;
+      NFT_FWD_NETDEV = module;
+      NFT_HASH = module;
+      NFT_LIMIT = module;
+      NFT_LOG = module;
+      NFT_MASQ = module;
+      NFT_NAT = module;
+      NFT_NUMGEN = module;
+      NFT_OSF = module;
+      NFT_QUEUE = module;
+      NFT_QUOTA = module;
+      NFT_REDIR = module;
+      NFT_REJECT = module;
+      NFT_REJECT_IPV4 = module;
+      NFT_REJECT_IPV6 = module;
+      NFT_REJECT_INET = module;
+      NFT_SOCKET = module;
+      NFT_SYNPROXY = module;
+      NFT_TPROXY = module;
+      NFT_TUNNEL = module;
+
+      BRIDGE = yes;
+      HSR = no;
+      NET_DSA = module;
+
+      # packet CLaSsification
+      NET_CLS_ROUTE4 = module;
+      NET_CLS_FW = module;
+      NET_CLS_U32 = module;
+      NET_CLS_FLOW = module;
+      NET_CLS_CGROUP = module;
+      NET_CLS_FLOWER = module;
+      NET_CLS_MATCHALL = module;
+      NET_EMATCH = module;
+      NET_EMATCH_CMP = module;
+      NET_EMATCH_NBYTE = module;
+      NET_EMATCH_U32 = module;
+      NET_EMATCH_META = module;
+      NET_EMATCH_TEXT = module;
+      NET_EMATCH_IPSET = module;
+
+      # packet actions
+      NET_CLS_ACT = yes;
+      NET_ACT_POLICE = module;
+      NET_ACT_GACT = module;
+      NET_ACT_SAMPLE = module;
+      NET_ACT_NAT = module;
+      NET_ACT_PEDIT = module;
+      NET_ACT_SKBEDIT = module;
+      NET_ACT_CSUM = module;
+      NET_ACT_MPLS = module;
+      NET_ACT_VLAN = module;
+      NET_ACT_CONNMARK = module;
+      NET_ACT_CTINFO = module;
+      NET_ACT_SKBMOD = module;
+      NET_ACT_IFE = module;
+      NET_ACT_TUNNEL_KEY = module;
+      NET_ACT_CT = module;
+
+      # random stuff
+      PSAMPLE = module;
+      RFKILL = yes;
+
+      # hardware specific stuff
+      FB = lib.mkForce no;
+      DRM = no;
+
+      NR_CPUS = lib.mkForce (freeform "4");
+      SMP = yes;
+
+      SFP = yes;
+      ARCH_MEDIATEK = yes;
       MEDIATEK_WATCHDOG = yes;
       MTD_NAND_ECC_MEDIATEK = yes;
       MTD_NAND_ECC_SW_HAMMING = yes;
@@ -177,27 +306,21 @@ rec {
       MTD_SPI_NAND = yes;
       MTD_UBI = yes;
       MTD_UBI_BLOCK = yes;
-      MTK_EFUSE = yes;
+      NVMEM_MTK_EFUSE = yes;
       MTK_HSDMA = yes;
       MTK_INFRACFG = yes;
       MTK_PMIC_WRAP = yes;
-      MTK_SCPSYS = yes;
-      MTK_SCPSYS_PM_DOMAINS = yes;
       MTK_THERMAL = yes;
       MTK_TIMER = yes;
       NET_DSA_MT7530 = module;
-      NET_DSA_TAG_MTK = module;
       NET_MEDIATEK_SOC = module;
       NET_MEDIATEK_SOC_WED = yes;
-      NET_MEDIATEK_STAR_EMAC = module;
+      NET_MEDIATEK_STAR_EMAC = yes;
       NET_SWITCHDEV = yes;
       NET_VENDOR_MEDIATEK = yes;
       PCIE_MEDIATEK = yes;
       PCIE_MEDIATEK_GEN3 = yes;
       PINCTRL_MT7986 = yes;
-      PINCTRL_MTK = yes;
-      PINCTRL_MTK_MOORE = yes;
-      PINCTRL_MTK_V2 = yes;
       PWM_MEDIATEK = yes;
       MT7915E = module;
       MT7986_WMAC = yes;
