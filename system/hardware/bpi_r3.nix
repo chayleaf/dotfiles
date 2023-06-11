@@ -9,8 +9,8 @@
 
   # i'm not about to build a kernel on every update without an arm device...
   # i guess i could use my phone for building it, but no, not interested
-  boot.kernelPackages = pkgs.linuxPackages_testing;
-  # boot.kernelPackages = pkgs.linuxPackages_bpiR3;
+  # boot.kernelPackages = pkgs.linuxPackages_testing;
+  boot.kernelPackages = pkgs.linuxPackages_bpiR3;
 
   hardware.deviceTree.enable = true;
   hardware.deviceTree.filter = "*mt7986*";
@@ -18,7 +18,7 @@
 
   # # disable a bunch of useless drivers
   # boot.initrd.includeDefaultModules = false;
-  # boot.initrd.availableKernelModules = [ "mmc_block" "dm_mod" "rfkill" "cfg80211" "mt7915e" "ubi" "sdhci" "sd_mod" "sr_mod" "xhci_pci" ];
+  boot.initrd.availableKernelModules = [ "mmc_block" "dm_mod" "rfkill" "cfg80211" "mt7915e" ];
   boot.kernelParams = [ "console=ttyS0,115200" ];
 
   boot.initrd.compressor = "zstd";

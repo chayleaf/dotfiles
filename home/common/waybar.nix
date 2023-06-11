@@ -3,16 +3,17 @@
   services.playerctld.enable = config.wayland.windowManager.sway.enable;
   programs.waybar = {
     enable = config.wayland.windowManager.sway.enable;
-    package = (pkgs.waybar.override {
+    package = pkgs.waybar.override {
       withMediaPlayer = true;
-    }).overrideAttrs (old: {
+    };
+    /*).overrideAttrs (old: {
       src = pkgs.fetchFromGitHub {
         owner = "chayleaf";
         repo = "Waybar";
         rev = "3091cf4a009e92665325c0dd61adf5ab367786a3";
         sha256 = "sha256-zH4hbQ8+9TYRVW/XYqmAVsi0vsSPn1LPqXxr0gi0j1E=";
       };
-    });
+    });*/
     settings = [{
       layer = "bottom";
       # position = "bottom";

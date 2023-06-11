@@ -2,6 +2,7 @@
 , lib
 , nur
 , nix-gaming
+, pkgs' ? pkgs
 , ... }:
 let
   inherit (pkgs) callPackage;
@@ -159,25 +160,77 @@ rec {
     '';
     fixupPhase = "true";
   };
-  linux_bpiR3 = (pkgs.buildLinux ({
-    version = "6.3";
-    modDirVersion = "6.3.0";
-
-    src = pkgs.fetchFromGitHub {
-      owner = "frank-w";
-      repo = "BPI-Router-Linux";
-      rev = "6.3-main";
-      hash = lib.fakeHash;
+  linux_bpiR3 = pkgs.linux_testing.override {
+    stdenv = pkgs'.ccacheStdenv;
+    buildPackages = pkgs'.buildPackages // {
+      stdenv = pkgs'.buildPackages.ccacheStdenv;
     };
-
-    defconfig = "mt7986a_bpi-r3";
-  })).overrideAttrs (old: {
-    postConfigure = ''
-      sed -i "$buildRoot/.config" -e 's%^CONFIG_LOCALVERSION=.*%CONFIG_LOCALVERSION=""%'
-      sed -i "$buildRoot/include/config/auto.conf" -e 's%^CONFIG_LOCALVERSION=.*%CONFIG_LOCALVERSION=""%'
-    '';
-  });
+    structuredExtraConfig = with lib.kernel; {
+      COMMON_CLK_MEDIATEK = yes;
+      COMMON_CLK_MT7986 = yes;
+      COMMON_CLK_MT7986_ETHSYS = yes;
+      MEDIATEK_GE_PHY = yes;
+      MEDIATEK_WATCHDOG = yes;
+      MTD_NAND_ECC_MEDIATEK = yes;
+      MTD_NAND_ECC_SW_HAMMING = yes;
+      MTD_NAND_MTK = yes;
+      MTD_SPI_NAND = yes;
+      MTD_UBI = yes;
+      MTD_UBI_BLOCK = yes;
+      MTK_EFUSE = yes;
+      MTK_HSDMA = yes;
+      MTK_INFRACFG = yes;
+      MTK_PMIC_WRAP = yes;
+      MTK_SCPSYS = yes;
+      MTK_SCPSYS_PM_DOMAINS = yes;
+      MTK_THERMAL = yes;
+      MTK_TIMER = yes;
+      NET_DSA_MT7530 = module;
+      NET_DSA_TAG_MTK = module;
+      NET_MEDIATEK_SOC = module;
+      NET_MEDIATEK_SOC_WED = yes;
+      NET_MEDIATEK_STAR_EMAC = module;
+      NET_SWITCHDEV = yes;
+      NET_VENDOR_MEDIATEK = yes;
+      PCIE_MEDIATEK = yes;
+      PCIE_MEDIATEK_GEN3 = yes;
+      PINCTRL_MT7986 = yes;
+      PINCTRL_MTK = yes;
+      PINCTRL_MTK_MOORE = yes;
+      PINCTRL_MTK_V2 = yes;
+      PWM_MEDIATEK = yes;
+      MT7915E = module;
+      MT7986_WMAC = yes;
+      SPI_MT65XX = yes;
+      SPI_MTK_NOR = yes;
+      SPI_MTK_SNFI = yes;
+      MMC_MTK = yes;
+    };
+  };
   linuxPackages_bpiR3 = pkgs.linuxPackagesFor linux_bpiR3;
+  ccacheWrapper = pkgs.ccacheWrapper.override {
+    extraConfig = ''
+      export CCACHE_COMPRESS=1
+      export CCACHE_DIR="/var/cache/ccache"
+      export CCACHE_UMASK=007
+      if [ ! -d "$CCACHE_DIR" ]; then
+        echo "====="
+        echo "Directory '$CCACHE_DIR' does not exist"
+        echo "Please create it with:"
+        echo "  sudo mkdir -m0770 '$CCACHE_DIR'"
+        echo "  sudo chown root:nixbld '$CCACHE_DIR'"
+        echo "====="
+        exit 1
+      fi
+      if [ ! -w "$CCACHE_DIR" ]; then
+        echo "====="
+        echo "Directory '$CCACHE_DIR' is not accessible for user $(whoami)"
+        echo "Please verify its access permissions"
+        echo "====="
+        exit 1
+      fi
+    '';
+  };
 
   firefox-addons = lib.recurseIntoAttrs (callPackage ./firefox-addons { inherit nur sources; });
   mpvScripts = pkgs.mpvScripts // (callPackage ./mpv-scripts { });

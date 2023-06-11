@@ -43,8 +43,8 @@ in {
     };
   };
 
-  systemd.services.heisenbridge.wants = [ "matrix-synapse.service" ];
-  systemd.services.heisenbridge.after = [ "matrix-synapse.service" ];
+  # systemd.services.heisenbridge.wants = [ "matrix-synapse.service" ];
+  # systemd.services.heisenbridge.after = [ "matrix-synapse.service" ];
   services.heisenbridge = {
     enable = true;
     homeserver = "http://${lib.quoteListenAddr matrixAddr}:${toString matrixPort}/";

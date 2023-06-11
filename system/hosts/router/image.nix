@@ -69,7 +69,7 @@ vmTools.runInLinuxVM (runCommand "bpi-r3-fs" {
     truncate -s ${toString ((rootPartEnd - rootPartStart + 1) * 512)} ./tmp.img
     ${btrfs-progs}/bin/mkfs.btrfs \
       --label NIXOS_SD \
-      --uuid "44444444-4444-4444-8888-888888888889" \
+      --uuid "44444444-4444-4444-8888-888888888888" \
       ./tmp.img
   '';
   # i give up on making this work in a nix derivation, just do the rest in a script (./image.sh)

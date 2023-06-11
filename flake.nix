@@ -19,7 +19,7 @@
       inputs.nixpkgs.follows = "nixpkgs";
     };
     notlua = {
-      url = "github:chayleaf/notlua/469652092f4f2e951b0db29027b05346b32d8122";
+      url = "github:chayleaf/notlua";
       inputs.nixpkgs.follows = "nixpkgs";
     };
     nixos-mailserver = {
@@ -58,6 +58,7 @@
     # can't use callPackage ./pkgs here, idk why; use import instead
     overlay = self: super: import ./pkgs {
       pkgs = super;
+      pkgs' = self;
       lib = super.lib;
       nur = import nur {
         pkgs = super;
@@ -171,9 +172,10 @@
                 ({ config, pkgs, lib, ...}: {
                   nixpkgs.overlays = [ overlay ];
                   nix.package = lib.mkDefault pkgs.nixFlakes;
-                  nix.extraOptions = ''
+                  # this is only needed if nixos doesnt set plugin-files already
+                  /*nix.extraOptions = ''
                     plugin-files = ${pkgs.nix-plugins.override { nix = config.nix.package; }}/lib/nix/plugins/libnix-extra-builtins.so
-                  '';
+                  '';*/
                 })
                 (getPrivUser hostname username)
               ];
@@ -206,9 +208,10 @@
                       ({ config, pkgs, lib, ... }: {
                         nixpkgs.overlays = [ overlay ];
                         nix.package = lib.mkDefault pkgs.nixFlakes;
-                        nix.extraOptions = ''
+                        # this is only needed if nixos doesnt set plugin-files already
+                        /*nix.extraOptions = ''
                           plugin-files = ${pkgs.nix-plugins.override { nix = config.nix.package; }}/lib/nix/plugins/libnix-extra-builtins.so
-                        '';
+                        '';*/
                       })
                     ];
                   });

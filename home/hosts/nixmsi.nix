@@ -63,30 +63,9 @@
     ghidra cutter
     openrgb piper
     steam-run steam
-    ((osu-lazer-bin.override {
-      gmrun_enable = false;
-    }).overrideAttrs (old: {
-      paths = assert builtins.length old.paths == 2;
-      let
-        osu = builtins.head old.paths;
-        osu' = osu.overrideAttrs (old: {
-          installPhase = builtins.replaceStrings
-            ["runHook postInstall"]
-            ["sed -i 's:exec :exec ${obs-studio-plugins.obs-vkcapture}/bin/obs-gamecapture :g' $out/bin/osu-lazer\nrunHook postInstall"]
-            old.installPhase;
-        });
-      in assert osu.pname == "osu-lazer-bin"; [
-        osu'
-        (makeDesktopItem {
-          name = osu'.pname;
-          exec = "${osu'.outPath}/bin/osu-lazer";
-          icon = "${osu'.outPath}/osu.png";
-          comment = "A free-to-win rhythm game. Rhythm is just a *click* away!";
-          desktopName = "osu!";
-          categories = ["Game"];
-        })
-      ];
-    }))
+    (osu-lazer-bin.override {
+      command_prefix = "${obs-studio-plugins.obs-vkcapture}/bin/obs-gamecapture";
+    })
     taisei
     techmino
     (wrapOBS {
