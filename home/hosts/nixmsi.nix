@@ -106,6 +106,7 @@
     glaxnimate
     lalrpop
     looking-glass-client
+    tio
   ];
   xdg.configFile."looking-glass/client.ini".text = ''
     [app]

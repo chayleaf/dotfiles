@@ -18,7 +18,14 @@
       # position = "bottom";
       ipc = true;
       height = 40;
-      modules-left = [ "sway/workspaces" "sway/mode" "mpris" ];
+      modules-left = [ "sway/workspaces" "sway/mode" "idle_inhibitor" "mpris" ];
+      idle_inhibitor = {
+        format = "{icon}";
+        format-icons = {
+          activated = "󰅶";
+          deactivated = "󰾪";
+        };
+      };
       mpris = {
         tooltip = true;
         format = "{player_icon} {dynamic}";

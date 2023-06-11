@@ -27,6 +27,10 @@
       inputs.nixpkgs.follows = "nixpkgs";
       inputs.nixpkgs-22_11.follows = "nixpkgs";
     };
+    flake-compat = {
+      url = "github:edolstra/flake-compat";
+      flake = false;
+    };
   };
 
   outputs = inputs@{ self, nixpkgs, nixos-hardware, impermanence, home-manager, nur, nix-gaming, notlua, nixos-mailserver, ... }:

@@ -1,0 +1,31 @@
+diff --git a/plat/mediatek/mt7986/platform.mk b/plat/mediatek/mt7986/platform.mk
+index c232d7a..27a165d 100644
+--- a/plat/mediatek/mt7986/platform.mk
++++ b/plat/mediatek/mt7986/platform.mk
+@@ -456,6 +456,7 @@ else
+ bl2: $(BUILD_PLAT)/bl2.img
+ endif
+ 
++ifneq ($(USE_MKIMAGE),1)
+ ifneq ($(BROM_SIGN_KEY),)
+ $(BUILD_PLAT)/bl2.img: $(BROM_SIGN_KEY)
+ endif
+@@ -472,6 +473,18 @@ $(BUILD_PLAT)/bl2.img: $(BL2_IMG_PAYLOAD) $(DOIMAGETOOL)
+ 		$(if $(BL_AR_VER), -r $(BL_AR_VER))				\
+ 		$(if $(NAND_TYPE), -n $(NAND_TYPE))				\
+ 		$(BL2_IMG_PAYLOAD) $@
++else
++MKIMAGE ?= mkimage
++
++ifneq ($(BROM_SIGN_KEY)$(AUTO_AR_VER),)
++$(warning BL2 signing/anti-rollback is not supported using mkimage)
++endif
++
++$(BUILD_PLAT)/bl2.img: $(BL2_IMG_PAYLOAD)
++	$(Q)$(MKIMAGE) -T mtk_image -a $(BL2_BASE) -e $(BL2_BASE)		\
++		-n "arm64=1;media=$(BROM_HEADER_TYPE)$(if $(NAND_TYPE),;nandinfo=$(NAND_TYPE))"	\
++		-d $(BL2_IMG_PAYLOAD) $@
++endif
+ 
+ $(DOIMAGETOOL):
+ 	$(Q)$(MAKE) --no-print-directory -C $(DOIMAGEPATH)

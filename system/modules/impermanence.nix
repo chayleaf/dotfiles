@@ -13,6 +13,7 @@ in {
         };
         path = mkOption {
           type = types.path;
+          default = if cfg.enable then throw "You must set path to persistent storage" else "";
           description = "Default path for persistence";
         };
         directories = mkOption {

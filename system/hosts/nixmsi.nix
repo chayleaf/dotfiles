@@ -231,5 +231,7 @@ in {
   };
 
   programs.ccache.enable = true;
+  services.sshd.enable = true;
+  boot.binfmt.emulatedSystems = [ "aarch64-linux" ];
 }
 

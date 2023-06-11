@@ -1,0 +1,75 @@
+diff --git a/include/configs/mt7986.h b/include/configs/mt7986.h
+index 0c41af1fc3..4ddf3cef89 100644
+--- a/include/configs/mt7986.h
++++ b/include/configs/mt7986.h
+@@ -9,6 +9,8 @@
+ #ifndef __MT7986_H
+ #define __MT7986_H
+ 
++#include <linux/stringify.h>
++
+ /* Uboot definition */
+ #define CFG_SYS_UBOOT_BASE		CONFIG_TEXT_BASE
+ 
+@@ -18,4 +20,61 @@
+ /* DRAM */
+ #define CFG_SYS_SDRAM_BASE		0x40000000
+ 
++#define BOOT_TARGET_DEVICES(func) \
++	func(MMC, mmc, 0)
++
++#include <config_distro_bootcmd.h>
++
++/*
++ * Linux mt6978a.dtsi defines reserved memory in the first 256MB:
++ * 0x4300_0000 - 0x4302_FFFF
++ * 0x4FC0_0000 - 0x4FCF_FFFF
++ * 0x4FD0_0000 - 0x4FD3_FFFF
++ * 0x4FD4_0000 - 0x4FD7_FFFF
++ * 0x4FD8_0000 - 0x4FDA_3FFF
++ *
++ * Getting uboot to obey these by adding them into the DTS here
++ * got it respecting them.  To not clobber these memory addresses
++ * fdt_high and initrd_high are being set.
++ */
++
++/*
++ * Do not relocate FDT, because relocate fails to alloc when
++ * initrd_high is set to 0x4FC0_0000 to keep initrd out of
++ * reserved memory.  This is irregardless of the reserved
++ * addresses above still being valid as far as configuraiton
++ * is concerned at that point, so I'm at a loss.
++ */
++#define	FDT_HIGH	__stringify(0xffffffffffffffff)
++/* No reloc might work now that FDT is in-place, but this should be more compatible */
++#define	INITRD_HIGH	__stringify(0x4fc00000)
++
++/* Seems to be the address uboot would relocate to so place there */
++#define	KERNEL_ADDR_R	__stringify(0x43200000)
++/* Right before the kernel, after that reserved memory, probably best spots exist */
++#define	FDT_ADDR_R	__stringify(0x43030000)
++
++#define	RAMDISK_ADDR_R	__stringify(0x4b100000)
++
++/* Anything different means no-boot */
++#define	BOOTM_SIZE	__stringify(0x10000000)
++
++/* These can be outside Linux's 256MB */
++#define	SCRIPTADDR	__stringify(0x90000000)
++#define	PXEFILE_ADDR_R	__stringify(0x90100000)
++
++
++/* No comp_addr supplied */
++#define CFG_EXTRA_ENV_SETTINGS \
++	"bootm_size=" BOOTM_SIZE "\0" \
++	"fdt_addr_r=" FDT_ADDR_R "\0" \
++	"fdt_high=" FDT_HIGH "\0" \
++	"initrd_high=" INITRD_HIGH "\0" \
++	"kernel_addr_r=" KERNEL_ADDR_R "\0" \
++	"pxefile_addr_r=" PXEFILE_ADDR_R "\0" \
++	"ramdisk_addr_r=" RAMDISK_ADDR_R "\0" \
++	"scriptaddr=" SCRIPTADDR "\0" \
++	"fdtfile=" CONFIG_DEFAULT_FDT_FILE "\0" \
++	BOOTENV
++
+ #endif

@@ -1,35 +1,26 @@
 { pkgs
-, lib
 , ... }:
 
-# WIP
 {
   boot.loader = {
     grub.enable = false;
     generic-extlinux-compatible.enable = true;
   };
 
-  # https://github.com/frank-w/BPI-Router-Linux
-  boot.kernelPackages = pkgs.linuxPackagesFor ((pkgs.buildLinux ({
-    version = "6.3";
-    modDirVersion = "6.3.0";
-
-    src = pkgs.fetchFromGitHub {
-      owner = "frank-w";
-      repo = "BPI-Router-Linux";
-      rev = "6.3-main";
-      hash = lib.fakeHash;
-    };
-
-    defconfig = "mt7986a_bpi-r3";
-  })).overrideAttrs (old: {
-    postConfigure = ''
-      sed -i "$buildRoot/.config" -e 's/^CONFIG_LOCALVERSION=.*/CONFIG_LOCALVERSION=""/'
-      sed -i "$buildRoot/include/config/auto.conf" -e 's/^CONFIG_LOCALVERSION=.*/CONFIG_LOCALVERSION=""/'
-    '';
-  }));
+  # i'm not about to build a kernel on every update without an arm device...
+  # i guess i could use my phone for building it, but no, not interested
+  boot.kernelPackages = pkgs.linuxPackages_testing;
+  # boot.kernelPackages = pkgs.linuxPackages_bpiR3;
 
   hardware.deviceTree.enable = true;
-  hardware.deviceTree.filter = "mt7986a-bananapi-bpi-r3*.dtb";
+  hardware.deviceTree.filter = "*mt7986*";
   hardware.enableRedistributableFirmware = true;
+
+  # # disable a bunch of useless drivers
+  # boot.initrd.includeDefaultModules = false;
+  # boot.initrd.availableKernelModules = [ "mmc_block" "dm_mod" "rfkill" "cfg80211" "mt7915e" "ubi" "sdhci" "sd_mod" "sr_mod" "xhci_pci" ];
+  boot.kernelParams = [ "console=ttyS0,115200" ];
+
+  boot.initrd.compressor = "zstd";
+  nixpkgs.buildPlatform = "x86_64-linux";
 }
