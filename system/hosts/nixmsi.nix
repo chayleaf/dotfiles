@@ -213,6 +213,9 @@ in {
   environment.etc."system76-scheduler/exceptions.ron".source =
     "${pkgs.system76-scheduler}/etc/system76-scheduler/exceptions.ron";*/
   services.system76-scheduler.enable = true;
+  services.system76-scheduler.assignments = {
+    games.matchers = [ "osu!" ];
+  };
 
   common.workstation = true;
   common.gettyAutologin = true;

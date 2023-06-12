@@ -337,11 +337,15 @@ rec {
     };
   };
   linuxPackages_bpiR3 = pkgs.linuxPackagesFor linux_bpiR3;
+  # there are few direct hits with the linux kernel, so use CCACHE_NODIRECT
+  # (direct hits are file-based, non-direct are preprocessed file-based)
   ccacheWrapper = pkgs.ccacheWrapper.override {
     extraConfig = ''
       export CCACHE_COMPRESS=1
       export CCACHE_DIR="/var/cache/ccache"
       export CCACHE_UMASK=007
+      export CCACHE_SLOPPINESS=include_file_mtime,time_macros
+      export CCACHE_NODIRECT=1
       if [ ! -d "$CCACHE_DIR" ]; then
         echo "====="
         echo "Directory '$CCACHE_DIR' does not exist"

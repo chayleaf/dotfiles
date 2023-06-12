@@ -15,6 +15,8 @@
           export CCACHE_COMPRESS=1
           export CCACHE_DIR="${config.programs.ccache.cacheDir}"
           export CCACHE_UMASK=007
+          export CCACHE_SLOPPINESS=include_file_mtime,time_macros
+          export CCACHE_NODIRECT=1
           if [ ! -d "$CCACHE_DIR" ]; then
             echo "====="
             echo "Directory '$CCACHE_DIR' does not exist"
