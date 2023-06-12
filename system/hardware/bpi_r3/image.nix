@@ -52,7 +52,6 @@ vmTools.runInLinuxVM (runCommand "bpi-r3-fs" {
   ];
   preVM = ''
     img=./result.img
-    ls /dev/fuse /etc/mtab || (echo "Must have /dev/fuse and /etc/mtab in nix options (extra-sandbox-paths)" && exit 1)
     ${vmTools.qemu}/bin/qemu-img create -f raw $img 7818182656
     truncate -s ${toString imageSize} $img
 

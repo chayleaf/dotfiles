@@ -79,11 +79,20 @@
           ./system/hosts/nixserver
         ];
       };
-      router = {
+      router-emmc = {
         system = "aarch64-linux";
         modules = [
-          ./system/hardware/bpi_r3.nix
+          ./system/hardware/bpi_r3/emmc.nix
           ./system/hosts/router
+          { networking.hostName = "router"; }
+        ];
+      };
+      router-sd = {
+        system = "aarch64-linux";
+        modules = [
+          ./system/hardware/bpi_r3/sd.nix
+          ./system/hosts/router
+          { networking.hostName = "router"; }
         ];
       };
       nixmsi = rec {
@@ -103,13 +112,25 @@
         ];
       };
     };
-  in {
+  in rec {
     overlays.default = overlay;
     packages = lib.genAttrs [
       "x86_64-linux"
       "aarch64-linux"
     ] (system: let self = overlay self (import nixpkgs { inherit system; }); in self );
     # this is the system config part
+    nixosImages.router = let pkgs = import nixpkgs { system = "aarch64-linux"; overlays = [ overlay ]; }; in {
+      emmcImage = pkgs.callPackage ./system/hardware/bpi_r3/image.nix {
+        inherit (nixosConfigurations.router-emmc) config;
+        rootfsImage = nixosConfigurations.router-emmc.config.system.build.rootfsImage;
+        bpiR3Stuff = pkgs.bpiR3StuffEmmc;
+      };
+      sdImage = pkgs.callPackage ./system/hardware/bpi_r3/image.nix {
+        inherit (nixosConfigurations.router-sd) config;
+        rootfsImage = nixosConfigurations.router-sd.config.system.build.rootfsImage;
+        bpiR3Stuff = pkgs.bpiR3StuffSd;
+      };
+    };
     nixosConfigurations = builtins.mapAttrs (hostname: args @ { system ? "x86_64-linux", modules, nixpkgs ? {}, home ? {}, ... }:
       lib.nixosSystem ({
         inherit system;
@@ -129,8 +150,8 @@
           ./system/modules/common.nix
           (getPrivSys hostname)
           # The common configuration that isn't part of common.nix
-          ({ config, pkgs, ... }: {
-            networking.hostName = hostname;
+          ({ config, pkgs, lib, ... }: {
+            networking.hostName = lib.mkDefault hostname;
             nixpkgs.overlays = [ overlay ];
             nix.extraOptions = ''
               plugin-files = ${pkgs.nix-plugins.override { nix = config.nix.package; }}/lib/nix/plugins/libnix-extra-builtins.so

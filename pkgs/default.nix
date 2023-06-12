@@ -250,7 +250,7 @@ rec {
 
       BRIDGE = yes;
       HSR = no;
-      NET_DSA = module;
+      NET_DSA = yes;
 
       # packet CLaSsification
       NET_CLS_ROUTE4 = module;
@@ -289,10 +289,13 @@ rec {
       # random stuff
       PSAMPLE = module;
       RFKILL = yes;
+      CRYPTO_SHA256 = yes;
 
       # hardware specific stuff
       FB = lib.mkForce no;
       DRM = no;
+      CFG80211 = module;
+      MAC80211 = module;
 
       NR_CPUS = lib.mkForce (freeform "4");
       SMP = yes;
@@ -312,8 +315,11 @@ rec {
       MTK_PMIC_WRAP = yes;
       MTK_THERMAL = yes;
       MTK_TIMER = yes;
-      NET_DSA_MT7530 = module;
-      NET_MEDIATEK_SOC = module;
+      NET_DSA_MT7530 = yes;
+      NET_DSA_MT7530_MDIO = yes;
+      NET_DSA_MT7530_MMIO = yes;
+      NET_DSA_TAG_MTK = yes;
+      NET_MEDIATEK_SOC = yes;
       NET_MEDIATEK_SOC_WED = yes;
       NET_MEDIATEK_STAR_EMAC = yes;
       NET_SWITCHDEV = yes;
