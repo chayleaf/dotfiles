@@ -14,6 +14,12 @@
   hardware.deviceTree.enable = true;
   hardware.deviceTree.filter = "mt7986a-bananapi-bpi-r3.dtb";
   hardware.enableRedistributableFirmware = true;
+  hardware.deviceTree.overlays = [
+    {
+      name = "mt7986a-bananapi-bpi-r3-wireless.dts";
+      dtsFile = ./mt7986a-bananapi-bpi-r3-wireless.dts;
+    }
+  ];
 
   # # disable a bunch of useless drivers
   # boot.initrd.includeDefaultModules = false;

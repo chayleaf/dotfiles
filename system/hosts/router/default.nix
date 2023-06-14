@@ -25,7 +25,7 @@ in {
     enable = true;
     path = /persist;
     directories = [
-      { directory = /home/${config.common.mainUsername}; user = config.common.mainUsername; group = config.common.mainUsername; mode = "0700"; }
+      { directory = /home/${config.common.mainUsername}; user = config.common.mainUsername; group = "users"; mode = "0700"; }
       { directory = /root; mode = "0700"; }
     ];
   };
