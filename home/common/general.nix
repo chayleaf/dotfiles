@@ -47,7 +47,7 @@
       });
       extraPackages = with pkgs; [
         # utils
-        gnused mktemp fzf coreutils-full findutils xdg-utils git gnupg whois curl
+        gnused mktemp fzf coreutils-full findutils xdg-utils gnupg whois curl
         file mediainfo unzip gnutar man rclone sshfs trash-cli
         # for preview
         exa bat
@@ -94,6 +94,7 @@
         credential.helper = "${pkgs.gitAndTools.gitFull}/bin/git-credential-libsecret";
         init.defaultBranch = "master";
       };
+      lfs.enable = true;
     };
     bat = {
       enable = true;

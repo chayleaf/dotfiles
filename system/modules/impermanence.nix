@@ -72,7 +72,7 @@ in {
         { directory = /var/lib/swtpm-localca; user = "root"; group = "root"; mode = "0750"; }
       ]))) ++ (lib.optionals config.networking.wireless.iwd.enable [
         { directory = /var/lib/iwd; user = "root"; group = "root"; mode = "0700"; }
-      ]) ++ (lib.optionals (builtins.any (x: x.useDHCP) (builtins.attrValues config.networking.interfaces) || config.networking.useDHCP) [
+      ]) ++ (lib.optionals (builtins.any (x: x.useDHCP != false) (builtins.attrValues config.networking.interfaces) && config.networking.useDHCP) [
         { directory = /var/db/dhcpcd; user = "root"; group = "root"; mode = "0755"; }
       ]) ++ (lib.optionals config.services.gitea.enable [
         { directory = /var/lib/gitea; user = "gitea"; group = "gitea"; mode = "0755"; }

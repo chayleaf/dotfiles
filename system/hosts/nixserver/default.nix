@@ -64,7 +64,6 @@ in {
   };
   zramSwap.enable = true;
   swapDevices = [ ];
-  services.tlp.enable = false;
   impermanence = {
     enable = true;
     path = /persist;

@@ -84,6 +84,7 @@
         modules = [
           ./system/hardware/bpi_r3/emmc.nix
           ./system/hosts/router
+          ./system/modules/router
           { networking.hostName = "router"; }
         ];
       };
@@ -92,6 +93,7 @@
         modules = [
           ./system/hardware/bpi_r3/sd.nix
           ./system/hosts/router
+          ./system/modules/router
           { networking.hostName = "router"; }
         ];
       };
