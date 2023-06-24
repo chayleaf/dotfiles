@@ -670,7 +670,9 @@ in {
             ''"${domain}. AAAA ${serverAddress6}"''
           ]) hosted-domains);
       };
-      python.python-script = toString ./avahi-resolver-v2.py;
+      # normally it would refer to the flake path, but then the service changes on every flake update
+      # instead, write a new file in nix store
+      python.python-script = builtins.toFile "avahi-resolver-v2.py" (builtins.readFile ./avahi-resolver-v2.py);
       remote-control.control-enable = true;
     };
   };

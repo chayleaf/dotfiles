@@ -198,7 +198,6 @@
       "original": {
         "owner": "chayleaf",
         "repo": "nixos-router",
-        "rev": "b28e10ec8d247babd9ff461bb14725e504d3badf",
         "type": "github"
       }
     },
