@@ -43,6 +43,8 @@
 
   outputs = inputs@{ self, nixpkgs, nixos-hardware, impermanence, home-manager, nur, nix-gaming, notlua, notnft, nixos-mailserver, nixos-router, ... }:
   let
+    # --impure required for developing
+    # it takes the paths for notlua,notnft,nixos-router from filesystem as opposed to flake inputs
     developing = false;
     # IRL-related stuff I'd rather not put into git
     priv =
@@ -80,7 +82,7 @@
     mkPkgs = config: import nixpkgs (config // {
       overlays = (if config?overlays then config.overlays else [ ]) ++ [ overlay ];
     });
-    # this is actual config, it gets processed later
+    # this is actual config, it gets processed below
     config = {
       nixserver = {
         modules = [
@@ -93,6 +95,7 @@
         system = "aarch64-linux";
         specialArgs.notnft = if developing then (import /${devPath}/notnft { inherit (nixpkgs) lib; }).config.notnft else notnft.lib.${system};
         specialArgs.router-lib = if developing then import /${devPath}/nixos-router/lib.nix { inherit (nixpkgs) lib; } else nixos-router.lib.${system};
+        specialArgs.server-config = nixosConfigurations.nixserver.config;
         modules = [
           ./system/hardware/bpi_r3/emmc.nix
           ./system/hosts/router
@@ -104,6 +107,7 @@
         system = "aarch64-linux";
         specialArgs.notnft = if developing then (import /${devPath}/notnft { inherit (nixpkgs) lib; }).config.notnft else notnft.lib.${system};
         specialArgs.router-lib = if developing then import /${devPath}/nixos-router/lib.nix { inherit (nixpkgs) lib; } else nixos-router.lib.${system};
+        specialArgs.server-config = nixosConfigurations.nixserver.config;
         modules = [
           ./system/hardware/bpi_r3/sd.nix
           ./system/hosts/router
@@ -128,25 +132,8 @@
         ];
       };
     };
-  in rec {
-    overlays.default = overlay;
-    packages = lib.genAttrs [
-      "x86_64-linux"
-      "aarch64-linux"
-    ] (system: let self = overlay self (import nixpkgs { inherit system; }); in self );
-    nixosImages.router = let pkgs = import nixpkgs { system = "aarch64-linux"; overlays = [ overlay ]; }; in {
-      emmcImage = pkgs.callPackage ./system/hardware/bpi_r3/image.nix {
-        inherit (nixosConfigurations.router-emmc) config;
-        rootfsImage = nixosConfigurations.router-emmc.config.system.build.rootfsImage;
-        bpiR3Stuff = pkgs.bpiR3StuffEmmc;
-      };
-      sdImage = pkgs.callPackage ./system/hardware/bpi_r3/image.nix {
-        inherit (nixosConfigurations.router-sd) config;
-        rootfsImage = nixosConfigurations.router-sd.config.system.build.rootfsImage;
-        bpiR3Stuff = pkgs.bpiR3StuffSd;
-      };
-    };
-    # this is the system config part
+
+    # this is the system config processing part
     nixosConfigurations = builtins.mapAttrs (hostname: args @ { system ? "x86_64-linux", modules, specialArgs ? {}, nixpkgs ? {}, home ? {}, ... }:
       lib.nixosSystem ({
         inherit system;
@@ -221,6 +208,25 @@
         ]);
       } // (builtins.removeAttrs args [ "home" "modules" "nixpkgs" ])))
       config;
+  in {
+    inherit nixosConfigurations;
+    overlays.default = overlay;
+    packages = lib.genAttrs [
+      "x86_64-linux"
+      "aarch64-linux"
+    ] (system: let self = overlay self (import nixpkgs { inherit system; }); in self );
+    nixosImages.router = let pkgs = import nixpkgs { system = "aarch64-linux"; overlays = [ overlay ]; }; in {
+      emmcImage = pkgs.callPackage ./system/hardware/bpi_r3/image.nix {
+        inherit (nixosConfigurations.router-emmc) config;
+        rootfsImage = nixosConfigurations.router-emmc.config.system.build.rootfsImage;
+        bpiR3Stuff = pkgs.bpiR3StuffEmmc;
+      };
+      sdImage = pkgs.callPackage ./system/hardware/bpi_r3/image.nix {
+        inherit (nixosConfigurations.router-sd) config;
+        rootfsImage = nixosConfigurations.router-sd.config.system.build.rootfsImage;
+        bpiR3Stuff = pkgs.bpiR3StuffSd;
+      };
+    };
 
     # for each hostname, for each user, generate an attribute "${user}@${hostname}"
     homeConfigurations =

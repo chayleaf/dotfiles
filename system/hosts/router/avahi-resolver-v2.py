@@ -681,7 +681,9 @@ def operate(id, event, qstate, qdata):
                         f.write(new_data)
             if changed4:
                 for qname in qnames:
-                    name4 = NFT_QUERIES[qname]['name4']
+                    q = NFT_QUERIES[qname]
+                    name4 = q['name4']
+                    ips4 = q['ips4']
                     if name4:
                         ip2 = []
                         for ip in ip4:
@@ -698,7 +700,9 @@ def operate(id, event, qstate, qdata):
                             add_ips(name4, False, ip2)
             if changed6:
                 for qname in qnames:
-                    name6 = NFT_QUERIES[qname]['name6']
+                    q = NFT_QUERIES[qname]
+                    name6 = q['name6']
+                    ips6 = q['ips6']
                     if name6:
                         ip2 = []
                         for ip in ip6:

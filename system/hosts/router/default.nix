@@ -3,6 +3,7 @@
 , notnft
 , lib
 , router-lib
+, server-config
 , ... }:
 
 let
@@ -98,7 +99,8 @@ let
         [return];
 
       ingress_lan_common = add chain
-        [(is.eq (fib (f: with f; [ saddr mark iif ]) (f: f.oif)) missing) (log "${logPrefix}oif missing ") drop]
+        # there are some issues with this, disable it for lan
+        # [(is.eq (fib (f: with f; [ saddr mark iif ]) (f: f.oif)) missing) (log "${logPrefix}oif missing ") drop]
         [(jump "ingress_common")];
 
       ingress_wan_common = add chain
@@ -151,8 +153,8 @@ let
           }
           // lib.genAttrs lans (_: jump "inbound_lan_common")
           // lib.genAttrs wans (_: jump "inbound_wan_common")
-        ))]
-        [(log "${logPrefix}inbound drop ")];
+        ))];
+        #[(log "${logPrefix}inbound drop ")];
 
       forward = add chain { type = f: f.filter; hook = f: f.forward; prio = f: f.filter; policy = f: f.drop; }
         [(vmap ct.state { established = accept; related = accept; invalid = drop; })]
@@ -215,14 +217,7 @@ let
   vacuumAddress4 = addToIp parsedGatewayAddr4 2;
   vacuumAddress6 = addToIp parsedGatewayAddr6 2;
 
-  # TODO: take from server config?
-  hosted-domains =
-    map
-      (prefix: if prefix == null then cfg.domainName else "${prefix}.${cfg.domainName}")
-  [
-    null "dns" "mumble" "mail" "music" "www" "matrix"
-    "search" "git" "cloud" "ns1" "ns2"
-  ];
+  hosted-domains = builtins.attrNames server-config.services.nginx.virtualHosts;
 in {
   router-settings.domainName = "pavluk.org";
   router-settings.dhcpReservations = [
@@ -237,34 +232,40 @@ in {
     { ipAddress = vacuumAddress6;
       macAddress = cfg.vacuumMac; }
   ];
-  router-settings.dnatRules = [
-    {
-      # TODO: take firewall settings from server config
-      port = notnft.dsl.set [
-        # http
-        80 443 8008 8448
-        # mail
-        25 587 465 143 993 110 995 4190
-      ];
-      tcp = true; udp = false;
-      target4.address = serverAddress4;
-      target6.address = serverAddress6;
-    }
-    {
-      # mumble
-      port = 64738; tcp = true; udp = true;
-      target4.address = serverAddress4;
-      target6.address = serverAddress6;
-    }
-    {
-      # expose the default namespace's ssh via port 23
-      port = 23; tcp = true; udp = false;
-      target4.address = gatewayAddr4;
-      target4.port = 22;
-      target6.address = gatewayAddr6;
-      target6.port = 22;
-    }
-  ];
+
+  # dnat to server, take ports from its firewall config
+  router-settings.dnatRules = let
+    allTcp = server-config.networking.firewall.allowedTCPPorts;
+    allTcpRanges = server-config.networking.firewall.allowedTCPPortRanges;
+    allUdp = server-config.networking.firewall.allowedUDPPorts;
+    allUdpRanges = server-config.networking.firewall.allowedUDPPortRanges;
+
+    tcpAndUdp = builtins.filter (x: x != 22 && builtins.elem x allTcp) allUdp;
+    tcpOnly = builtins.filter (x: x != 22 && !(builtins.elem x allUdp)) allTcp;
+    udpOnly = builtins.filter (x: x != 22 && !(builtins.elem x allTcp)) allUdp;
+
+    rangesTcpAndUdp = builtins.filter (x: builtins.elem x allTcpRanges) allUdpRanges;
+    rangesTcpOnly = builtins.filter (x: !(builtins.elem x allUdpRanges)) allTcpRanges;
+    rangesUdpOnly = builtins.filter (x: !(builtins.elem x allTcpRanges)) allUdpRanges;
+  in lib.optional (tcpAndUdp != [ ]) {
+    port = notnft.dsl.set tcpAndUdp; tcp = true; udp = true;
+    target4.address = serverAddress4; target6.address = serverAddress6;
+  } ++ lib.optional (tcpOnly != [ ]) {
+    port = notnft.dsl.set tcpOnly; tcp = true; udp = false;
+    target4.address = serverAddress4; target6.address = serverAddress6;
+  } ++ lib.optional (udpOnly != [ ]) {
+    port = notnft.dsl.set udpOnly; tcp = false; udp = true;
+    target4.address = serverAddress4; target6.address = serverAddress6;
+  } ++ map (range: {
+    port = notnft.dsl.range range.from range.to; tcp = true; udp = true;
+    target4.address = serverAddress4; target6.address = serverAddress6;
+  }) rangesTcpAndUdp ++ map (range: {
+    port = notnft.dsl.range range.from range.to; tcp = true; udp = false;
+    target4.address = serverAddress4; target6.address = serverAddress6;
+  }) rangesTcpOnly ++ map (range: {
+    port = notnft.dsl.range range.from range.to; tcp = false; udp = true;
+    target4.address = serverAddress4; target6.address = serverAddress6;
+  }) rangesUdpOnly;
 
   imports = [ ./options.nix ];
   system.stateVersion = "22.11";
@@ -301,9 +302,11 @@ in {
     "net.ipv6.conf.all.forwarding" = true;
   };
   services.openssh.enable = true;
-  /*services.fail2ban = {
+  services.fail2ban = {
     enable = true;
-  };*/
+    ignoreIP = [ netCidr4 netCidr6 ];
+    maxretry = 10;
+  };
   router.enable = true;
   router.interfaces.wlan0 = {
     bridge = "br0";
@@ -364,7 +367,7 @@ in {
       { service = "wireguard-wg0"; inNetns = false; }
     ];
     systemdLinkLinkConfig.MACAddressPolicy = "none";
-    systemdLinkLinkConfig.MACAddress = "11:22:33:44:55:66";
+    systemdLinkLinkConfig.MACAddress = cfg.routerMac;
     dhcpcd.enable = true;
     networkNamespace = "wan";
   };
@@ -408,6 +411,34 @@ in {
     ipv4.kea.enable = true;
     ipv6.radvd.enable = true;
     ipv6.kea.enable = true;
+  };
+  router.networkNamespaces.default = {
+    # set routing table depending on packet mark
+    rules = [
+      { ipv6 = false; extraArgs = [ "fwmark" wan_table "table" wan_table ]; }
+      { ipv6 = true; extraArgs = [ "fwmark" wan_table "table" wan_table ]; }
+      # don't add vpn_table as it should be the default
+      { ipv6 = false; extraArgs = [ "fwmark" iot_table "table" iot_table ]; }
+      { ipv6 = true; extraArgs = [ "fwmark" iot_table "table" iot_table ]; }
+    ] ++ builtins.concatLists (map (rule: let
+      table = if rule.inVpn then 0 else wan_table;
+      forEachPort = func: port:
+        if builtins.isInt port then [ (func port) ]
+        else if port?set then builtins.concatLists (map (forEachPort func) port.set)
+        else if port?range.min then let inherit (port.range) min max; in [ (func "${toString min}-${toString max}") ]
+        else if port?range then let max = builtins.elemAt port.range 1; min = builtins.head port.range; in [ (func "${toString min}-${toString max}" ) ]
+        else throw "Unsupported expr: ${builtins.toJSON port}";
+      gen = len: proto: tgt:
+        forEachPort
+          (port: [ "from" "${tgt.address}/${toString len}" "ipproto" proto "sport" port "table" table ])
+          (if tgt.port == null then rule.port else tgt.port);
+    in   lib.optionals (rule.tcp && rule.target4 != null) (map (x: { ipv6 = false; extraArgs = x; }) (gen 32  "tcp" rule.target4))
+      ++ lib.optionals (rule.udp && rule.target4 != null) (map (x: { ipv6 = false; extraArgs = x; }) (gen 32  "udp" rule.target4))
+      ++ lib.optionals (rule.tcp && rule.target6 != null) (map (x: { ipv6 = true;  extraArgs = x; }) (gen 128 "tcp" rule.target6))
+      ++ lib.optionals (rule.udp && rule.target6 != null) (map (x: { ipv6 = true;  extraArgs = x; }) (gen 128 "udp" rule.target6))
+
+    ) (builtins.filter (x: (x.tcp || x.udp) && dnatRuleMode x == "rule") cfg.dnatRules));
+
     nftables.stopJsonRules = mkFlushRules {};
     nftables.jsonRules = mkRules {
       selfIp4 = gatewayAddr4;
@@ -541,6 +572,8 @@ in {
     ipv6.routes = [
       { extraArgs = [ netCidr6 "via" mainNetnsAddr6 ]; }
     ];
+  };
+  router.networkNamespaces.wan = {
     nftables.stopJsonRules = mkFlushRules {};
     nftables.jsonRules = mkRules {
       selfIp4 = wanNetnsAddr4;
@@ -600,30 +633,6 @@ in {
       ];
     };
   };
-  router.networkNamespaces.default.rules = [
-    { ipv6 = false; extraArgs = [ "fwmark" wan_table "table" wan_table ]; }
-    { ipv6 = true; extraArgs = [ "fwmark" wan_table "table" wan_table ]; }
-    # don't add vpn_table as it should be the default
-    { ipv6 = false; extraArgs = [ "fwmark" iot_table "table" iot_table ]; }
-    { ipv6 = true; extraArgs = [ "fwmark" iot_table "table" iot_table ]; }
-  ] ++ builtins.concatLists (map (rule: let
-    table = if rule.inVpn then 0 else wan_table;
-    forEachPort = func: port:
-      if builtins.isInt port then [ (func port) ]
-      else if port?set then builtins.concatLists (map (forEachPort func) port.set)
-      else if port?range.min then let inherit (port.range) min max; in [ (func "${toString min}-${toString max}") ]
-      else if port?range then let max = builtins.elemAt port.range 1; min = builtins.head port.range; in [ (func "${toString min}-${toString max}" ) ]
-      else throw "Unsupported expr: ${builtins.toJSON port}";
-    gen = len: proto: tgt:
-      forEachPort
-        (port: [ "from" "${tgt.address}/${toString len}" "ipproto" proto "sport" port "table" table ])
-        (if tgt.port == null then rule.port else tgt.port);
-  in   lib.optionals (rule.tcp && rule.target4 != null) (map (x: { ipv6 = false; extraArgs = x; }) (gen 32  "tcp" rule.target4))
-    ++ lib.optionals (rule.udp && rule.target4 != null) (map (x: { ipv6 = false; extraArgs = x; }) (gen 32  "udp" rule.target4))
-    ++ lib.optionals (rule.tcp && rule.target6 != null) (map (x: { ipv6 = true;  extraArgs = x; }) (gen 128 "tcp" rule.target6))
-    ++ lib.optionals (rule.udp && rule.target6 != null) (map (x: { ipv6 = true;  extraArgs = x; }) (gen 128 "udp" rule.target6))
-
-  ) (builtins.filter (x: (x.tcp || x.udp) && dnatRuleMode x == "rule") cfg.dnatRules));
 
   networking.wireguard.interfaces.wg0 = cfg.wireguard // {
     socketNamespace = "wan";
@@ -673,9 +682,9 @@ in {
     # load vpn_domains.json and vpn_ips.json, as well as unvpn_domains.json and unvpn_ips.json
     # resolve domains and append it to ips and add it to the nftables sets
     environment.NFT_QUERIES = "vpn:force_vpn4,force_vpn6;unvpn:force_unvpn4,force_unvpn6";
-    # it needs to run after br0 has been set up because it sets up the sets
-    after = [ "nftables-br0.service" ];
-    wants = [ "nftables-br0.service" ];
+    # it needs to run after nftables has been set up because it sets up the sets
+    after = [ "nftables-default.service" ];
+    wants = [ "nftables-default.service" ];
     # allow it to call nft
     serviceConfig.AmbientCapabilities = [ "CAP_NET_ADMIN" ];
   };

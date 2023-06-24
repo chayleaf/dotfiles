@@ -5,6 +5,10 @@
 
 {
   options.router-settings = {
+    routerMac = lib.mkOption {
+      description = "router's mac address";
+      type = lib.types.str;
+    };
     serverMac = lib.mkOption {
       description = "server's mac address";
       type = lib.types.str;

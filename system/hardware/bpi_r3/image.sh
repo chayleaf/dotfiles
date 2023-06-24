@@ -46,8 +46,8 @@ if [ -z "$1" ]; then
   exit 1
 fi
 rootfs="$1/rootfs.ext4"
-template="$1/template.btrfs"
-image="$1/image.img"
+template="$1/template.btrfs.zst"
+image="$1/image.img.zst"
 boot="$1/boot"
 
 metadata0="$(head -n1 "$1/metadata")"
@@ -58,10 +58,12 @@ if [ -z "$metadata0" ] || [ -z "$metadata1" ] || [[ "$metadata0" == "$metadata1"
 fi
 
 tmp=$(mktemp -d)
-cp "$template" "$tmp/template.btrfs"
-cp "$image" "$tmp/image.img"
+cp "$template" "$tmp/template.btrfs.zst"
+cp "$image" "$tmp/image.img.zst"
 template="$tmp/template.btrfs"
 image="$tmp/image.img"
+unzstd --rm "$template.zst"
+unzstd --rm "$image.zst"
 chmod +w "$template" "$image"
 
 function cleanup {
@@ -94,5 +96,4 @@ run umount "$tmp/out"
 
 dd conv=notrunc if="$template" of="$image" seek="$metadata0"
 
-zstd --compress "$image"
-cp "$image.zst" ./image.img.zst
+zstd -f --rm --compress "$image" -o ./image.img.zst 

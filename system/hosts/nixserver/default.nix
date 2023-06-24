@@ -85,9 +85,6 @@ in {
   };
   console.font = "${pkgs.terminus_font}/share/consolefonts/ter-v24n.psf.gz";
   networking.useDHCP = true;
-  networking.resolvconf.extraConfig = ''
-    name_servers="127.0.0.1 ::1"
-  '';
   networking.firewall = {
     enable = true;
     allowedTCPPorts = [
@@ -107,12 +104,15 @@ in {
   # UNBOUND
   users.users.${config.common.mainUsername}.extraGroups = [ config.services.unbound.group ];
 
+  #networking.resolvconf.extraConfig = ''
+  #  name_servers="127.0.0.1 ::1"
+  #'';
   services.unbound = {
-    enable = true;
+    enable = false;
     package = pkgs.unbound-with-systemd.override {
       stdenv = pkgs.ccacheStdenv;
       withPythonModule = true;
-      python = unbound-python;
+      python = pkgs.python3;
     };
     localControlSocketPath = "/run/unbound/unbound.ctl";
     resolveLocalQueries = false;
@@ -142,9 +142,11 @@ in {
       remote-control.control-enable = true;
     };
   };
-  systemd.services.unbound.environment = {
-    MDNS_ACCEPT_NAMES = "^.*\\.local\\.$";
-    PYTHONPATH = "${unbound-python}/${unbound-python.sitePackages}";
+  systemd.services.unbound = lib.mkIf config.services.unbound.enable {
+    environment = {
+      MDNS_ACCEPT_NAMES = "^.*\\.local\\.$";
+      PYTHONPATH = "${unbound-python}/${unbound-python.sitePackages}";
+    };
   };
   # just in case
   networking.hosts."127.0.0.1" = [ "localhost" ] ++ hosted-domains;
@@ -179,6 +181,7 @@ in {
     enable = true;
     ignoreIP = lib.optionals (cfg.lanCidrV4 != "0.0.0.0/0") [ cfg.lanCidrV4 ]
                 ++ (lib.optionals (cfg.lanCidrV6 != "::/0") [ cfg.lanCidrV6 ]);
+    maxretry = 10;
     jails.dovecot = ''
       enabled = true
       filter = dovecot
