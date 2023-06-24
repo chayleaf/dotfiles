@@ -1,5 +1,7 @@
 { config, lib, ... }:
 
+# common impermanence config for all of my hosts
+
 let
   cfg = config.impermanence;
 in {
@@ -22,7 +24,7 @@ in {
           description = "Extra directories to persist";
         };
         files = mkOption {
-          type = with types; listOf path;
+          type = with types; listOf (either path attrs);
           default = [ ];
           description = "Extra files to persist";
         };
@@ -60,71 +62,76 @@ in {
         { directory = /var/lib/systemd; user = "root"; group = "root"; mode = "0755"; }
         { directory = /var/tmp; user = "root"; group = "root"; mode = "1777"; }
         { directory = /var/spool; user = "root"; group = "root"; mode = "0777"; }
-      ] ++ (lib.optionals cfg.persistTmp [
+      ] ++ lib.optionals cfg.persistTmp [
         { directory = /tmp; user = "root"; group = "root"; mode = "1777"; }
-      ]) ++ (lib.optionals config.services.mullvad-vpn.enable [
+      ] ++ lib.optionals config.services.mullvad-vpn.enable [
         { directory = /etc/mullvad-vpn; user = "root"; group = "root"; mode = "0700"; }
         { directory = /var/cache/mullvad-vpn; user = "root"; group = "root"; mode = "0755"; }
-      ]) ++ (lib.optionals config.virtualisation.libvirtd.enable ([
+      ] ++ lib.optionals config.virtualisation.libvirtd.enable ([
         # { directory = /var/cache/libvirt; user = "root"; group = "root"; mode = "0755"; }
         { directory = /var/lib/libvirt; user = "root"; group = "root"; mode = "0755"; }
-      ] ++ (lib.optionals config.virtualisation.libvirtd.qemu.swtpm.enable [
+      ] ++ lib.optionals config.virtualisation.libvirtd.qemu.swtpm.enable [
         { directory = /var/lib/swtpm-localca; user = "root"; group = "root"; mode = "0750"; }
-      ]))) ++ (lib.optionals config.networking.wireless.iwd.enable [
+      ]) ++ lib.optionals config.networking.wireless.iwd.enable [
         { directory = /var/lib/iwd; user = "root"; group = "root"; mode = "0700"; }
-      ]) ++ (lib.optionals (builtins.any (x: x.useDHCP != false) (builtins.attrValues config.networking.interfaces) && config.networking.useDHCP) [
+      ] ++ lib.optionals (builtins.any (x: x.useDHCP != false) (builtins.attrValues config.networking.interfaces) && config.networking.useDHCP) [
         { directory = /var/db/dhcpcd; user = "root"; group = "root"; mode = "0755"; }
-      ]) ++ (lib.optionals config.services.gitea.enable [
+      ] ++ lib.optionals config.services.gitea.enable [
         { directory = /var/lib/gitea; user = "gitea"; group = "gitea"; mode = "0755"; }
-      ]) ++ (lib.optionals config.services.matrix-synapse.enable [
+      ] ++ lib.optionals config.services.matrix-synapse.enable [
         { directory = /var/lib/matrix-synapse; user = "matrix-synapse"; group = "matrix-synapse"; mode = "0700"; }
-      ]) ++ (lib.optionals config.services.heisenbridge.enable [
+      ] ++ lib.optionals config.services.heisenbridge.enable [
         { directory = /var/lib/heisenbridge; user = "heisenbridge"; group = "heisenbridge"; mode = "0755"; }
-      ]) ++ (lib.optionals config.services.murmur.enable [
+      ] ++ lib.optionals config.services.murmur.enable [
         { directory = /var/lib/murmur; user = "murmur"; group = "murmur"; mode = "0700"; }
-      ]) ++ (lib.optionals config.services.nextcloud.enable [
+      ] ++ lib.optionals config.services.nextcloud.enable [
         { directory = /var/lib/nextcloud; user = "nextcloud"; group = "nextcloud"; mode = "0750"; }
-      ]) ++ (lib.optionals config.services.botamusique.enable [
+      ] ++ lib.optionals config.services.botamusique.enable [
         { directory = /var/lib/private/botamusique; user = "root"; group = "root"; mode = "0750"; }
-      ]) ++ (lib.optionals config.security.acme.acceptTerms [
+      ] ++ lib.optionals config.security.acme.acceptTerms [
         { directory = /var/lib/acme; user = "acme"; group = "acme"; mode = "0755"; }
-      ]) ++ (lib.optionals config.services.printing.enable [
+      ] ++ lib.optionals config.services.printing.enable [
         { directory = /var/lib/cups; user = "root"; group = "root"; mode = "0755"; }
-      ]) ++ (lib.optionals config.services.fail2ban.enable [
+      ] ++ lib.optionals config.services.fail2ban.enable [
         { directory = /var/lib/fail2ban; user = "fail2ban"; group = "fail2ban"; mode = "0750"; }
-      ]) ++ (lib.optionals config.services.opendkim.enable [
+      ] ++ lib.optionals config.services.opendkim.enable [
         { directory = /var/lib/opendkim; user = "opendkim"; group = "opendkim"; mode = "0700"; }
-      ]) ++ (lib.optionals config.services.pleroma.enable [
+      ] ++ lib.optionals config.services.pleroma.enable [
         { directory = /var/lib/pleroma; user = "pleroma"; group = "pleroma"; mode = "0700"; }
-      ]) ++ (lib.optionals config.services.postfix.enable [
+      ] ++ lib.optionals config.services.postfix.enable [
         { directory = /var/lib/postfix; user = "root"; group = "root"; mode = "0755"; }
-      ]) ++ (lib.optionals config.services.postgresql.enable [
+      ] ++ lib.optionals config.services.postgresql.enable [
         { directory = /var/lib/postgresql; user = "postgres"; group = "postgres"; mode = "0755"; }
-      ]) ++ (lib.optionals config.services.unbound.enable [
+      ] ++ lib.optionals config.services.unbound.enable [
         { directory = /var/lib/unbound; user = "unbound"; group = "unbound"; mode = "0755"; }
-      ]) ++ (lib.optionals config.services.searx.enable [
+      ] ++ lib.optionals config.services.searx.enable [
         { directory = /var/lib/searx; user = "searx"; group = "searx"; mode = "0700"; }
-      ]) ++ (lib.optionals config.services.roundcube.enable [
+      ] ++ lib.optionals config.services.roundcube.enable [
         { directory = /var/lib/roundcube; user = "roundcube"; group = "roundcube"; mode = "0700"; }
-      ]) ++ (lib.optionals config.services.rspamd.enable [
+      ] ++ lib.optionals config.services.rspamd.enable [
         { directory = /var/lib/rspamd; user = "rspamd"; group = "rspamd"; mode = "0700"; }
-      ]) ++ (lib.optionals (
-        (builtins.hasAttr "rspamd" config.services.redis.servers)
-        && (builtins.hasAttr "enable" config.services.redis.servers.rspamd)
-        && config.services.redis.servers.rspamd.enable
-      ) [
+      ] ++ lib.optionals (config.services.redis.servers.rspamd.enable or false) [
         { directory = /var/lib/redis-rspamd; user = "redis-rspamd"; group = "redis-rspamd"; mode = "0700"; }
-      ]) ++ (lib.optionals config.services.dovecot2.enable [
+      ] ++ lib.optionals config.services.dovecot2.enable [
         { directory = /var/lib/dhparams; user = "root"; group = "root"; mode = "0755"; }
         { directory = /var/lib/dovecot; user = "root"; group = "root"; mode = "0755"; }
-      ]) ++ (lib.optionals config.security.sudo.enable [
+      ] ++ lib.optionals config.security.sudo.enable [
         { directory = /var/db/sudo/lectured; user = "root"; group = "root"; mode = "0700"; }
-      ]) ++ cfg.directories);
-      files = map toString ([
+      ] ++ cfg.directories);
+      files = map (x:
+        if builtins.isPath x then toString x
+        else if builtins.isAttrs x && x?file && builtins.isPath x.file then x // { file = toString x.file; }
+        else x) ([
         # hardware-related
         /etc/adjtime
         # needed at least for /var/log
         /etc/machine-id
+      ] ++ lib.optionals config.services.openssh.enable [
+        # keep ssh fingerprints stable
+        /etc/ssh/ssh_host_ed25519_key
+        /etc/ssh/ssh_host_ed25519_key.pub
+        /etc/ssh/ssh_host_rsa_key
+        /etc/ssh/ssh_host_rsa_key.pub
       ] ++ cfg.files);
     };
   };

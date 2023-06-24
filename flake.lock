@@ -181,6 +181,27 @@
         "type": "gitlab"
       }
     },
+    "nixos-router": {
+      "inputs": {
+        "nixpkgs": [
+          "nixpkgs"
+        ]
+      },
+      "locked": {
+        "lastModified": 1687562820,
+        "narHash": "sha256-cks0WUe/27kBlQDNulKA4ZHTggN9k/jGWhFDrMiEV8k=",
+        "owner": "chayleaf",
+        "repo": "nixos-router",
+        "rev": "5048633a6f38c6787cba1a010359ff5246ec532b",
+        "type": "github"
+      },
+      "original": {
+        "owner": "chayleaf",
+        "repo": "nixos-router",
+        "rev": "5048633a6f38c6787cba1a010359ff5246ec532b",
+        "type": "github"
+      }
+    },
     "nixpkgs": {
       "locked": {
         "lastModified": 1686412476,
@@ -235,6 +256,27 @@
         "type": "github"
       }
     },
+    "notnft": {
+      "inputs": {
+        "nixpkgs": [
+          "nixpkgs"
+        ]
+      },
+      "locked": {
+        "lastModified": 1687562693,
+        "narHash": "sha256-imxVKPmthtrMq5RFst8IfdbnDPy4sEeln2lo9374W4o=",
+        "owner": "chayleaf",
+        "repo": "notnft",
+        "rev": "f090546a7c190557c2081129b7e49a595f2ab76f",
+        "type": "github"
+      },
+      "original": {
+        "owner": "chayleaf",
+        "repo": "notnft",
+        "rev": "f090546a7c190557c2081129b7e49a595f2ab76f",
+        "type": "github"
+      }
+    },
     "nur": {
       "locked": {
         "lastModified": 1686488164,
@@ -258,8 +300,10 @@
         "nix-gaming": "nix-gaming",
         "nixos-hardware": "nixos-hardware",
         "nixos-mailserver": "nixos-mailserver",
+        "nixos-router": "nixos-router",
         "nixpkgs": "nixpkgs",
         "notlua": "notlua",
+        "notnft": "notnft",
         "nur": "nur",
         "rust-overlay": "rust-overlay"
       }

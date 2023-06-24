@@ -7,7 +7,7 @@
 
 set -euxo pipefail
 
-(which zstd && which rsync) || exit 1
+which zstd || exit 1
 
 userspace="$(which lklfuse >/dev/null && echo -n 1 || echo -n)"
 use_rsync="$(which rsync >/dev/null && echo -n 1 || echo -n)"
@@ -74,15 +74,19 @@ mkdir -p "$tmp/rootfs" "$tmp/out"
 Mount ext4 "$rootfs" "$tmp/rootfs" ro
 rootfs="$tmp/rootfs"
 Mount btrfs "$template" "$tmp/out"
-run cp -rv "$boot"/* "$tmp/out/@boot/"
+cpr "$boot" "$tmp/out/@boot"
 run umount "$tmp/out"
 Mount btrfs "$template" "$tmp/out" "compress=zstd:15"
 run cp -v "$rootfs/nix-path-registration" "$tmp/out/@/"
 # those two are the only dirs needed for impermanence in boot stage 1
-sudo -A mkdir -p "$tmp/out/@/var/lib/nixos"
-sudo -A mkdir -p "$tmp/out/@/var/log"
-run ls "$boot"
-cpr "$boot" "$tmp/out/@boot"
+run mkdir -p "$tmp/out/@/var/lib/nixos"
+run mkdir -p "$tmp/out/@/var/log"
+
+# secrets, we don't want to pass them via the store
+run mkdir -p "$tmp/out/@/secrets"
+run cp -v /etc/nixos/private/wireguard-key "$tmp/out/@/secrets/"
+run chmod -R 000 "$tmp/out/@/secrets"
+
 cpr "$rootfs/nix" "$tmp/out/@nix"
 
 run umount "$rootfs"

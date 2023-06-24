@@ -182,11 +182,15 @@ in {
     27015
     25565
     7777
-  ]
+    9887
+  ];
   # kde connect
-  ++ (lib.range 1714 1764);
-  networking.firewall.allowedUDPPorts = lib.range 1714 1764;
-
+  networking.firewall.allowedTCPPortRanges = [
+    { from = 1714; to = 1764; }
+  ];
+  networking.firewall.allowedUDPPortRanges = [
+    { from = 1714; to = 1764; }
+  ];
   networking.wireless.iwd.enable = true;
 
   services.ratbagd.enable = true;

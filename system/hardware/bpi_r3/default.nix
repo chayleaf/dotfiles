@@ -27,7 +27,6 @@
   boot.kernelParams = [ "boot.shell_on_fail" "console=ttyS0,115200" ];
 
   boot.initrd.compressor = "zstd";
-  nixpkgs.buildPlatform = "x86_64-linux";
 
   system.build.rootfsImage = pkgs.callPackage "${pkgs.path}/nixos/lib/make-ext4-fs.nix" {
     storePaths = config.system.build.toplevel;

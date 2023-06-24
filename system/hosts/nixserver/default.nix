@@ -28,6 +28,8 @@ let
     "ns2"
   ];
 
+  unbound-python = pkgs.python3.withPackages (pkgs: with pkgs; [ pydbus dnspython ]);
+
 in {
   imports = [
     ./options.nix
@@ -108,8 +110,9 @@ in {
   services.unbound = {
     enable = true;
     package = pkgs.unbound-with-systemd.override {
+      stdenv = pkgs.ccacheStdenv;
       withPythonModule = true;
-      python = pkgs.python3.withPackages (pkgs: with pkgs; [ pydbus dnspython ]);
+      python = unbound-python;
     };
     localControlSocketPath = "/run/unbound/unbound.ctl";
     resolveLocalQueries = false;
@@ -119,7 +122,7 @@ in {
         access-control =  [ "${cfg.lanCidrV4} allow" "${cfg.lanCidrV6} allow" ];
         aggressive-nsec = true;
         do-ip6 = true;
-        module-config = ''"validator iterator"'';
+        module-config = ''"validator python iterator"'';
         local-zone = [
           ''"local." static''
         ] ++ (lib.optionals (cfg.localIpV4 != null || cfg.localIpV6 != null) [
@@ -129,7 +132,7 @@ in {
           lib.optionals (cfg.localIpV4 != null) [
             ''"${domain}. A ${cfg.localIpV4}"''
           ] ++ (lib.optionals (cfg.localIpV6 != null) [
-            ''"${domain}. A ${cfg.localIpV6}"''
+            ''"${domain}. AAAA ${cfg.localIpV6}"''
           ])) hosted-domains);
       };
       python.python-script = toString (pkgs.fetchurl {
@@ -139,7 +142,10 @@ in {
       remote-control.control-enable = true;
     };
   };
-  systemd.services.unbound.environment.MDNS_ACCEPT_NAMES = "^.*\\.local\\.$";
+  systemd.services.unbound.environment = {
+    MDNS_ACCEPT_NAMES = "^.*\\.local\\.$";
+    PYTHONPATH = "${unbound-python}/${unbound-python.sitePackages}";
+  };
   # just in case
   networking.hosts."127.0.0.1" = [ "localhost" ] ++ hosted-domains;
 

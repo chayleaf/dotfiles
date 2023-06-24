@@ -22,6 +22,14 @@
       url = "github:chayleaf/notlua";
       inputs.nixpkgs.follows = "nixpkgs";
     };
+    notnft = {
+      url = "github:chayleaf/notnft/f090546a7c190557c2081129b7e49a595f2ab76f";
+      inputs.nixpkgs.follows = "nixpkgs";
+    };
+    nixos-router = {
+      url = "github:chayleaf/nixos-router/5048633a6f38c6787cba1a010359ff5246ec532b";
+      inputs.nixpkgs.follows = "nixpkgs";
+    };
     nixos-mailserver = {
       url = "gitlab:simple-nixos-mailserver/nixos-mailserver";
       inputs.nixpkgs.follows = "nixpkgs";
@@ -33,8 +41,9 @@
     };
   };
 
-  outputs = inputs@{ self, nixpkgs, nixos-hardware, impermanence, home-manager, nur, nix-gaming, notlua, nixos-mailserver, ... }:
+  outputs = inputs@{ self, nixpkgs, nixos-hardware, impermanence, home-manager, nur, nix-gaming, notlua, notnft, nixos-mailserver, nixos-router, ... }:
   let
+    developing = false;
     # IRL-related stuff I'd rather not put into git
     priv =
       if builtins.pathExists ./private.nix then (import ./private.nix { })
@@ -43,6 +52,7 @@
       else if builtins?extraBuiltins.secrets then builtins.extraBuiltins.secrets
       # yes, this is impure, this is a last ditch effort at getting access to secrets
       else import /etc/nixos/private { };
+    devPath = priv.devPath or ../.;
     # if x has key s, get it. Otherwise return def
     # All private config for hostname
     getPriv = hostname: priv.${hostname} or { };
@@ -79,21 +89,25 @@
           ./system/hosts/nixserver
         ];
       };
-      router-emmc = {
+      router-emmc = rec {
         system = "aarch64-linux";
+        specialArgs.notnft = if developing then (import /${devPath}/notnft { inherit (nixpkgs) lib; }).config.notnft else notnft.lib.${system};
+        specialArgs.router-lib = if developing then import /${devPath}/nixos-router/lib.nix { inherit (nixpkgs) lib; } else nixos-router.lib.${system};
         modules = [
           ./system/hardware/bpi_r3/emmc.nix
           ./system/hosts/router
-          ./system/modules/router
+          (if developing then (import /${devPath}/nixos-router) else nixos-router.nixosModules.default)
           { networking.hostName = "router"; }
         ];
       };
-      router-sd = {
+      router-sd = rec {
         system = "aarch64-linux";
+        specialArgs.notnft = if developing then (import /${devPath}/notnft { inherit (nixpkgs) lib; }).config.notnft else notnft.lib.${system};
+        specialArgs.router-lib = if developing then import /${devPath}/nixos-router/lib.nix { inherit (nixpkgs) lib; } else nixos-router.lib.${system};
         modules = [
           ./system/hardware/bpi_r3/sd.nix
           ./system/hosts/router
-          ./system/modules/router
+          (if developing then (import /${devPath}/nixos-router) else nixos-router.nixosModules.default)
           { networking.hostName = "router"; }
         ];
       };
@@ -120,7 +134,6 @@
       "x86_64-linux"
       "aarch64-linux"
     ] (system: let self = overlay self (import nixpkgs { inherit system; }); in self );
-    # this is the system config part
     nixosImages.router = let pkgs = import nixpkgs { system = "aarch64-linux"; overlays = [ overlay ]; }; in {
       emmcImage = pkgs.callPackage ./system/hardware/bpi_r3/image.nix {
         inherit (nixosConfigurations.router-emmc) config;
@@ -133,7 +146,8 @@
         bpiR3Stuff = pkgs.bpiR3StuffSd;
       };
     };
-    nixosConfigurations = builtins.mapAttrs (hostname: args @ { system ? "x86_64-linux", modules, nixpkgs ? {}, home ? {}, ... }:
+    # this is the system config part
+    nixosConfigurations = builtins.mapAttrs (hostname: args @ { system ? "x86_64-linux", modules, specialArgs ? {}, nixpkgs ? {}, home ? {}, ... }:
       lib.nixosSystem ({
         inherit system;
         # allow modules to access nixpkgs directly, use customized lib,
@@ -141,7 +155,7 @@
         specialArgs = {
           inherit lib nixpkgs;
           hardware = nixos-hardware.nixosModules;
-        };
+        } // specialArgs;
         modules = modules ++ [
           # Third-party NixOS modules
           impermanence.nixosModule 

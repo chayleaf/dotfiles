@@ -10,6 +10,7 @@ let
     src = pkgs.fetchFromGitHub {
       owner = "frank-w";
       repo = "u-boot";
+      # branch r3-atf
       rev = "c30a1caf8274af67bf31f3fb5abc45df5737df36";
       hash = "sha256-pW2yytXRIFEIbG1gnuXq8TiLe/Eew7zESe6Pijh2qVk=";
     };
@@ -61,10 +62,10 @@ let
     CONFIG_USE_BOOTCOMMAND=y
     CONFIG_ZSTD=y
   '';
-  ubootVersion = "2023.07-rc3";
+  ubootVersion = "2023.07-rc4";
   ubootSrc = pkgs.fetchurl {
     url = "ftp://ftp.denx.de/pub/u-boot/u-boot-${ubootVersion}.tar.bz2";
-    hash = "sha256-QuwINnS9MPpMFueMP19FPAjZ9zdZWne13aWVrDoJ2C8=";
+    hash = "sha256-tqp9fnGPQFeNGrkU/A6AusDEz7neh2KiR9HWbR7+WTY=";
   };
 in rec {
   ubootBpiR3Sd = pkgs.buildUBoot {

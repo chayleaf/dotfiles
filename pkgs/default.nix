@@ -48,6 +48,7 @@ in
   mpvScripts = pkgs.mpvScripts // (callPackage ./mpv-scripts { });
 
   qemu_7 = callPackage ./qemu_7.nix {
+    stdenv = pkgs'.ccacheStdenv;
     inherit (pkgs.darwin.apple_sdk.frameworks) CoreServices Cocoa Hypervisor vmnet;
     inherit (pkgs.darwin.stubs) rez setfile;
     inherit (pkgs.darwin) sigtool;
@@ -62,5 +63,23 @@ in
   # TODO: when https://gitlab.com/virtio-fs/virtiofsd/-/issues/96 is fixed remove this
   virtiofsd = callPackage ./qemu_virtiofsd.nix {
     qemu = pkgs'.qemu_7;
+    stdenv = pkgs'.ccacheStdenv;
   };
+
+  hostapd = (pkgs.hostapd.override { stdenv = pkgs'.ccacheStdenv; }).overrideAttrs (old: {
+    # also remove 80211N
+    extraConfig = old.extraConfig + ''
+      CONFIG_OCV=y
+      CONFIG_WPS=y
+      CONFIG_WPS_NFC=y
+      CONFIG_WNM=y
+      CONFIG_IEEE80211AX=y
+      CONFIG_IEEE80211BE=y
+      CONFIG_ELOOP_EPOLL=y
+      CONFIG_MBO=y
+      CONFIG_TAXONOMY=y
+      CONFIG_OWE=y
+      CONFIG_AIRTIME_POLICY=y
+    '';
+  });
 } // (import ../system/hardware/bpi_r3/pkgs.nix { inherit pkgs pkgs' lib sources; })
