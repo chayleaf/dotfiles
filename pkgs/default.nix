@@ -82,4 +82,4 @@ in
       CONFIG_AIRTIME_POLICY=y
     '';
   });
-} // (import ../system/hardware/bpi_r3/pkgs.nix { inherit pkgs pkgs' lib sources; })
+} // (import ../system/hardware/bpi-r3/pkgs.nix { inherit pkgs pkgs' lib sources; })

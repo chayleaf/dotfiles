@@ -23,11 +23,11 @@
       inputs.nixpkgs.follows = "nixpkgs";
     };
     notnft = {
-      url = "github:chayleaf/notnft/f090546a7c190557c2081129b7e49a595f2ab76f";
+      url = "github:chayleaf/notnft";
       inputs.nixpkgs.follows = "nixpkgs";
     };
     nixos-router = {
-      url = "github:chayleaf/nixos-router/5048633a6f38c6787cba1a010359ff5246ec532b";
+      url = "github:chayleaf/nixos-router";
       inputs.nixpkgs.follows = "nixpkgs";
     };
     nixos-mailserver = {
@@ -210,12 +210,12 @@
       "aarch64-linux"
     ] (system: let self = overlay self (import nixpkgs { inherit system; }); in self );
     nixosImages.router = let pkgs = import nixpkgs { system = "aarch64-linux"; overlays = [ overlay ]; }; in {
-      emmcImage = pkgs.callPackage ./system/hardware/bpi_r3/image.nix {
+      emmcImage = pkgs.callPackage ./system/hardware/bpi-r3/image.nix {
         inherit (nixosConfigurations.router-emmc) config;
         rootfsImage = nixosConfigurations.router-emmc.config.system.build.rootfsImage;
         bpiR3Stuff = pkgs.bpiR3StuffEmmc;
       };
-      sdImage = pkgs.callPackage ./system/hardware/bpi_r3/image.nix {
+      sdImage = pkgs.callPackage ./system/hardware/bpi-r3/image.nix {
         inherit (nixosConfigurations.router-sd) config;
         rootfsImage = nixosConfigurations.router-sd.config.system.build.rootfsImage;
         bpiR3Stuff = pkgs.bpiR3StuffSd;

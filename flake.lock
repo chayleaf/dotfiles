@@ -188,17 +188,17 @@
         ]
       },
       "locked": {
-        "lastModified": 1687562820,
-        "narHash": "sha256-cks0WUe/27kBlQDNulKA4ZHTggN9k/jGWhFDrMiEV8k=",
+        "lastModified": 1687589315,
+        "narHash": "sha256-yHeWC/6OatjLN56VfCw1gjnzZd++uyYIkJBbDckWj/E=",
         "owner": "chayleaf",
         "repo": "nixos-router",
-        "rev": "5048633a6f38c6787cba1a010359ff5246ec532b",
+        "rev": "b28e10ec8d247babd9ff461bb14725e504d3badf",
         "type": "github"
       },
       "original": {
         "owner": "chayleaf",
         "repo": "nixos-router",
-        "rev": "5048633a6f38c6787cba1a010359ff5246ec532b",
+        "rev": "b28e10ec8d247babd9ff461bb14725e504d3badf",
         "type": "github"
       }
     },
@@ -273,7 +273,6 @@
       "original": {
         "owner": "chayleaf",
         "repo": "notnft",
-        "rev": "f090546a7c190557c2081129b7e49a595f2ab76f",
         "type": "github"
       }
     },

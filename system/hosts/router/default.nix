@@ -47,8 +47,6 @@ let
   wan_table = 1;
   # vpn table, assign an id but don't actually add a rule for it, so it is the default
   vpn_table = 2;
-  # iot table without a route into the internet
-  iot_table = 3;
 
   dnatRuleMode = rule:
     if rule.mode != "" then rule.mode
@@ -62,7 +60,8 @@ let
   # wans = external interfaces (internet)
   # lans = internal interfaces (lan)
   # netdevIngressWanRules = additional rules for ingress (netdev)
-  # inetInboundWanRules = additional rules for input from wan (inet), i.e. stuff meant directly for the router and not for any other device
+  # inetInboundWanRules = additional rules for input from wan (inet)
+  # inetInboundLanRules = same for lan
   # inetForwardRules = additional forward rules besides allow lan->wan forwarding
   # inetSnatRules = snat rules (changing source address, usually just called nat)
   # inetDnatRules = dnat rules (changing destination address, i.e. port forwarding)
@@ -76,6 +75,7 @@ let
     lans,
     netdevIngressWanRules ? [],
     inetInboundWanRules ? [],
+    inetInboundLanRules ? [],
     inetForwardRules ? [],
     inetSnatRules ? [],
     inetDnatRules ? [],
@@ -99,6 +99,7 @@ let
       ingress_lan_common = add chain
         # there are some issues with this, disable it for lan
         # [(is.eq (fib (f: with f; [ saddr mark iif ]) (f: f.oif)) missing) (log "${logPrefix}oif missing ") drop]
+        inetInboundLanRules
         [(jump "ingress_common")];
 
       ingress_wan_common = add chain
@@ -178,7 +179,6 @@ let
     } // extraInetEntries);
   };
 
-  mkFlushRules = {}: with notnft.dsl; ruleset [ (flush ruleset) ];
   unbound-python = pkgs.python3.withPackages (ps: with ps; [ pydbus dnspython requests pytricia nftables ]);
 
   # parse a.b.c.d/x into { address, prefixLength }
@@ -387,13 +387,9 @@ in {
     } ];
     ipv4.routes = [
       { extraArgs = [ netCidr4 "dev" "br0" "proto" "kernel" "scope" "link" "src" gatewayAddr4 "table" wan_table ]; }
-      # allow iot to contact ips inside the network
-      { extraArgs = [ netCidr4 "dev" "br0" "proto" "kernel" "scope" "link" "src" gatewayAddr4 "table" iot_table ]; }
     ];
     ipv6.routes = [
       { extraArgs = [ netCidr6 "dev" "br0" "proto" "kernel" "metric" "256" "pref" "medium" "table" wan_table ]; }
-      # allow iot to contact ips inside the network
-      { extraArgs = [ netCidr6 "dev" "br0" "proto" "kernel" "metric" "256" "pref" "medium" "table" iot_table ]; }
     ];
     ipv4.kea.enable = true;
     ipv6.radvd.enable = true;
@@ -405,9 +401,6 @@ in {
     rules = [
       { ipv6 = false; extraArgs = [ "fwmark" wan_table "table" wan_table ]; }
       { ipv6 = true; extraArgs = [ "fwmark" wan_table "table" wan_table ]; }
-      # don't add vpn_table as it should be the default
-      { ipv6 = false; extraArgs = [ "fwmark" iot_table "table" iot_table ]; }
-      { ipv6 = true; extraArgs = [ "fwmark" iot_table "table" iot_table ]; }
       # below is dnat config
     ] ++ builtins.concatLists (map (rule: let
       table = if rule.inVpn then 0 else wan_table;
@@ -430,7 +423,6 @@ in {
     # nftables rules
     # things to note: this has the code for switching between rtables
     # otherwise, boring stuff
-    nftables.stopJsonRules = mkFlushRules {};
     nftables.jsonRules = mkRules {
       selfIp4 = gatewayAddr4;
       selfIp6 = gatewayAddr6;
@@ -463,7 +455,7 @@ in {
         # allow dnat ("ct status dnat" doesn't work)
       ];
       inetInboundWanRules = with notnft.dsl; with payload; [
-        [(is.eq th.dport 22) accept]
+        [(is.eq tcp.dport 22) accept]
         [(is.eq ip.saddr (cidr netnsCidr4)) accept]
         [(is.eq ip6.saddr (cidr netnsCidr6)) accept]
       ];
@@ -479,9 +471,11 @@ in {
 
         # those tables get populated by unbound
         force_unvpn4 = add set { type = f: f.ipv4_addr; flags = f: with f; [ interval ]; };
-        force_vpn4 = add set { type = f: f.ipv4_addr; flags = f: with f; [ interval ]; };
         force_unvpn6 = add set { type = f: f.ipv6_addr; flags = f: with f; [ interval ]; };
+        force_vpn4 = add set { type = f: f.ipv4_addr; flags = f: with f; [ interval ]; };
         force_vpn6 = add set { type = f: f.ipv6_addr; flags = f: with f; [ interval ]; };
+        allow_iot4 = add set { type = f: f.ipv4_addr; flags = f: with f; [ interval ]; };
+        allow_iot6 = add set { type = f: f.ipv6_addr; flags = f: with f; [ interval ]; };
 
         prerouting = add chain { type = f: f.filter; hook = f: f.prerouting; prio = f: f.filter; policy = f: f.accept; } ([
           [(mangle meta.mark ct.mark)]
@@ -524,7 +518,12 @@ in {
         ++ [
           [(is.eq ip.daddr "@block4") drop]
           [(is.eq ip6.daddr "@block6") drop]
-          [(is.eq ether.saddr cfg.vacuumMac) (mangle meta.mark iot_table)]
+          # this doesn't work... it still gets routed, even though iot_table doesn't have a default route
+          # instead of debugging that, simply change the approach
+          # [(is.eq ip.saddr vacuumAddress4) (is.ne ip.daddr) (mangle meta.mark iot_table)]
+          # [(is.eq ether.saddr cfg.vacuumMac) (mangle meta.mark iot_table)]
+          [(is.eq ether.saddr cfg.vacuumMac) (is.ne ip.daddr (cidr netCidr4)) (is.ne ip.daddr "@allow_iot4") (log "iot4 ") drop]
+          [(is.eq ether.saddr cfg.vacuumMac) (is.ne ip6.daddr (cidr netCidr6)) (is.ne ip6.daddr "@allow_iot6") (log "iot6 ") drop]
           [(mangle ct.mark meta.mark)]
         ]);
       };
@@ -572,7 +571,6 @@ in {
   };
   router.networkNamespaces.wan = {
     # this is the even more boring nftables config
-    nftables.stopJsonRules = mkFlushRules {};
     nftables.jsonRules = mkRules {
       selfIp4 = wanNetnsAddr4;
       selfIp6 = wanNetnsAddr6;
@@ -627,7 +625,7 @@ in {
           (is.eq icmpv6.type (f: with f; set [ nd-neighbor-solicit nd-neighbor-advert ]))
           accept]
         # SSH
-        [(is.eq th.dport 22) accept]
+        [(is.eq tcp.dport 22) accept]
       ];
     };
   };
@@ -683,7 +681,7 @@ in {
     environment.MDNS_ACCEPT_NAMES = "^.*\\.local\\.$";
     # load vpn_domains.json and vpn_ips.json, as well as unvpn_domains.json and unvpn_ips.json
     # resolve domains and append it to ips and add it to the nftables sets
-    environment.NFT_QUERIES = "vpn:force_vpn4,force_vpn6;unvpn:force_unvpn4,force_unvpn6";
+    environment.NFT_QUERIES = "vpn:force_vpn4,force_vpn6;unvpn:force_unvpn4,force_unvpn6;iot:allow_iot4,allow_iot6";
     # it needs to run after nftables has been set up because it sets up the sets
     after = [ "nftables-default.service" ];
     wants = [ "nftables-default.service" ];
