@@ -6,10 +6,6 @@
 let
   cfg = config.server;
 
-  efiPart = "/dev/disk/by-uuid/3E2A-A5CB";
-  rootUuid = "6aace237-9b48-4294-8e96-196759a5305b";
-  rootPart = "/dev/disk/by-uuid/${rootUuid}";
-
   hosted-domains =
     map
       (prefix: if prefix == null then cfg.domainName else "${prefix}.${cfg.domainName}")
@@ -40,69 +36,32 @@ in {
   ];
 
   system.stateVersion = "22.11";
-
-  boot = {
-    loader = {
-      grub = {
-        enable = true;
-        device = "nodev";
-        efiSupport = true;
-        efiInstallAsRemovable = true;
-      };
-      efi.efiSysMountPoint = "/boot/efi";
-    };
-  };
-  fileSystems = {
-    "/" =    { device = "none"; fsType = "tmpfs"; neededForBoot = true;
-               options = [ "defaults" "size=2G" "mode=755" ]; };
-    "/persist" =
-             { device = rootPart; fsType = "btrfs"; neededForBoot = true;
-               options = [ "compress=zstd:15" ]; };
-    "/boot" =
-             { device = rootPart; fsType = "btrfs"; neededForBoot = true;
-               options = [ "compress=zstd:15" "subvol=boot" ]; };
-    "/boot/efi" =
-             { device = efiPart; fsType = "vfat"; };
-  };
-  zramSwap.enable = true;
-  swapDevices = [ ];
-  impermanence = {
-    enable = true;
-    path = /persist;
-    directories = [
-      { directory = /home/${config.common.mainUsername}; user = config.common.mainUsername; group = "users"; mode = "0700"; }
-      { directory = /root; }
-      { directory = /nix; }
-      { directory = /var/www/${cfg.domainName}; }
-    ];
-  };
-  services.beesd = {
-    filesystems.root = {
-      spec = "UUID=${rootUuid}";
-      hashTableSizeMB = 128;
-      extraOptions = [ "--loadavg-target" "8.0" ];
-    };
-  };
-  console.font = "${pkgs.terminus_font}/share/consolefonts/ter-v24n.psf.gz";
+  impermanence.directories = [
+    { directory = /var/www/${cfg.domainName}; }
+  ];
   networking.useDHCP = true;
   networking.firewall = {
     enable = true;
-    allowedTCPPorts = [
-      # ssh
-      22
-      # dns
-      53 853
-      # http/s
-      80 443
+    allowedTCPPorts = lib.mkMerge [
+      [
+        # ssh
+        22
+        # http/s
+        80 443
+      ]
+      (lib.mkIf config.services.unbound.enable [
+        # dns
+        53 853
+      ])
     ];
-    allowedUDPPorts = [
+    allowedUDPPorts = lib.mkIf config.services.unbound.enable [
       # dns
       53 853
     ];
   };
 
   # UNBOUND
-  users.users.${config.common.mainUsername}.extraGroups = [ config.services.unbound.group ];
+  users.users.${config.common.mainUsername}.extraGroups = lib.mkIf config.services.unbound.enable [ config.services.unbound.group ];
 
   #networking.resolvconf.extraConfig = ''
   #  name_servers="127.0.0.1 ::1"

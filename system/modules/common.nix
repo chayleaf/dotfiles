@@ -55,10 +55,17 @@
     ] ++ (lib.optionals (cfg.resolution == "1920x1080") [
       "fbcon=font:TER16x32"
     ]);
+    console.font =
+      lib.mkIf (cfg.resolution == "1920x1080" || cfg.resolution == "1366x768") {
+        "1920x1080" = "${pkgs.terminus_font}/share/consolefonts/ter-v32n.psf.gz";
+        "1366x768" = "${pkgs.terminus_font}/share/consolefonts/ter-v24n.psf.gz";
+      }.${cfg.resolution};
     boot.loader.grub = lib.mkIf (cfg.resolution != null) {
       gfxmodeEfi = cfg.resolution;
       gfxmodeBios = cfg.resolution;
     };
+
+    networking.usePredictableInterfaceNames = lib.mkDefault true;
 
     hardware.enableRedistributableFirmware = true;
     services.openssh.settings.PasswordAuthentication = false;

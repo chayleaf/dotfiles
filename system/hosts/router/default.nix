@@ -7,8 +7,6 @@
 , ... }:
 
 let
-  rootUuid = "44444444-4444-4444-8888-888888888888";
-  rootPart = "/dev/disk/by-uuid/${rootUuid}";
   cfg = config.router-settings;
   hapdConfig = {
     inherit (cfg) country_code wpa_passphrase;
@@ -219,7 +217,23 @@ let
 
   hosted-domains = builtins.attrNames server-config.services.nginx.virtualHosts;
 in {
-  router-settings.domainName = "pavluk.org";
+  imports = [ ./options.nix ];
+  system.stateVersion = "22.11";
+
+  boot.kernel.sysctl = {
+    "net.ipv4.conf.all.src_valid_mark" = true;
+    "net.ipv4.conf.default.src_valid_mark" = true;
+    "net.ipv4.conf.all.forwarding" = true;
+    "net.ipv6.conf.all.forwarding" = true;
+  };
+
+  services.openssh.enable = true;
+  services.fail2ban = {
+    enable = true;
+    ignoreIP = [ netCidr4 netCidr6 ];
+    maxretry = 10;
+  };
+
   router-settings.dhcpReservations = [
     { ipAddress = serverAddress4;
       macAddress = cfg.serverMac; }
@@ -267,47 +281,8 @@ in {
     target4.address = serverAddress4; target6.address = serverAddress6;
   }) rangesUdpOnly;
 
-  imports = [ ./options.nix ];
-  system.stateVersion = "22.11";
-  fileSystems = {
-    # mount root on tmpfs
-    "/" =     { device = "none"; fsType = "tmpfs"; neededForBoot = true;
-                options = [ "defaults" "size=2G" "mode=755" ]; };
-    "/persist" =
-              { device = rootPart; fsType = "btrfs"; neededForBoot = true;
-                options = [ "compress=zstd:15" "subvol=@" ]; };
-    "/boot" =
-              { device = rootPart; fsType = "btrfs"; neededForBoot = true;
-                options = [ "subvol=@boot" ]; };
-    "/nix" =
-              { device = rootPart; fsType = "btrfs"; neededForBoot = true;
-                options = [ "compress=zstd:15" "subvol=@nix" ]; };
-  };
-  impermanence = {
-    enable = true;
-    path = /persist;
-    directories = [
-      { directory = /home/${config.common.mainUsername}; user = config.common.mainUsername; group = "users"; mode = "0700"; }
-      { directory = /root; mode = "0700"; }
-      { directory = /var/db/dhcpcd; mode = "0755"; }
-      { directory = /var/lib/private/kea; mode = "0750"; }
-      # for wireguard key
-      { directory = /secrets; mode = "0000"; }
-    ];
-  };
-  boot.kernel.sysctl = {
-    "net.ipv4.conf.all.src_valid_mark" = true;
-    "net.ipv4.conf.default.src_valid_mark" = true;
-    "net.ipv4.conf.all.forwarding" = true;
-    "net.ipv6.conf.all.forwarding" = true;
-  };
-  services.openssh.enable = true;
-  services.fail2ban = {
-    enable = true;
-    ignoreIP = [ netCidr4 netCidr6 ];
-    maxretry = 10;
-  };
   router.enable = true;
+  # 2.4g ap
   router.interfaces.wlan0 = {
     bridge = "br0";
     hostapd.enable = true;
@@ -321,6 +296,7 @@ in {
       ht_capab = "[LDPC][SHORT-GI-20][SHORT-GI-40][TX-STBC][RX-STBC1][MAX-AMSDU-7935]";
     } // hapdConfig;
   };
+  # 5g ap
   router.interfaces.wlan1 = {
     bridge = "br0";
     hostapd.enable = true;
@@ -337,6 +313,7 @@ in {
       vht_capab = "[RXLDPC][SHORT-GI-80][SHORT-GI-160][TX-STBC-2BY1][SU-BEAMFORMER][SU-BEAMFORMEE][MU-BEAMFORMER][MU-BEAMFORMEE][RX-ANTENNA-PATTERN][TX-ANTENNA-PATTERN][RX-STBC-1][SOUNDING-DIMENSION-4][BF-ANTENNA-4][VHT160][MAX-MPDU-11454][MAX-A-MPDU-LEN-EXP7]";
     } // hapdConfig;
   };
+  # ethernet lan0-3
   router.interfaces.lan0 = {
     bridge = "br0";
     systemdLinkLinkConfig.MACAddressPolicy = "persistent";
@@ -353,15 +330,21 @@ in {
     bridge = "br0";
     systemdLinkLinkConfig.MACAddressPolicy = "persistent";
   };
+  # sfp lan4
   router.interfaces.lan4 = {
     bridge = "br0";
     systemdLinkLinkConfig.MACAddressPolicy = "persistent";
   };
-  /*router.interfaces.lan5 = {
+  /*
+  # sfp lan5
+  router.interfaces.lan5 = {
     bridge = "br0";
+    # i could try to figure out why this doesn't work... but i don't even have sfp to plug into this
     systemdLinkMatchConfig.OriginalName = "eth1";
     systemdLinkLinkConfig.MACAddressPolicy = "persistent";
-  };*/
+  };
+  */
+  # ethernet wan
   router.interfaces.wan = {
     dependentServices = [
       { service = "wireguard-wg0"; inNetns = false; }
@@ -371,7 +354,11 @@ in {
     dhcpcd.enable = true;
     networkNamespace = "wan";
   };
+  # disable default firewall as it uses iptables
+  # (and we have our own firewall)
   networking.firewall.enable = false;
+  # br0, which bridges all lan devices
+  # this is "the" lan device
   router.interfaces.br0 = {
     dependentServices = [ { service = "unbound"; bindType = "wants"; } ];
     ipv4.addresses = [ {
@@ -390,7 +377,7 @@ in {
       gateways = [ gatewayAddr6 ];
       radvdSettings.AdvAutonomous = true;
       coreradSettings.autonomous = true;
-      # don't autoallocate addresses
+      # don't autoallocate addresses, keep autonomous ones
       keaSettings.pools = [ ];
       # just assign the reservations
       keaSettings.reservations = map (res: {
@@ -412,6 +399,7 @@ in {
     ipv6.radvd.enable = true;
     ipv6.kea.enable = true;
   };
+
   router.networkNamespaces.default = {
     # set routing table depending on packet mark
     rules = [
@@ -420,6 +408,7 @@ in {
       # don't add vpn_table as it should be the default
       { ipv6 = false; extraArgs = [ "fwmark" iot_table "table" iot_table ]; }
       { ipv6 = true; extraArgs = [ "fwmark" iot_table "table" iot_table ]; }
+      # below is dnat config
     ] ++ builtins.concatLists (map (rule: let
       table = if rule.inVpn then 0 else wan_table;
       forEachPort = func: port:
@@ -436,15 +425,18 @@ in {
       ++ lib.optionals (rule.udp && rule.target4 != null) (map (x: { ipv6 = false; extraArgs = x; }) (gen 32  "udp" rule.target4))
       ++ lib.optionals (rule.tcp && rule.target6 != null) (map (x: { ipv6 = true;  extraArgs = x; }) (gen 128 "tcp" rule.target6))
       ++ lib.optionals (rule.udp && rule.target6 != null) (map (x: { ipv6 = true;  extraArgs = x; }) (gen 128 "udp" rule.target6))
-
     ) (builtins.filter (x: (x.tcp || x.udp) && dnatRuleMode x == "rule") cfg.dnatRules));
 
+    # nftables rules
+    # things to note: this has the code for switching between rtables
+    # otherwise, boring stuff
     nftables.stopJsonRules = mkFlushRules {};
     nftables.jsonRules = mkRules {
       selfIp4 = gatewayAddr4;
       selfIp6 = gatewayAddr6;
       lans = [ "br0" ];
       wans = [ "wg0" "veth-wan-a" ];
+      logPrefix = "lan ";
       netdevIngressWanRules = with notnft.dsl; with payload; [
         # check oif only from vpn
         # dont check it from veth-wan-a because of dnat fuckery and because we already check packets coming from wan there
@@ -470,7 +462,6 @@ in {
         [(is.eq meta.iifname "veth-wan-a") (is.eq meta.oifname "br0") accept]
         # allow dnat ("ct status dnat" doesn't work)
       ];
-      logPrefix = "lan ";
       inetInboundWanRules = with notnft.dsl; with payload; [
         [(is.eq th.dport 22) accept]
         [(is.eq ip.saddr (cidr netnsCidr4)) accept]
@@ -539,6 +530,11 @@ in {
       };
     };
   };
+  # veths are virtual ethernet cables
+  # veth-wan-a - located in the default namespace
+  # veth-wan-b - located in the wan namespace
+  # this allows routing traffic to wan namespace from default namespace via veth-wan-a
+  # (and vice versa)
   router.veths.veth-wan-a.peerName = "veth-wan-b";
   router.interfaces.veth-wan-a = {
     ipv4.addresses = [ netnsParsedCidr4 ];
@@ -566,6 +562,7 @@ in {
       address = wanNetnsAddr6;
       inherit (netnsParsedCidr6) prefixLength;
     } ];
+    # allow wan->default namespace communication
     ipv4.routes = [
       { extraArgs = [ netCidr4 "via" mainNetnsAddr4 ]; }
     ];
@@ -574,6 +571,7 @@ in {
     ];
   };
   router.networkNamespaces.wan = {
+    # this is the even more boring nftables config
     nftables.stopJsonRules = mkFlushRules {};
     nftables.jsonRules = mkRules {
       selfIp4 = wanNetnsAddr4;
@@ -634,11 +632,15 @@ in {
     };
   };
 
+  # vpn socket is in wan namespace, meaning traffic gets sent through the wan namespace
+  # vpn interface is in default namespace, meaning it can be used in the default namespace
   networking.wireguard.interfaces.wg0 = cfg.wireguard // {
     socketNamespace = "wan";
     interfaceNamespace = "init";
   };
 
+  # use main netns's address instead of 127.0.0.1
+  # this ensures all network namespaces can access it
   networking.resolvconf.extraConfig = ''
     name_servers="${mainNetnsAddr4} ${mainNetnsAddr6}"
   '';
@@ -662,7 +664,7 @@ in {
         module-config = ''"validator python iterator"'';
         local-zone = [
           ''"local." static''
-          ''"${cfg.domainName}." typetransparent''
+          ''"${server-config.server.domainName}." typetransparent''
         ];
         local-data = builtins.concatLists (map (domain:
           [
@@ -676,7 +678,7 @@ in {
   };
   networking.hosts."${serverAddress4}" = hosted-domains;
   networking.hosts."${serverAddress6}" = hosted-domains;
-  systemd.services.unbound = {
+  systemd.services.unbound = lib.mkIf config.services.unbound.enable {
     environment.PYTHONPATH = "${unbound-python}/${unbound-python.sitePackages}";
     environment.MDNS_ACCEPT_NAMES = "^.*\\.local\\.$";
     # load vpn_domains.json and vpn_ips.json, as well as unvpn_domains.json and unvpn_ips.json
@@ -710,7 +712,6 @@ in {
   };
 
   # run an extra sshd so we can connect even if forwarding/routing between namespaces breaks
-  # i don't want to connect by uart each time something goes wrong
   systemd.services.sshd-wan = {
     description = "SSH Daemon (WAN)";
     wantedBy = [ "multi-user.target" ];
@@ -742,6 +743,7 @@ in {
     startWhenNeeded = false;
   };
 
+  # share printers (and allow unbound to resolve .local)
   services.avahi = {
     enable = true;
     hostName = "router";
@@ -757,4 +759,12 @@ in {
   # it takes a stupidly long time when done via qemu
   # (also it's supposed to be disabled by default but it was enabled for me, why?)
   documentation.man.generateCaches = false;
+
+  impermanence.directories = [
+    # for wireguard key
+    { directory = /secrets; mode = "0000"; }
+    # my custom impermanence module doesnt detect it
+    { directory = /var/db/dhcpcd; mode = "0755"; }
+    { directory = /var/lib/private/kea; mode = "0750"; }
+  ];
 }

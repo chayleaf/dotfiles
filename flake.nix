@@ -87,8 +87,7 @@
       nixserver = {
         modules = [
           nixos-mailserver.nixosModules.default
-          ./system/hardware/hp_probook_g0.nix
-          ./system/hosts/nixserver
+          ./system/devices/hp-probook-g0-server.nix
         ];
       };
       router-emmc = rec {
@@ -97,10 +96,8 @@
         specialArgs.router-lib = if developing then import /${devPath}/nixos-router/lib.nix { inherit (nixpkgs) lib; } else nixos-router.lib.${system};
         specialArgs.server-config = nixosConfigurations.nixserver.config;
         modules = [
-          ./system/hardware/bpi_r3/emmc.nix
-          ./system/hosts/router
+          (import ./system/devices/bpi-r3-router.nix "emmc")
           (if developing then (import /${devPath}/nixos-router) else nixos-router.nixosModules.default)
-          { networking.hostName = "router"; }
         ];
       };
       router-sd = rec {
@@ -109,18 +106,15 @@
         specialArgs.router-lib = if developing then import /${devPath}/nixos-router/lib.nix { inherit (nixpkgs) lib; } else nixos-router.lib.${system};
         specialArgs.server-config = nixosConfigurations.nixserver.config;
         modules = [
-          ./system/hardware/bpi_r3/sd.nix
-          ./system/hosts/router
+          (import ./system/devices/bpi-r3-router.nix "sd")
           (if developing then (import /${devPath}/nixos-router) else nixos-router.nixosModules.default)
-          { networking.hostName = "router"; }
         ];
       };
       nixmsi = rec {
         system = "x86_64-linux";
         modules = [
           nix-gaming.nixosModules.pipewireLowLatency
-          ./system/hardware/msi_delta_15.nix
-          ./system/hosts/nixmsi.nix
+          ./system/devices/msi-delta-15-workstation.nix
         ];
         home.common.enableNixosModule = false;
         home.common.extraSpecialArgs = {
