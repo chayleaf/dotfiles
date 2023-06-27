@@ -149,14 +149,7 @@ in {
 
   # SEARXNG
   services.searx.enable = true;
-  services.searx.package = pkgs.searxng.overrideAttrs (_: {
-    src = pkgs.fetchFromGitHub {
-      owner = "searxng";
-      repo = "searxng";
-      rev = "cb1c3741d7de1354b524589114617f183009f6a8";
-      sha256 = "sha256-7erY5Bd1ZoTpAIDbhIupu64Xd1PQspaW6vBqu7knzNI=";
-    };
-  });
+  services.searx.package = pkgs.searxng;
   services.searx.runInUwsgi = true;
   services.searx.uwsgiConfig = let inherit (config.services.searx) settings; in {
     socket = "${lib.quoteListenAddr settings.server.bind_address}:${toString settings.server.port}";
@@ -192,6 +185,9 @@ in {
       enable_http2 = true;         # See https://www.python-httpx.org/http2/
     };
   };
+  # workaround for a bug, will probably get fixed upstream some day
+  services.uwsgi.instance.vassals.searx.pythonPackages = lib.mkForce (self: [ pkgs.searxng self.pytomlpp ]);
+
   services.nginx.virtualHosts."search.${cfg.domainName}" = let inherit (config.services.searx) settings; in {
     enableACME = true;
     forceSSL = true;

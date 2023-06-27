@@ -92,6 +92,7 @@ in {
         { directory = /var/lib/acme; user = "acme"; group = "acme"; mode = "0755"; }
       ] ++ lib.optionals config.services.printing.enable [
         { directory = /var/lib/cups; user = "root"; group = "root"; mode = "0755"; }
+        { directory = /var/cache/cups; user = "root"; group = "lp"; mode = "0770"; }
       ] ++ lib.optionals config.services.fail2ban.enable [
         { directory = /var/lib/fail2ban; user = "root"; group = "root"; mode = "0700"; }
       ] ++ lib.optionals config.services.opendkim.enable [

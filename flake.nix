@@ -30,6 +30,10 @@
       url = "github:chayleaf/nixos-router";
       inputs.nixpkgs.follows = "nixpkgs";
     };
+    maubot = {
+      url = "github:chayleaf/maubot.nix";
+      inputs.nixpkgs.follows = "nixpkgs";
+    };
     nixos-mailserver = {
       url = "gitlab:simple-nixos-mailserver/nixos-mailserver";
       inputs.nixpkgs.follows = "nixpkgs";
@@ -41,11 +45,13 @@
     };
   };
 
-  outputs = inputs@{ self, nixpkgs, nixos-hardware, impermanence, home-manager, nur, nix-gaming, notlua, notnft, nixos-mailserver, nixos-router, ... }:
+  outputs = inputs@{ self, nixpkgs, nixos-hardware, impermanence, home-manager, nur, nix-gaming, notlua, notnft, nixos-mailserver, nixos-router, maubot, ... }:
   let
     # --impure required for developing
-    # it takes the paths for notlua,notnft,nixos-router from filesystem as opposed to flake inputs
-    developing = false;
+    # it takes the paths for modules from filesystem as opposed to flake inputs
+    devNft = false;
+    devNixRt = false;
+    devMaubot = false;
     # IRL-related stuff I'd rather not put into git
     priv =
       if builtins.pathExists ./private.nix then (import ./private.nix { })
@@ -88,26 +94,27 @@
         modules = [
           nixos-mailserver.nixosModules.default
           ./system/devices/hp-probook-g0-server.nix
+          (if devMaubot then import /${devPath}/maubot.nix/module else maubot.nixosModules.default)
         ];
       };
       router-emmc = rec {
         system = "aarch64-linux";
-        specialArgs.notnft = if developing then (import /${devPath}/notnft { inherit (nixpkgs) lib; }).config.notnft else notnft.lib.${system};
-        specialArgs.router-lib = if developing then import /${devPath}/nixos-router/lib.nix { inherit (nixpkgs) lib; } else nixos-router.lib.${system};
+        specialArgs.notnft = if devNft then (import /${devPath}/notnft { inherit (nixpkgs) lib; }).config.notnft else notnft.lib.${system};
+        specialArgs.router-lib = if devNixRt then import /${devPath}/nixos-router/lib.nix { inherit (nixpkgs) lib; } else nixos-router.lib.${system};
         specialArgs.server-config = nixosConfigurations.nixserver.config;
         modules = [
           (import ./system/devices/bpi-r3-router.nix "emmc")
-          (if developing then (import /${devPath}/nixos-router) else nixos-router.nixosModules.default)
+          (if devNixRt then (import /${devPath}/nixos-router) else nixos-router.nixosModules.default)
         ];
       };
       router-sd = rec {
         system = "aarch64-linux";
-        specialArgs.notnft = if developing then (import /${devPath}/notnft { inherit (nixpkgs) lib; }).config.notnft else notnft.lib.${system};
-        specialArgs.router-lib = if developing then import /${devPath}/nixos-router/lib.nix { inherit (nixpkgs) lib; } else nixos-router.lib.${system};
+        specialArgs.notnft = if devNft then (import /${devPath}/notnft { inherit (nixpkgs) lib; }).config.notnft else notnft.lib.${system};
+        specialArgs.router-lib = if devNixRt then import /${devPath}/nixos-router/lib.nix { inherit (nixpkgs) lib; } else nixos-router.lib.${system};
         specialArgs.server-config = nixosConfigurations.nixserver.config;
         modules = [
           (import ./system/devices/bpi-r3-router.nix "sd")
-          (if developing then (import /${devPath}/nixos-router) else nixos-router.nixosModules.default)
+          (if devNixRt then (import /${devPath}/nixos-router) else nixos-router.nixosModules.default)
         ];
       };
       nixmsi = rec {

@@ -1,6 +1,6 @@
 { config
-, pkgs
 , lib
+, pkgs
 , ... }:
 
 let
@@ -18,13 +18,13 @@ in {
       proxyWebsockets = true;
     };
   };
-  users.users.maubot = {
+  /*users.users.maubot = {
     home = "/var/lib/maubot";
     group = "maubot";
     isSystemUser = true;
   };
-  users.groups.maubot = { };
-  systemd.services.maubot = {
+  users.groups.maubot = { };*/
+  /*systemd.services.maubot = {
     description = "Maubot";
     wants = [ "matrix-synapse.service" "nginx.service" ];
     after = [ "matrix-synapse.service" "nginx.service" ];
@@ -42,5 +42,27 @@ in {
         magic = cfg.pizzabotMagic;
       }) feedparser levenshtein python-dateutil pytz
     ])}/bin/python3 -m maubot";
+  };*/
+  systemd.services.maubot = {
+    after = [ "nginx.service" ];
+    requires = [ "nginx.service" ];
   };
+  services.maubot.enable = true;
+  services.maubot.settings = {
+    server.public_url = "https://matrix.${cfg.domainName}";
+  };
+  services.maubot.plugins = with config.services.maubot.package.plugins; [
+    com.arachnitech.weather
+    com.dvdgsng.maubot.urban
+    xyz.maubot.media
+    xyz.maubot.reactbot
+    xyz.maubot.reminder
+    xyz.maubot.translate
+    xyz.maubot.rss
+  ];
+  services.maubot.pythonPackages = [
+    (pkgs.pineapplebot.override { magic = cfg.pizzabotMagic; })
+  ] ++ (with pkgs.python3.pkgs; [
+    levenshtein
+  ]);
 }

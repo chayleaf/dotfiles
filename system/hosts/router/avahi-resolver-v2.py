@@ -198,6 +198,8 @@ IF_UNSPEC    = -1
 PROTO_UNSPEC = -1
 
 NFT_QUERIES = {}
+# dynamic query update token
+NFT_TOKEN = ""
 
 sysbus = None
 avahi = None
@@ -452,18 +454,19 @@ def add_ips(set: str, ipv6: bool, ips: list, flush: bool = False):
             f.write(f'While adding ips for set {set}:\n')
             traceback.print_exc(file=f)
 
+def add_split_domain(domains, splitDomain):
+    while splitDomain:
+        key = splitDomain[-1]
+        if key not in domains.keys():
+            domains[key] = {}
+        domains = domains[key]
+        splitDomain = splitDomain[:-1]
+    domains['__IsTrue__'] = True
+
 def build_domains(domains):
     ret = {}
-    def fill(tmp, splitDomain):
-        while splitDomain:
-            key = splitDomain[-1]
-            if key not in tmp.keys():
-                tmp[key] = {}
-            tmp = tmp[key]
-            splitDomain = splitDomain[:-1]
-        tmp['__IsTrue__'] = True
     for domain in domains:
-        fill(ret, domain.split('.'))
+        add_split_domain(ret, domain.split('.'))
     return ret
 
 def lookup_domain(domains, domain):
@@ -487,14 +490,19 @@ def init(*args, **kwargs):
     global MDNS_TTL, MDNS_GETONE, MDNS_TIMEOUT
     global MDNS_REJECT_TYPES, MDNS_ACCEPT_TYPES
     global MDNS_REJECT_NAMES, MDNS_ACCEPT_NAMES
-    global NFT_QUERIES
+    global NFT_QUERIES, NFT_TOKEN
 
+    NFT_TOKEN = os.environ.get('NFT_TOKEN', '')
     nft_queries = os.environ.get('NFT_QUERIES', '')
     if nft_queries:
         for query in nft_queries.split(';'):
             name, sets = query.split(':')
+            dynamic = False
+            if name.endswith('!'):
+                name = name.rstrip('!')
+                dynamic = True
             set4, set6 = sets.split(',')
-            NFT_QUERIES[name] = { 'domains': [], 'ips4': [], 'ips6': [], 'name4': set4, 'name6': set6 }
+            NFT_QUERIES[name] = { 'domains': [], 'ips4': [], 'ips6': [], 'name4': set4, 'name6': set6, 'dynamic': dynamic }
 
     for k, v in NFT_QUERIES.items():
         try:
@@ -618,7 +626,7 @@ def rr2text(rec, ttl):
         dns.rdata.from_wire(class_, type_, wire, 0, len(wire), None))
 
 def operate(id, event, qstate, qdata):
-    global NFT_QUERIES
+    global NFT_QUERIES, NFT_TOKEN
 
     qi = qstate.qinfo
     name = qi.qname_str
@@ -628,8 +636,25 @@ def operate(id, event, qstate, qdata):
     class_str = dns.rdataclass.to_text(class_)
     rc = get_rcode(qstate.return_msg)
 
-    # vpn stuff
     n2 = name.rstrip('.')
+
+    if NFT_TOKEN and n2.endswith(f'.{NFT_TOKEN}'):
+        n3 = n2.removesuffix(f'.{NFT_TOKEN}')
+        for k, v in NFT_QUERIES.items():
+            if v['dynamic']:
+                if n3.endswith(f'.{k}'):
+                    n3 = n3.removesuffix(f'.{k}')
+                    qdomains = v['domains']
+                    if not lookup_domain(qdomains, n3):
+                        add_split_domain(qdomains, n3.split('.'))
+                        old = []
+                        if os.path.exists(f'/var/lib/unbound/{k}_domains.json'):
+                            with open(f'/var/lib/unbound/{k}_domains.json', 'rt') as f:
+                                old = json.load(f)
+                            os.rename(f'/var/lib/unbound/{k}_domains.json', f'/var/lib/unbound/{k}_domains.json.bak')
+                        old.append('*.' + n3)
+                        with open(f'/var/lib/unbound/{k}_domains.json', 'wt') as f:
+                            json.dump(old, f)
     qnames = []
     for k, v in NFT_QUERIES.items():
         if lookup_domain(v['domains'], n2):

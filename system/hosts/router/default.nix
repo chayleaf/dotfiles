@@ -529,6 +529,7 @@ in {
       };
     };
   };
+
   # veths are virtual ethernet cables
   # veth-wan-a - located in the default namespace
   # veth-wan-b - located in the wan namespace
@@ -676,6 +677,12 @@ in {
       remote-control.control-enable = true;
     };
   };
+  environment.etc."unbound/iot_domains.json".text = builtins.toJSON [
+    # ntp time sync
+    "pool.ntp.org"
+    # valetudo update check
+    "api.github.com" "github.com" "*.githubusercontent.com"
+  ];
   networking.hosts."${serverAddress4}" = hosted-domains;
   networking.hosts."${serverAddress6}" = hosted-domains;
   systemd.services.unbound = lib.mkIf config.services.unbound.enable {
@@ -683,7 +690,8 @@ in {
     environment.MDNS_ACCEPT_NAMES = "^.*\\.local\\.$";
     # load vpn_domains.json and vpn_ips.json, as well as unvpn_domains.json and unvpn_ips.json
     # resolve domains and append it to ips and add it to the nftables sets
-    environment.NFT_QUERIES = "vpn:force_vpn4,force_vpn6;unvpn:force_unvpn4,force_unvpn6;iot:allow_iot4,allow_iot6";
+    environment.NFT_QUERIES = "vpn:force_vpn4,force_vpn6;unvpn!:force_unvpn4,force_unvpn6;iot:allow_iot4,allow_iot6";
+    serviceConfig.EnvironmentFile = "/secrets/unbound_env";
     # it needs to run after nftables has been set up because it sets up the sets
     after = [ "nftables-default.service" ];
     wants = [ "nftables-default.service" ];

@@ -22,11 +22,14 @@ in
   inherit lib stdenv fetchurl;
   inherit (nur.repos.rycee.firefox-addons) buildFirefoxXpiAddon;
 }) // {
-  # addons.mozilla.org's version is horribly outdated for whatever reason
-  # I guess the extension normally autoupdates by itself?
-  # this is an unsigned build
+  # this is no longer maintained, hardcode last released version
   yomichan = buildExtension {
-    inherit (sources.yomichan) pname version src;
+    pname = "yomichan";
+    version = "22.10.23.0";
+    src = fetchurl {
+      url = "https://github.com/FooSoft/yomichan/releases/download/22.10.23.0/yomichan-firefox-dev.xpi";
+      sha256 = "sha256-l70wVXHEArifukDelZeoVxIyP2Crs6QZSD/kFdEml/8=";
+    };
     id = "alex.testing@foosoft.net.xpi";
     meta = with lib; {
       homepage = "https://foosoft.net/projects/yomichan";

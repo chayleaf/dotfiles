@@ -1,4 +1,18 @@
 {
+    "atf-bpir3": {
+        "cargoLocks": null,
+        "date": "2022-12-13",
+        "extract": null,
+        "name": "atf-bpir3",
+        "passthru": null,
+        "pinned": false,
+        "src": {
+            "sha256": "sha256-pW2yytXRIFEIbG1gnuXq8TiLe/Eew7zESe6Pijh2qVk=",
+            "type": "tarball",
+            "url": "https://github.com/frank-w/u-boot/archive/c30a1caf8274af67bf31f3fb5abc45df5737df36.tar.gz"
+        },
+        "version": "c30a1caf8274af67bf31f3fb5abc45df5737df36"
+    },
     "fastforward": {
         "cargoLocks": null,
         "date": null,
@@ -28,6 +42,20 @@
             "url": "https://github.com/GloriousEggroll/proton-ge-custom/releases/download/GE-Proton8-4/GE-Proton8-4.tar.gz"
         },
         "version": "GE-Proton8-4"
+    },
+    "searxng": {
+        "cargoLocks": null,
+        "date": "2023-06-25",
+        "extract": null,
+        "name": "searxng",
+        "passthru": null,
+        "pinned": false,
+        "src": {
+            "sha256": "sha256-sk28RG9/ZoPL71x99tNi884Mw0taMTYWh6HXINTr1xQ=",
+            "type": "tarball",
+            "url": "https://github.com/searxng/searxng/archive/e8706fb738da9feb21e596f403dddb40e69c8a7b.tar.gz"
+        },
+        "version": "e8706fb738da9feb21e596f403dddb40e69c8a7b"
     },
     "yomichan": {
         "cargoLocks": null,

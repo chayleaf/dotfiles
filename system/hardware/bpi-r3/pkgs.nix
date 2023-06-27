@@ -1,19 +1,12 @@
 { pkgs
 , pkgs'
 , lib
-# , sources
+, sources
 , ... }:
 
 let
   armTrustedFirmwareBpiR3 = { bootDevice, uboot ? null }: pkgs.buildArmTrustedFirmware rec {
-    # TODO: nvfetcherify this
-    src = pkgs.fetchFromGitHub {
-      owner = "frank-w";
-      repo = "u-boot";
-      # branch r3-atf
-      rev = "c30a1caf8274af67bf31f3fb5abc45df5737df36";
-      hash = "sha256-pW2yytXRIFEIbG1gnuXq8TiLe/Eew7zESe6Pijh2qVk=";
-    };
+    inherit (sources.atf-bpir3) src;
     patches = [ ./bpi-r3-atf-backport-mkimage-support.patch ];
     extraMakeFlags = assert builtins.elem bootDevice [
       "nor" "snand" "spim-nand" "emmc" "sdmmc" "ram"

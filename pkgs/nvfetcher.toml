@@ -2,21 +2,22 @@
 src.github = "GloriousEggroll/proton-ge-custom"
 fetch.url = "https://github.com/GloriousEggroll/proton-ge-custom/releases/download/$ver/$ver.tar.gz"
 
-[yomichan]
-src.github = "FooSoft/yomichan"
-fetch.url = "https://github.com/FooSoft/yomichan/releases/download/$ver/yomichan-firefox-dev.xpi"
-
 [fastforward]
 # allow prereleases
 src.github_tag = "FastForwardTeam/FastForward"
+src.use_commit = true
 fetch.url = "https://github.com/FastForwardTeam/FastForward/releases/download/$ver/fastforwardteam-$ver.xpi"
 
 # nix-prefetch doesnt work with git right now for some reason, whatever
-# [atf-bpir3]
-# src.git = "https://github.com/frank-w/u-boot.git"
-# src.branch = "r3-atf"
-# src.use_commit = true
+[atf-bpir3]
+src.git = "https://github.com/frank-w/u-boot.git"
+src.branch = "r3-atf"
+src.use_commit = true
+fetch.tarball = "https://github.com/frank-w/u-boot/archive/$ver.tar.gz"
 # fetch.git = "https://github.com/frank-w/u-boot.git"
-# fetch.branch = "$ver"
-#fetch.github = "frank-w/u-boot"
-# fetch.branch = "r3-atf"
+
+[searxng]
+src.git = "https://github.com/searxng/searxng.git"
+src.use_commit = true
+fetch.tarball = "https://github.com/searxng/searxng/archive/$ver.tar.gz"
+
