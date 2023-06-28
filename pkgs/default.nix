@@ -31,7 +31,6 @@ in
       fetchSubmodules = true;
     };
   });
-  maubot = callPackage ./maubot.nix { };
   pineapplebot = callPackage ./pineapplebot.nix { };
   proton-ge = pkgs.stdenvNoCC.mkDerivation {
     inherit (sources.proton-ge) pname version src;

@@ -49,6 +49,7 @@ in {
   };
   services.maubot.enable = true;
   services.maubot.settings = {
+    database = "postgresql://maubot@localhost/maubot";
     server.public_url = "https://matrix.${cfg.domainName}";
   };
   services.maubot.plugins = with config.services.maubot.package.plugins; [
