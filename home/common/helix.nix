@@ -1,6 +1,6 @@
 { pkgs, lib, ... }:
 let
-  wrapHelix = { extraPackages ? [] , withPython3 ? true,  extraPython3Packages ? (_: []) }:
+  wrapHelix = { extraPackages ? [ ], withPython3 ? true,  extraPython3Packages ? (_: []) }:
   pkgs.symlinkJoin {
     postBuild = ''
       rm $out/bin/hx

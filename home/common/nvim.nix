@@ -407,7 +407,7 @@
                     rhs = vim.lsp.buf.references;
                     desc = "Lists all the references to the symbol under the cursor in the quickfix window."; };
                   "<space>f" = {
-                    rhs = DEFUN (vim.lsp.buf.format {async = true;});
+                    rhs = DEFUN (vim.lsp.buf.format { async = true; });
                     desc = "Formats a buffer."; };
                 };
               } _

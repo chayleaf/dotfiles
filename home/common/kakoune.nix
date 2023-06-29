@@ -1,6 +1,6 @@
 { pkgs, lib, ... }:
 let
-  wrapKakoune = { extraPackages ? [] , withPython3 ? true,  extraPython3Packages ? (_: []) }:
+  wrapKakoune = { extraPackages ? [ ], withPython3 ? true,  extraPython3Packages ? (_: []) }:
   pkgs.symlinkJoin {
     postBuild = ''
       rm $out/bin/kak
