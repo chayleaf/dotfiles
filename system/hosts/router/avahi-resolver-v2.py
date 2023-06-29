@@ -646,7 +646,7 @@ def operate(id, event, qstate, qdata):
                     n3 = n3.removesuffix(f'.{k}')
                     qdomains = v['domains']
                     if not lookup_domain(qdomains, n3):
-                        add_split_domain(qdomains, n3.split('.'))
+                        add_split_domain(qdomains, ['*'] + n3.split('.'))
                         old = []
                         if os.path.exists(f'/var/lib/unbound/{k}_domains.json'):
                             with open(f'/var/lib/unbound/{k}_domains.json', 'rt') as f:
