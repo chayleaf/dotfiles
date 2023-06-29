@@ -15,7 +15,11 @@
   # welcome to my cursed DSL
   programs.neovim = let
     notlua-nvim = notlua.neovim { inherit (config.programs.neovim) plugins extraLuaPackages; };
-    inherit (notlua.keywords) CALL PROP SET LET DEFUN IF APPLY OR EQ RETURN ELSE IDX LETREC;
+    inherit (notlua.keywords)
+      AND APPLY CALL DEFUN
+      ELSE EQ GE IDX IF
+      LE LET LETREC OR
+      PROP RETURN SET;
     inherit (notlua.utils) compile;
     inherit (notlua-nvim.stdlib) vim string require print;
     inherit (notlua-nvim.keywords) REQ REQ';
@@ -144,18 +148,30 @@
             LET (vim.filetype.match { inherit buf; }) (filetype: L [
               CALL (PROP vim.cmd "folddoc") "foldopen!" _
               IF (EQ filetype "gitcommit") (
-                CALL vim.cmd {
-                  cmd = "normal";
-                  bang = true;
+                vim.cmd {
+                  cmd = "normal"; bang = true;
                   args = [ "gg" ];
                 }
-              ) ELSE (
-                CALL vim.cmd {
-                  cmd = "normal";
-                  bang = true;
-                  args = [ "g`\"" ];
-                }
-              ) _
+              ) ELSE (LET
+                (IDX (vim.api.nvim_buf_get_mark buf "\"") 1)
+                (vim.api.nvim_buf_line_count buf)
+              (pos: cnt:
+                IF (AND (GE pos 1) (LE pos cnt))
+                  (vim.cmd {
+                    cmd = "normal"; bang = true;
+                    args = [ "g`\"" ];
+                  })
+                /*ELIF*/ (GE pos 1)
+                  (vim.cmd {
+                    cmd = "normal"; bang = true;
+                    args = [ "g$" ];
+                  })
+                ELSE
+                  (vim.cmd {
+                    cmd = "normal"; bang = true;
+                    args = [ "gg" ];
+                  })
+              )) _
             ]);
         }
       ) _
@@ -448,13 +464,7 @@
                 cssls = { };
                 tsserver = { };
                 jsonls = { };
-                nil_ls = {
-                  settings = {
-                    nil.nix.binary = "${pkgs.writeShellScript "nil-nix-wrapper" ''
-                      nix --allow-import-from-derivation "$@"
-                    ''}";
-                  };
-                };
+                nil_ls = { };
                 taplo = { };
                 marksman = { };
                 rust_analyzer = {

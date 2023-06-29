@@ -1,17 +1,16 @@
-{ config, pkgs, lib, ... }:
+{ pkgs, lib, ... }:
 let
   wrapHelix = { extraPackages ? [] , withPython3 ? true,  extraPython3Packages ? (_: []) }:
   pkgs.symlinkJoin {
     postBuild = ''
       rm $out/bin/hx
-      makeWrapper ${lib.escapeShellArgs (
-        [ "${pkgs.helix}/bin/hx" "${placeholder "out"}/bin/hx" ]
-        ++ [ "--suffix" "PATH" ":" (lib.makeBinPath (extraPackages ++ [(pkgs.python3.withPackages extraPython3Packages)])) ]
-      )}
+      makeWrapper ${lib.escapeShellArgs
+        [ "${pkgs.helix}/bin/hx" "${placeholder "out"}/bin/hx"
+          "--suffix" "PATH" ":" (lib.makeBinPath (extraPackages ++ [ (pkgs.python3.withPackages extraPython3Packages) ])) ]}
     '';
     buildInputs = [ pkgs.makeWrapper ]; preferLocalBuild = true;
     name = "helix${pkgs.helix.version}"; paths = [ pkgs.helix ];
-    passthru.unwrapped = pkgs.helix; meta = pkgs.helix.meta; version = pkgs.helix.version;
+    passthru.unwrapped = pkgs.helix; inherit (pkgs.helix) meta version;
   };
 in {
   programs.helix = {
