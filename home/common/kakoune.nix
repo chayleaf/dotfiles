@@ -1,6 +1,6 @@
 { pkgs, lib, ... }:
 let
-  wrapKakoune = { extraPackages ? [ ], withPython3 ? true,  extraPython3Packages ? (_: []) }:
+  wrapKakoune = { extraPackages ? [ ], withPython3 ? true, extraPython3Packages ? (_: [ ]) }:
   pkgs.symlinkJoin {
     postBuild = ''
       rm $out/bin/kak
@@ -40,28 +40,35 @@ in {
     '';
     plugins = with pkgs.kakounePlugins; [ kak-lsp smarttab-kak tabs-kak ]; 
   };
-  xdg.configFile."kak-lsp/kak-lsp.toml".text = ''
-    # bash, clangd, json, html, css, python work out of the box
-    [language.rust]
-    filetypes = ["rust"]
-    roots = ["rust-toolchain.toml", "rust-toolchain", "Cargo.toml"]
-    command = "rust-analyzer"
-    [language.typescript]
-    filetypes = ["typescript"]
-    roots = ["package.json"]
-    command = "typescript-language-server"
-    args = ["--stdio"]
-    [language.nix]
-    filetypes = ["nix"]
-    roots = ["flake.nix"]
-    command = "nil"
-    [language.markdown]
-    filetypes = ["markdown"]
-    roots = []
-    command = "marksman"
-    [language.toml]
-    filetypes = ["toml"]
-    roots = []
-    command = "taplo"
-  '';
+  xdg.configFile."kak-lsp/kak-lsp.toml".source = (pkgs.formats.toml { }).generate "kak-lsp.toml" {
+    language = {
+      # bash, clangd, json, html, css, python work out of the box
+      rust = {
+        filetypes = [ "rust" ];
+        roots = [ "rust-toolchain.toml" "rust-toolchain" "Cargo.toml" ];
+        command = "rust-analyzer";
+      };
+      typescript = {
+        filetypes = [ "typescript" ];
+        roots = [ "package.json" ];
+        command = "typescript-language-server";
+        args = [ "--stdio" ];
+      };
+      nix = {
+        filetypes = [ "nix" ];
+        roots = [ "flake.nix" ];
+        command = "nil";
+      };
+      markdown = {
+        filetypes = [ "markdown" ];
+        roots = [ ];
+        command = "marksman";
+      };
+      toml = {
+        filetypes = [ "toml" ];
+        roots = [ ];
+        command = "taplo";
+      };
+    };
+  };
 }

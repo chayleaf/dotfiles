@@ -1,6 +1,6 @@
 { pkgs, lib, ... }:
 let
-  wrapHelix = { extraPackages ? [ ], withPython3 ? true,  extraPython3Packages ? (_: []) }:
+  wrapHelix = { extraPackages ? [ ], withPython3 ? true, extraPython3Packages ? (_: [ ]) }:
   pkgs.symlinkJoin {
     postBuild = ''
       rm $out/bin/hx
@@ -28,9 +28,14 @@ in {
       ];
       extraPython3Packages = (pypkgs: with pypkgs; [ python-lsp-server ]);
     };
-    # languages = [];
+    # languages = [ ];
     settings = {
       theme = "base16_terminal";
+      editor.cursor-shape = {
+        insert = "bar";
+        normal = "block";
+        select = "block";
+      };
     };
   };
 }
