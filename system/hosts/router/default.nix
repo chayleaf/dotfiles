@@ -703,9 +703,9 @@ in {
     script = ''
       BLACKLIST=$(${pkgs.coreutils}/bin/mktemp) || exit 1
       ${pkgs.curl}/bin/curl "https://reestr.rublacklist.net/api/v2/ips/json/" -o "$BLACKLIST" || exit 1
-      chown unbound:unbound "$BLACKLIST" && mv "$BLACKLIST" /var/lib/unbound/vpn_ips.json
+      ${pkgs.jq}/bin/jq ".[0:0]" "$BLACKLIST" && chown unbound:unbound "$BLACKLIST" && mv "$BLACKLIST" /var/lib/unbound/vpn_ips.json
       ${pkgs.curl}/bin/curl "https://reestr.rublacklist.net/api/v2/domains/json/" -o "$BLACKLIST" || exit 1
-      chown unbound:unbound "$BLACKLIST" && mv "$BLACKLIST" /var/lib/unbound/vpn_domains.json
+      ${pkgs.jq}/bin/jq ".[0:0]" "$BLACKLIST" && chown unbound:unbound "$BLACKLIST" && mv "$BLACKLIST" /var/lib/unbound/vpn_domains.json
     '';
     serviceConfig = {
       Type = "oneshot";
