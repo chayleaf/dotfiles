@@ -638,23 +638,32 @@ def operate(id, event, qstate, qdata):
 
     n2 = name.rstrip('.')
 
-    if NFT_TOKEN and n2.endswith(f'.{NFT_TOKEN}'):
-        n3 = n2.removesuffix(f'.{NFT_TOKEN}')
-        for k, v in NFT_QUERIES.items():
-            if v['dynamic']:
-                if n3.endswith(f'.{k}'):
-                    n3 = n3.removesuffix(f'.{k}')
+    if NFT_TOKEN and n2.endswith(f'{NFT_TOKEN}'):
+        if n2.endswith(f'.{NFT_TOKEN}'):
+            n3 = n2.removesuffix(f'.{NFT_TOKEN}')
+            for k, v in NFT_QUERIES.items():
+                if v['dynamic'] and n3.endswith(f'.{k}'):
+                    n4 = n3.removesuffix(f'.{k}')
                     qdomains = v['domains']
-                    if not lookup_domain(qdomains, n3):
-                        add_split_domain(qdomains, ['*'] + n3.split('.'))
+                    if not lookup_domain(qdomains, n4):
+                        add_split_domain(qdomains, ['*'] + n4.split('.'))
                         old = []
                         if os.path.exists(f'/var/lib/unbound/{k}_domains.json'):
                             with open(f'/var/lib/unbound/{k}_domains.json', 'rt') as f:
                                 old = json.load(f)
                             os.rename(f'/var/lib/unbound/{k}_domains.json', f'/var/lib/unbound/{k}_domains.json.bak')
-                        old.append('*.' + n3)
+                        old.append('*.' + n4)
                         with open(f'/var/lib/unbound/{k}_domains.json', 'wt') as f:
                             json.dump(old, f)
+        elif n2.endswith(f'.tmp{NFT_TOKEN}'):
+            n3 = n2.removesuffix(f'.tmp{NFT_TOKEN}')
+            for k, v in NFT_QUERIES.items():
+                if v['dynamic'] and n3.endswith(f'.{k}'):
+                    n4 = n3.removesuffix(f'.{k}')
+                    qdomains = v['domains']
+                    if not lookup_domain(qdomains, n4):
+                        add_split_domain(qdomains, ['*'] + n4.split('.'))
+        return True
     qnames = []
     for k, v in NFT_QUERIES.items():
         if lookup_domain(v['domains'], n2):
