@@ -80,23 +80,6 @@ in
     stdenv = pkgs'.ccacheStdenv;
   };
 
-  hostapd = (pkgs.hostapd.override { stdenv = pkgs'.ccacheStdenv; }).overrideAttrs (old: {
-    # also remove 80211N
-    extraConfig = old.extraConfig + ''
-      CONFIG_OCV=y
-      CONFIG_WPS=y
-      CONFIG_WPS_NFC=y
-      CONFIG_WNM=y
-      CONFIG_IEEE80211AX=y
-      CONFIG_IEEE80211BE=y
-      CONFIG_ELOOP_EPOLL=y
-      CONFIG_MBO=y
-      CONFIG_TAXONOMY=y
-      CONFIG_OWE=y
-      CONFIG_AIRTIME_POLICY=y
-    '';
-  });
-
   cutter2 = pkgs.callPackage ./rizin/wrapper.nix {
     unwrapped = pkgs.cutter;
   } [ (pkgs.libsForQt5.callPackage ./rizin/rz-ghidra.nix {

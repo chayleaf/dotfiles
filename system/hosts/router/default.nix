@@ -50,7 +50,7 @@ let
 
   dnatRuleMode = rule:
     if rule.mode != "" then rule.mode
-    else if rule.target4.address or null == gatewayAddr4 || rule.target6.address or null == gatewayAddr6 then "rule"
+    else if rule.target4.address or null == netAddresses.lan4 || rule.target6.address or null == netAddresses.lan6 then "rule"
     else "mark";
 
   # nftables rules generator
@@ -179,31 +179,27 @@ let
     } // extraInetEntries);
   };
 
-  unbound-python = pkgs.python3.withPackages (ps: with ps; [ pydbus dnspython requests pytricia nftables ]);
+  netAddressesWithPrefixLen = {
+    lan4 = cfg.network;
+    lan6 = cfg.network6;
+    netns4 = cfg.netnsNet;
+    netns6 = cfg.netnsNet6;
+  };
 
   # parse a.b.c.d/x into { address, prefixLength }
-  netParsedCidr4 = router-lib.parseCidr cfg.network;
-  netParsedCidr6 = router-lib.parseCidr cfg.network6;
-  netnsParsedCidr4 = router-lib.parseCidr cfg.netnsNet;
-  netnsParsedCidr6 = router-lib.parseCidr cfg.netnsNet6;
+  netParsedCidrs = builtins.mapAttrs (_: router-lib.parseCidr) netAddressesWithPrefixLen;
 
   # generate network cidr from device address
   # (normalizeCidr applies network mask to the address)
-  netCidr4 = router-lib.serializeCidr (router-lib.normalizeCidr netParsedCidr4);
-  netCidr6 = router-lib.serializeCidr (router-lib.normalizeCidr netParsedCidr6);
-  netnsCidr4 = router-lib.serializeCidr (router-lib.normalizeCidr netnsParsedCidr4);
-  netnsCidr6 = router-lib.serializeCidr (router-lib.normalizeCidr netnsParsedCidr6);
+  netCidrs = builtins.mapAttrs (_: v: router-lib.serializeCidr (router-lib.normalizeCidr v)) netParsedCidrs;
 
-  gatewayAddr4 = netParsedCidr4.address;
-  gatewayAddr6 = netParsedCidr6.address;
-  mainNetnsAddr4 = netnsParsedCidr4.address;
-  mainNetnsAddr6 = netnsParsedCidr6.address;
+  netAddresses = builtins.mapAttrs (_: v: v.address) netParsedCidrs;
 
   wanNetnsAddr4 = cfg.wanNetnsAddr;
   wanNetnsAddr6 = cfg.wanNetnsAddr6;
 
-  parsedGatewayAddr4 = router-lib.parseIp4 gatewayAddr4;
-  parsedGatewayAddr6 = router-lib.parseIp6 gatewayAddr6;
+  parsedGatewayAddr4 = router-lib.parseIp4 netAddresses.lan4;
+  parsedGatewayAddr6 = router-lib.parseIp6 netAddresses.lan6;
 
   addToIp' = ip: n: lib.init ip ++ [ (lib.last ip + n) ];
   addToIp = ip: n: router-lib.serializeIp (addToIp' ip n);
@@ -230,7 +226,7 @@ in {
   services.openssh.enable = true;
   services.fail2ban = {
     enable = true;
-    ignoreIP = [ netCidr4 netCidr6 ];
+    ignoreIP = [ netCidrs.lan4 netCidrs.lan6 ];
     maxretry = 10;
   };
 
@@ -359,19 +355,19 @@ in {
   router.interfaces.br0 = {
     dependentServices = [ { service = "unbound"; bindType = "wants"; } ];
     ipv4.addresses = [ {
-      address = gatewayAddr4;
-      inherit (netParsedCidr4) prefixLength;
-      dns = [ gatewayAddr4 ];
+      address = netAddresses.lan4;
+      inherit (netParsedCidrs.lan4) prefixLength;
+      dns = [ netAddresses.lan4 ];
       keaSettings.reservations = map (res: {
         hw-address = res.macAddress;
         ip-address = res.ipAddress;
       }) cfg.dhcpReservations;
     } ];
     ipv6.addresses = [ {
-      address = gatewayAddr6;
-      inherit (netParsedCidr6) prefixLength;
-      dns = [ gatewayAddr6 ];
-      gateways = [ gatewayAddr6 ];
+      address = netAddresses.lan6;
+      inherit (netParsedCidrs.lan6) prefixLength;
+      dns = [ netAddresses.lan6 ];
+      gateways = [ netAddresses.lan6 ];
       radvdSettings.AdvAutonomous = true;
       coreradSettings.autonomous = true;
       # don't autoallocate addresses, keep autonomous ones
@@ -383,10 +379,10 @@ in {
       }) cfg.dhcp6Reservations;
     } ];
     ipv4.routes = [
-      { extraArgs = [ netCidr4 "dev" "br0" "proto" "kernel" "scope" "link" "src" gatewayAddr4 "table" wan_table ]; }
+      { extraArgs = [ netCidrs.lan4 "dev" "br0" "proto" "kernel" "scope" "link" "src" netAddresses.lan4 "table" wan_table ]; }
     ];
     ipv6.routes = [
-      { extraArgs = [ netCidr6 "dev" "br0" "proto" "kernel" "metric" "256" "pref" "medium" "table" wan_table ]; }
+      { extraArgs = [ netCidrs.lan6 "dev" "br0" "proto" "kernel" "metric" "256" "pref" "medium" "table" wan_table ]; }
     ];
     ipv4.kea.enable = true;
     ipv6.radvd.enable = true;
@@ -421,8 +417,8 @@ in {
     # things to note: this has the code for switching between rtables
     # otherwise, boring stuff
     nftables.jsonRules = mkRules {
-      selfIp4 = gatewayAddr4;
-      selfIp6 = gatewayAddr6;
+      selfIp4 = netAddresses.lan4;
+      selfIp6 = netAddresses.lan6;
       lans = [ "br0" ];
       wans = [ "wg0" "veth-wan-a" ];
       logPrefix = "lan ";
@@ -452,8 +448,8 @@ in {
         # allow dnat ("ct status dnat" doesn't work)
       ];
       inetInboundWanRules = with notnft.dsl; with payload; [
-        [(is.eq ip.saddr (cidr netnsCidr4)) accept]
-        [(is.eq ip6.saddr (cidr netnsCidr6)) accept]
+        [(is.eq ip.saddr (cidr netCidrs.netns4)) accept]
+        [(is.eq ip6.saddr (cidr netCidrs.netns6)) accept]
       ];
       extraInetEntries = with notnft.dsl; with payload; {
         block4 = add set { type = f: f.ipv4_addr; flags = f: with f; [ interval ]; } [
@@ -488,10 +484,10 @@ in {
             protocols = if rule.tcp && rule.udp then notnft.dsl.set [ tcp udp ] else if rule.tcp then tcp else udp;
             rule4 = rule.target4; rule6 = rule.target6;
           in with notnft.dsl; with payload;
-            lib.optionals (rule4 != null && rule4.address != gatewayAddr4) [
+            lib.optionals (rule4 != null) [
               [ (is.eq meta.iifname "br0") (is.eq ip.protocol protocols) (is.eq ip.saddr rule4.address)
                 (is.eq th.sport (if rule4.port != null then rule4.port else rule.port)) (mangle meta.mark wan_table) ]
-            ] ++ lib.optionals (rule6 != null && rule6.address != gatewayAddr6) [
+            ] ++ lib.optionals (rule6 != null) [
               [ (is.eq meta.iifname "br0") (is.eq ip6.nexthdr protocols) (is.eq ip6.saddr rule6.address)
                 (is.eq th.sport (if rule6.port != null then rule6.port else rule.port)) (mangle meta.mark wan_table) ]
             ])
@@ -503,10 +499,10 @@ in {
             protocols = if rule.tcp && rule.udp then notnft.dsl.set [ tcp udp ] else if rule.tcp then tcp else udp;
             rule4 = rule.target4; rule6 = rule.target6;
           in with notnft.dsl; with payload;
-            lib.optionals (rule4 != null && rule4.address != gatewayAddr4) [
+            lib.optionals (rule4 != null) [
               [ (is ct.status (f: f.dnat)) (is.eq meta.iifname "br0") (is.eq ip.protocol protocols) (is.eq ip.saddr rule4.address)
                 (is.eq th.sport (if rule4.port != null then rule4.port else rule.port)) (mangle meta.mark vpn_table) ]
-            ] ++ lib.optionals (rule6 != null && rule6.address != gatewayAddr6) [
+            ] ++ lib.optionals (rule6 != null) [
               [ (is ct.status (f: f.dnat)) (is.eq meta.iifname "br0") (is.eq ip6.protocol protocols) (is.eq ip6.saddr rule6.address)
                 (is.eq th.sport (if rule6.port != null then rule6.port else rule.port)) (mangle meta.mark vpn_table) ]
             ])
@@ -518,8 +514,8 @@ in {
           # instead of debugging that, simply change the approach
           # [(is.eq ip.saddr vacuumAddress4) (is.ne ip.daddr) (mangle meta.mark iot_table)]
           # [(is.eq ether.saddr cfg.vacuumMac) (mangle meta.mark iot_table)]
-          [(is.eq ether.saddr cfg.vacuumMac) (is.ne ip.daddr (cidr netCidr4)) (is.ne ip.daddr "@allow_iot4") (log "iot4 ") drop]
-          [(is.eq ether.saddr cfg.vacuumMac) (is.ne ip6.daddr (cidr netCidr6)) (is.ne ip6.daddr "@allow_iot6") (log "iot6 ") drop]
+          [(is.eq ether.saddr cfg.vacuumMac) (is.ne ip.daddr (cidr netCidrs.lan4)) (is.ne ip.daddr "@allow_iot4") (log "iot4 ") drop]
+          [(is.eq ether.saddr cfg.vacuumMac) (is.ne ip6.daddr (cidr netCidrs.lan6)) (is.ne ip6.daddr "@allow_iot6") (log "iot6 ") drop]
           [(mangle ct.mark meta.mark)]
         ]);
       };
@@ -533,17 +529,17 @@ in {
   # (and vice versa)
   router.veths.veth-wan-a.peerName = "veth-wan-b";
   router.interfaces.veth-wan-a = {
-    ipv4.addresses = [ netnsParsedCidr4 ];
-    ipv6.addresses = [ netnsParsedCidr6 ];
+    ipv4.addresses = [ netParsedCidrs.netns4 ];
+    ipv6.addresses = [ netParsedCidrs.netns6 ];
     ipv4.routes = [
       # default config duplicated for wan_table
-      { extraArgs = [ netnsCidr4 "dev" "veth-wan-a" "proto" "kernel" "scope" "link" "src" mainNetnsAddr4 "table" wan_table ]; }
+      { extraArgs = [ netCidrs.netns4 "dev" "veth-wan-a" "proto" "kernel" "scope" "link" "src" netAddresses.netns4 "table" wan_table ]; }
       # default all traffic to wan in wan_table
       { extraArgs = [ "default" "via" wanNetnsAddr4 "table" wan_table ]; }
     ];
     ipv6.routes = [
       # default config duplicated for wan_table
-      { extraArgs = [ netnsCidr6 "dev" "veth-wan-a" "proto" "kernel" "metric" "256" "pref" "medium" "table" wan_table ]; }
+      { extraArgs = [ netCidrs.netns6 "dev" "veth-wan-a" "proto" "kernel" "metric" "256" "pref" "medium" "table" wan_table ]; }
       # default all traffic to wan in wan_table
       { extraArgs = [ "default" "via" wanNetnsAddr6 "table" wan_table ]; }
     ];
@@ -552,18 +548,18 @@ in {
     networkNamespace = "wan";
     ipv4.addresses = [ {
       address = wanNetnsAddr4;
-      inherit (netnsParsedCidr4) prefixLength;
+      inherit (netParsedCidrs.netns4) prefixLength;
     } ];
     ipv6.addresses = [ {
       address = wanNetnsAddr6;
-      inherit (netnsParsedCidr6) prefixLength;
+      inherit (netParsedCidrs.netns6) prefixLength;
     } ];
     # allow wan->default namespace communication
     ipv4.routes = [
-      { extraArgs = [ netCidr4 "via" mainNetnsAddr4 ]; }
+      { extraArgs = [ netCidrs.lan4 "via" netAddresses.netns4 ]; }
     ];
     ipv6.routes = [
-      { extraArgs = [ netCidr6 "via" mainNetnsAddr6 ]; }
+      { extraArgs = [ netCidrs.lan6 "via" netAddresses.netns6 ]; }
     ];
   };
   router.networkNamespaces.wan = {
@@ -600,10 +596,10 @@ in {
             protocols = if rule.tcp && rule.udp then notnft.dsl.set [ tcp udp ] else if rule.tcp then tcp else udp;
             rule4 = rule.target4; rule6 = rule.target6;
           in with notnft.dsl; with payload;
-            lib.optionals (rule4 != null && rule4.address == gatewayAddr4) [
+            lib.optionals (rule4 != null) [
               [ (is.eq meta.iifname "wan") (is.eq meta.oifname "veth-wan-b") (is.eq ip.protocol protocols)
                 (is.eq th.dport (if rule4.port != null then rule4.port else rule.port)) (is.eq ip.daddr rule4.address) masquerade ]
-            ] ++ lib.optionals (rule6 != null && rule6.address == gatewayAddr6) [
+            ] ++ lib.optionals (rule6 != null) [
               [ (is.eq meta.iifname "wan") (is.eq meta.oifname "veth-wan-b") (is.eq ip6.nexthdr protocols)
                 (is.eq th.dport (if rule6.port != null then rule6.port else rule.port)) (is.eq ip6.daddr rule6.address) masquerade ]
             ])
@@ -637,7 +633,7 @@ in {
   # use main netns's address instead of 127.0.0.1
   # this ensures all network namespaces can access it
   networking.resolvconf.extraConfig = ''
-    name_servers="${mainNetnsAddr4} ${mainNetnsAddr6}"
+    name_servers="${netAddresses.netns4} ${netAddresses.netns6}"
   '';
   users.users.${config.common.mainUsername}.extraGroups = [ config.services.unbound.group ];
   services.unbound = {
@@ -645,15 +641,15 @@ in {
     package = pkgs.unbound-with-systemd.override {
       stdenv = pkgs.ccacheStdenv;
       withPythonModule = true;
-      python = unbound-python;
+      python = pkgs.python3;
     };
     localControlSocketPath = "/run/unbound/unbound.ctl";
     # we override resolvconf above manually
     resolveLocalQueries = false;
     settings = {
       server = {
-        interface = [ mainNetnsAddr4 mainNetnsAddr6 gatewayAddr4 gatewayAddr6 ];
-        access-control = [ "${netnsCidr4} allow" "${netnsCidr6} allow" "${netCidr4} allow" "${netCidr6} allow" ];
+        interface = [ netAddresses.netns4 netAddresses.netns6 netAddresses.lan4 netAddresses.lan6 ];
+        access-control = [ "${netCidrs.netns4} allow" "${netCidrs.netns6} allow" "${netCidrs.lan4} allow" "${netCidrs.lan6} allow" ];
         aggressive-nsec = true;
         do-ip6 = true;
         module-config = ''"validator python iterator"'';
@@ -682,7 +678,10 @@ in {
   networking.hosts."${serverAddress4}" = hosted-domains;
   networking.hosts."${serverAddress6}" = hosted-domains;
   systemd.services.unbound = lib.mkIf config.services.unbound.enable {
-    environment.PYTHONPATH = "${unbound-python}/${unbound-python.sitePackages}";
+    environment.PYTHONPATH = let
+      unbound-python = pkgs.python3.withPackages (ps: with ps; [ pydbus dnspython requests pytricia nftables ]);
+    in
+      "${unbound-python}/${unbound-python.sitePackages}";
     environment.MDNS_ACCEPT_NAMES = "^.*\\.local\\.$";
     # load vpn_domains.json and vpn_ips.json, as well as unvpn_domains.json and unvpn_ips.json
     # resolve domains and append it to ips and add it to the nftables sets
@@ -738,7 +737,7 @@ in {
 
   services.printing = {
     enable = true;
-    allowFrom = [ "localhost" netCidr4 netCidr6 ];
+    allowFrom = [ "localhost" netCidrs.lan4 netCidrs.lan6 ];
     browsing = true;
     clientConf = ''
       ServerName router.local
@@ -759,6 +758,11 @@ in {
       domain = true;
       userServices = true;
     };
+  };
+
+  services.iperf3 = {
+    enable = true;
+    bind = netAddresses.lan4;
   };
 
   # it takes a stupidly long time when done via qemu

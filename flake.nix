@@ -99,12 +99,14 @@
       };
       router-emmc = rec {
         system = "aarch64-linux";
-        specialArgs.notnft = if devNft then (import /${devPath}/notnft { inherit (nixpkgs) lib; }).config.notnft else notnft.lib.${system};
         specialArgs.router-lib = if devNixRt then import /${devPath}/nixos-router/lib.nix { inherit (nixpkgs) lib; } else nixos-router.lib.${system};
         specialArgs.server-config = nixosConfigurations.nixserver.config;
         modules = [
+          {
+            _module.args.notnft = if devNft then (import /${devPath}/notnft { inherit (nixpkgs) lib; }).config.notnft else notnft.lib.${system};
+          }
           (import ./system/devices/bpi-r3-router.nix "emmc")
-          (if devNixRt then (import /${devPath}/nixos-router) else nixos-router.nixosModules.default)
+          (if devNixRt then import /${devPath}/nixos-router else nixos-router.nixosModules.default)
         ];
       };
       router-sd = rec {

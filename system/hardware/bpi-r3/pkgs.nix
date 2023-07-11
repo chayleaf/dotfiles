@@ -116,7 +116,7 @@ in rec {
     '';
     fixupPhase = "true";
   };
-  linux_bpiR3 = pkgs.linux_testing.override {
+  linux_bpiR3 = pkgs.linux_latest.override {
     stdenv = pkgs'.ccacheStdenv;
     buildPackages = pkgs'.buildPackages // {
       stdenv = pkgs'.buildPackages.ccacheStdenv;
@@ -250,14 +250,23 @@ in rec {
       # hardware specific stuff
       FB = lib.mkForce no;
       DRM = no;
+      SOUND = no;
+      INFINIBAND = lib.mkForce no;
       CFG80211 = module;
       MAC80211 = module;
+      WLAN = yes;
 
       NR_CPUS = lib.mkForce (freeform "4");
       SMP = yes;
 
       SFP = yes;
       ARCH_MEDIATEK = yes;
+      COMMON_CLK_MEDIATEK = yes;
+      COMMON_CLK_MEDIATEK_FHCTL = yes;
+      COMMON_CLK_MT7986 = yes;
+      COMMON_CLK_MT7986_ETHSYS = yes;
+      EINT_MTK = yes;
+      MEDIATEK_GE_PHY = yes;
       MEDIATEK_WATCHDOG = yes;
       MTD_NAND_ECC_MEDIATEK = yes;
       MTD_NAND_ECC_SW_HAMMING = yes;
@@ -269,6 +278,8 @@ in rec {
       MTK_HSDMA = yes;
       MTK_INFRACFG = yes;
       MTK_PMIC_WRAP = yes;
+      MTK_LVTS_THERMAL = yes;
+      MTK_SOC_THERMAL = yes;
       MTK_THERMAL = yes;
       MTK_TIMER = yes;
       NET_DSA_MT7530 = yes;
@@ -282,8 +293,15 @@ in rec {
       NET_VENDOR_MEDIATEK = yes;
       PCIE_MEDIATEK = yes;
       PCIE_MEDIATEK_GEN3 = yes;
+      PCS_MTK_LYNXI = yes;
+      PINCTRL_MTK = yes;
       PINCTRL_MT7986 = yes;
       PWM_MEDIATEK = yes;
+      REGULATOR_MT6380 = yes;
+      MT76_CORE  = module;
+      MT76_LEDS = yes;
+      MT76_CONNAC_LIB = module;
+      MT7815E = module;
       MT7915E = module;
       MT7986_WMAC = yes;
       SPI_MT65XX = yes;
