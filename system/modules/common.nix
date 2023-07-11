@@ -7,10 +7,10 @@
   options.common = with lib; mkOption {
     type = types.submodule {
       options = {
-        workstation = mkOption {
+        minimal = mkOption {
           type = types.bool;
-          default = false;
-          description = "whether this device is a workstation (meaning a device for personal use rather than a server/embedded device)";
+          default = true;
+          description = "whether this is a minimal (no DE/WM) system";
         };
         mainUsername = mkOption {
           type = types.str;
@@ -44,7 +44,7 @@
         dates = "weekly";
         options = "--delete-older-than 30d";
       };
-      package = pkgs.nixFlakes;
+      package = pkgs.nixForNixPlugins;
       extraOptions = ''
         experimental-features = nix-command flakes
       '';
@@ -83,30 +83,25 @@
     environment.systemPackages = with pkgs; ([
       wget
       git
-    ] ++ (if cfg.workstation then [
-      comma
-      neovim
-      man-pages man-pages-posix
-    ] else [
+      tmux
+    ] ++ lib.optionals cfg.minimal [
       kitty.terminfo
       # rxvt-unicode-unwrapped.terminfo
       vim
-      tmux
-    ]));
-    documentation.dev.enable = lib.mkIf cfg.workstation true;
+    ]);
     programs.fish.enable = true;
     /*programs.zsh = {
       enable = true;
       enableBashCompletion = true;
     };*/
-    users.defaultUserShell = lib.mkIf (!cfg.workstation) pkgs.fish;
+    users.defaultUserShell = lib.mkIf cfg.minimal pkgs.fish;
     users.users.${cfg.mainUsername} = {
       uid = 1000;
       isNormalUser = true;
       extraGroups = [ "wheel" ];
     };
     # nixos-hardware uses mkDefault here, so we use slightly higher priority
-    services.xserver.libinput.enable = lib.mkOverride 999 cfg.workstation;
+    services.xserver.libinput.enable = lib.mkOverride 999 (!cfg.minimal);
     /*
     services.xserver = {
       enable = true;
@@ -117,23 +112,8 @@
       windowManager.i3.enable = true;
     };
     */
-    programs.sway.enable = lib.mkIf cfg.workstation true;
-    services.dbus.enable = lib.mkIf cfg.workstation true;
-    security.polkit.enable = lib.mkIf cfg.workstation true;
     # pipewire:
-    security.rtkit.enable = lib.mkIf cfg.workstation true;
-    services.pipewire = lib.mkIf cfg.workstation {
-      enable = true;
-      alsa.enable = true;
-      alsa.support32Bit = true;
-      pulse.enable = true;
-      jack.enable = true;
-    };
     programs.fuse.userAllowOther = true;
-    xdg.portal = lib.mkIf cfg.workstation {
-      enable = true;
-      extraPortals = with pkgs; [ xdg-desktop-portal-gtk xdg-desktop-portal-wlr ];
-    };
     # autologin once after boot
     # --skip-login means directly call login instead of first asking for username
     # (normally login asks for username too, but getty prefers to do it by itself for whatever reason)

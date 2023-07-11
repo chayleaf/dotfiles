@@ -296,7 +296,7 @@ in {
   services.nextcloud = {
     enable = true;
     enableBrokenCiphersForSSE = false;
-    package = pkgs.nextcloud26;
+    package = pkgs.nextcloud27;
     autoUpdateApps.enable = true;
     # TODO: use socket auth and remove the next line
     database.createLocally = false;
@@ -319,6 +319,13 @@ in {
     '' ];
   };
   systemd.services.pleroma.path = [ pkgs.exiftool pkgs.gawk ];
+  systemd.services.pleroma.serviceConfig = {
+    Restart = "on-failure";
+  };
+  systemd.services.pleroma.unitConfig = {
+    StartLimitIntervalSec = 60;
+    StartLimitBurst = 3;
+  };
   services.nginx.virtualHosts."pleroma.${cfg.domainName}" = {
     enableACME = true;
     forceSSL = true;

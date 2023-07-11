@@ -1,11 +1,11 @@
-{ config, pkgs, lib, ... }:
+{ config, pkgs, ... }:
 {
   programs.zsh = {
     enable = true;
     # zsh-autosuggestions
     enableAutosuggestions = true;
     # zsh-syntax-highlighting
-    enableSyntaxHighlighting = true;
+    syntaxHighlighting.enable = true;
     defaultKeymap = "viins";
     dotDir = ".config/zsh";
     history.ignoreDups = true;

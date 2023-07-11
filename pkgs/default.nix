@@ -12,9 +12,13 @@ let
 in
 
 {
-  osu-lazer-bin = nix-gaming.osu-lazer-bin;
+  inherit (nix-gaming) faf-client osu-lazer-bin;
+  nixForNixPlugins = pkgs.nixVersions.nix_2_16;
   clang-tools_latest = pkgs.clang-tools_16;
   clang_latest = pkgs.clang_16;
+  steam-run = pkgs.steam-run.overrideAttrs (old: {
+    multiArch = true;
+  });
   home-daemon = callPackage ./home-daemon { };
   /*ghidra = pkgs.ghidra.overrideAttrs (old: {
     patches = old.patches ++ [ ./ghidra-stdcall.patch ];
@@ -30,6 +34,10 @@ in
       sha256 = "sha256-6vYbNmNJBCoU23nVculac24tHqH7F4AZVftIjL93WJU=";
       fetchSubmodules = true;
     };
+  });
+  kvmfrOverlay = pkgs.linuxPackages_latest.kvmfr.overrideAttrs (old: {
+    inherit (pkgs'.looking-glass-client) version src;
+    patches = [ ./kvmfr-linux6_4.patch ];
   });
   pineapplebot = callPackage ./pineapplebot.nix { };
   proton-ge = pkgs.stdenvNoCC.mkDerivation {
@@ -88,4 +96,10 @@ in
       CONFIG_AIRTIME_POLICY=y
     '';
   });
+
+  cutter2 = pkgs.callPackage ./rizin/wrapper.nix {
+    unwrapped = pkgs.cutter;
+  } [ (pkgs.libsForQt5.callPackage ./rizin/rz-ghidra.nix {
+    enableCutterPlugin = true;
+  }) ];
 } // (import ../system/hardware/bpi-r3/pkgs.nix { inherit pkgs pkgs' lib sources; })

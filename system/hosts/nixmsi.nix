@@ -45,7 +45,9 @@
   #   zen619.configuration.boot.kernelPackages = zenKernelPackages "6.1.9" "0fsmcjsawxr32fxhpp6sgwfwwj8kqymy0rc6vh4qli42fqmwdjgv";
   # };
 
-  nixpkgs.config.allowUnfreePredicate = pkg: (lib.getName pkg) == "steam-original";
+  nixpkgs.config.allowUnfreePredicate = pkg: builtins.elem (lib.getName pkg) [
+    "steam-original"
+  ];
   hardware = {
     steam-hardware.enable = true;
     opengl.driSupport32Bit = true;
@@ -111,23 +113,50 @@
     games.matchers = [ "osu!" ];
   };
 
-  common.workstation = true;
+  common.minimal = false;
   common.gettyAutologin = true;
   # programs.firejail.enable = true;
   # doesn't work:
   # programs.wireshark.enable = true;
-  # users.groups.wireshark.members = [ config.common.mainUsername"];
+  # users.groups.wireshark.members = [ config.common.mainUsername ];
   services.printing.enable = true;
-  # from nix-gaming
-  services.pipewire.lowLatency = {
+  services.pipewire = {
     enable = true;
-    # 96 is mostly fine but has some xruns
-    # 128 has xruns every now and then too, but is overall fine
-    quantum = 128;
-    rate = 48000;
+    alsa.enable = true;
+    alsa.support32Bit = true;
+    pulse.enable = true;
+    jack.enable = true;
+
+    # from nix-gaming
+    lowLatency = {
+      enable = true;
+      # 96 is mostly fine but has some xruns
+      # 128 has xruns every now and then too, but is overall fine
+      quantum = 128;
+      rate = 48000;
+    };
+  };
+  security.polkit.enable = true;
+  security.rtkit.enable = true;
+
+  services.dbus.enable = true;
+  programs.sway.enable = true;
+  xdg.portal = {
+    enable = true;
+    extraPortals = with pkgs; [ xdg-desktop-portal-gtk xdg-desktop-portal-wlr ];
   };
 
   programs.ccache.enable = true;
   services.sshd.enable = true;
   boot.binfmt.emulatedSystems = [ "aarch64-linux" ];
+  nix.settings.trusted-users = [ "root" config.common.mainUsername ];
+  services.udev.packages = [
+    pkgs.android-udev-rules
+  ];
+  environment.systemPackages = with pkgs; [
+    comma
+    neovim
+    man-pages man-pages-posix
+  ];
+  documentation.dev.enable = true;
 }

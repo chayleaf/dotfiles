@@ -93,7 +93,7 @@
       rust-analyzer
       nodePackages_latest.bash-language-server shellcheck
       nodePackages_latest.typescript-language-server
-      nodePackages_latest.svelte-language-server
+      # nodePackages_latest.svelte-language-server
       clang-tools_latest
       nodePackages_latest.vscode-langservers-extracted
       nil

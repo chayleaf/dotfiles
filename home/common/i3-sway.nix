@@ -255,7 +255,10 @@ in
           { app_id = "nheko"; }
         ];
         "3" = [{ app_id = "org.keepassxc.KeePassXC"; }];
-        "4" = [{ class = "Steam"; }];
+        "4" = [
+          { class = "Steam"; }
+          { class = "steam"; }
+        ];
       };
       keybindings = genKeybindings options.wayland.windowManager.sway (with pkgs.sway-contrib;
       /*let

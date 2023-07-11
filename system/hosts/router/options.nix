@@ -124,7 +124,7 @@
               description = "ipv4 address";
             };
             options.port = lib.mkOption {
-              type = nullOr int;
+              type = nullOr port;
               description = "target port";
               default = null;
             };
@@ -139,7 +139,7 @@
               description = "ipv6 address";
             };
             options.port = lib.mkOption {
-              type = nullOr int;
+              type = nullOr port;
               description = "target port";
               default = null;
             };

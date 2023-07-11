@@ -20,19 +20,19 @@
   };
   proton-ge = {
     pname = "proton-ge";
-    version = "GE-Proton8-4";
+    version = "GE-Proton8-6";
     src = fetchurl {
-      url = "https://github.com/GloriousEggroll/proton-ge-custom/releases/download/GE-Proton8-4/GE-Proton8-4.tar.gz";
-      sha256 = "sha256-OPwmVxBGaWo51pDJcqvxvZ8qxMH8X0DwZTpwiKbdx/I=";
+      url = "https://github.com/GloriousEggroll/proton-ge-custom/releases/download/GE-Proton8-6/GE-Proton8-6.tar.gz";
+      sha256 = "sha256-0ePO6ZzsZpAb9iM++k4fYDwKzJpuZNgfPKwZePAUc0Y=";
     };
   };
   searxng = {
     pname = "searxng";
-    version = "e8706fb738da9feb21e596f403dddb40e69c8a7b";
+    version = "cada89ee3648de6ca5b458aeacafe6c10d5230a2";
     src = fetchTarball {
-      url = "https://github.com/searxng/searxng/archive/e8706fb738da9feb21e596f403dddb40e69c8a7b.tar.gz";
-      sha256 = "sha256-sk28RG9/ZoPL71x99tNi884Mw0taMTYWh6HXINTr1xQ=";
+      url = "https://github.com/searxng/searxng/archive/cada89ee3648de6ca5b458aeacafe6c10d5230a2.tar.gz";
+      sha256 = "sha256-eOq4vZ8690H1lCRu8LXgUJvc/4lY+VqvVOqRyEURreI=";
     };
-    date = "2023-06-25";
+    date = "2023-07-07";
   };
 }

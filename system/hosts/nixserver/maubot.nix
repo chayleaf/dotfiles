@@ -53,13 +53,13 @@ in {
     server.public_url = "https://matrix.${cfg.domainName}";
   };
   services.maubot.plugins = with config.services.maubot.package.plugins; [
-    com.arachnitech.weather
-    com.dvdgsng.maubot.urban
-    xyz.maubot.media
-    xyz.maubot.reactbot
-    xyz.maubot.reminder
-    xyz.maubot.translate
-    xyz.maubot.rss
+    weather
+    urban
+    media
+    reactbot
+    reminder
+    translate
+    rss
   ];
   services.maubot.pythonPackages = [
     (pkgs.pineapplebot.override { magic = cfg.pizzabotMagic; })

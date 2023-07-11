@@ -45,7 +45,6 @@
           cookies-txt
           don-t-fuck-with-paste
           greasemonkey
-          i-dont-care-about-cookies
           keepassxc-browser
           libredirect
           localcdn

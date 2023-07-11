@@ -196,7 +196,7 @@
                 }
                 ({ config, pkgs, lib, ...}: {
                   nixpkgs.overlays = [ overlay ];
-                  nix.package = lib.mkDefault pkgs.nixFlakes;
+                  nix.package = lib.mkDefault pkgs.nixForNixPlugins;
                   # this is only needed if nixos doesnt set plugin-files already
                   /*nix.extraOptions = ''
                     plugin-files = ${pkgs.nix-plugins.override { nix = config.nix.package; }}/lib/nix/plugins/libnix-extra-builtins.so
@@ -251,7 +251,7 @@
                       (getPrivUser hostname user)
                       ({ config, pkgs, lib, ... }: {
                         nixpkgs.overlays = [ overlay ];
-                        nix.package = lib.mkDefault pkgs.nixFlakes;
+                        nix.package = lib.mkDefault pkgs.nixForNixPlugins;
                         # this is only needed if nixos doesnt set plugin-files already
                         /*nix.extraOptions = ''
                           plugin-files = ${pkgs.nix-plugins.override { nix = config.nix.package; }}/lib/nix/plugins/libnix-extra-builtins.so

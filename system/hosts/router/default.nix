@@ -249,18 +249,15 @@ in {
 
   # dnat to server, take ports from its firewall config
   router-settings.dnatRules = let
-    allTcp = server-config.networking.firewall.allowedTCPPorts;
-    allTcpRanges = server-config.networking.firewall.allowedTCPPortRanges;
-    allUdp = server-config.networking.firewall.allowedUDPPorts;
-    allUdpRanges = server-config.networking.firewall.allowedUDPPortRanges;
+    inherit (server-config.networking.firewall) allowedTCPPorts allowedTCPPortRanges allowedUDPPorts allowedUDPPortRanges;
 
-    tcpAndUdp = builtins.filter (x: x != 22 && builtins.elem x allTcp) allUdp;
-    tcpOnly = builtins.filter (x: x != 22 && !(builtins.elem x allUdp)) allTcp;
-    udpOnly = builtins.filter (x: x != 22 && !(builtins.elem x allTcp)) allUdp;
+    tcpAndUdp = builtins.filter (x: builtins.elem x allowedTCPPorts) allowedUDPPorts;
+    tcpOnly = builtins.filter (x: !(builtins.elem x allowedUDPPorts)) allowedTCPPorts;
+    udpOnly = builtins.filter (x: !(builtins.elem x allowedTCPPorts)) allowedUDPPorts;
 
-    rangesTcpAndUdp = builtins.filter (x: builtins.elem x allTcpRanges) allUdpRanges;
-    rangesTcpOnly = builtins.filter (x: !(builtins.elem x allUdpRanges)) allTcpRanges;
-    rangesUdpOnly = builtins.filter (x: !(builtins.elem x allTcpRanges)) allUdpRanges;
+    rangesTcpAndUdp = builtins.filter (x: builtins.elem x allowedTCPPortRanges) allowedUDPPortRanges;
+    rangesTcpOnly = builtins.filter (x: !(builtins.elem x allowedUDPPortRanges)) allowedTCPPortRanges;
+    rangesUdpOnly = builtins.filter (x: !(builtins.elem x allowedTCPPortRanges)) allowedUDPPortRanges;
   in lib.optional (tcpAndUdp != [ ]) {
     port = notnft.dsl.set tcpAndUdp; tcp = true; udp = true;
     target4.address = serverAddress4; target6.address = serverAddress6;
@@ -455,7 +452,6 @@ in {
         # allow dnat ("ct status dnat" doesn't work)
       ];
       inetInboundWanRules = with notnft.dsl; with payload; [
-        [(is.eq tcp.dport 22) accept]
         [(is.eq ip.saddr (cidr netnsCidr4)) accept]
         [(is.eq ip6.saddr (cidr netnsCidr6)) accept]
       ];
@@ -626,7 +622,7 @@ in {
           (is.eq icmpv6.type (f: with f; set [ nd-neighbor-solicit nd-neighbor-advert ]))
           accept]
         # SSH
-        [(is.eq tcp.dport 22) accept]
+        [(is.eq tcp.dport 23) accept]
       ];
     };
   };
@@ -720,6 +716,7 @@ in {
   };
 
   # run an extra sshd so we can connect even if forwarding/routing between namespaces breaks
+  # (use port 23 because 22 is forwarded to the server)
   systemd.services.sshd-wan = {
     description = "SSH Daemon (WAN)";
     wantedBy = [ "multi-user.target" ];
@@ -731,7 +728,7 @@ in {
     restartTriggers = [ config.environment.etc."ssh/sshd_config".source ];
     preStart = config.systemd.services.sshd.preStart;
     serviceConfig = {
-      ExecStart = "${config.programs.ssh.package}/bin/sshd -D -f /etc/ssh/sshd_config";
+      ExecStart = "${config.programs.ssh.package}/bin/sshd -D -f /etc/ssh/sshd_config -p 23";
       KillMode = "process";
       Restart = "always";
       Type = "simple";

@@ -12,10 +12,12 @@
   nix.settings = {
     trusted-public-keys = [
       "cache.nixos.org-1:6NCHdD59X431o0gWypbMrAURkbJ16ZPMQFGspcDShjY="
+      "nix-gaming.cachix.org-1:nbjlureqMbRAxR1gJ/f3hxemL9svXaZF/Ees8vCUUs4="
       # "nixpkgs-wayland.cachix.org-1:3lwxaILxMRkVhehr5StQprHdEo4IrE8sRho9R9HOLYA="
     ];
     trusted-substituters = [
       "https://cache.nixos.org"
+      "https://nix-gaming.cachix.org"
       # "https://nixpkgs-wayland.cachix.org"
     ];
   };
@@ -53,16 +55,17 @@
   home.sessionVariables = {
     STEAM_EXTRA_COMPAT_TOOLS_PATHS = "${pkgs.proton-ge}";
     CARGO_PROFILE_DEV_INCREMENTAL = "true";
-    RUSTC_LINKER = "${pkgs.clang_latest}/bin/clang";
-    RUSTFLAGS = "-C link-arg=--ld-path=${pkgs.mold}/bin/mold";
+    # RUSTC_LINKER = "${pkgs.clang_latest}/bin/clang";
+    # RUSTFLAGS = "-C link-arg=--ld-path=${pkgs.mold}/bin/mold";
     CARGO_TARGET_X86_64_UNKNOWN_LINUX_GNU_LINKER = "${pkgs.clang_latest}/bin/clang";
     CARGO_TARGET_X86_64_UNKNOWN_LINUX_GNU_RUSTFLAGS = "-C link-arg=--ld-path=${pkgs.mold}/bin/mold";
   };
   home.packages = with pkgs; [
     mold
-    ghidra cutter
+    ghidra cutter2
     openrgb piper
     steam-run steam
+    faf-client
     (osu-lazer-bin.override {
       command_prefix = "${obs-studio-plugins.obs-vkcapture}/bin/obs-gamecapture";
     })
@@ -74,7 +77,7 @@
     easyeffects
     # wineWowPackages.waylandFull
     winetricks
-    protontricks # proton-caller
+    # protontricks # proton-caller
     # bottles
     virtmanager
     gimp krita blender-hip

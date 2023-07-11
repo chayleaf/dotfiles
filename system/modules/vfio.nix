@@ -131,8 +131,7 @@ in {
         "vfio_pci"
       ];
       extraModulePackages =
-        with config.boot.kernelPackages;
-          lib.mkIf enableIvshmem [ kvmfr ];
+        lib.mkIf enableIvshmem [ (pkgs.kvmfrOverlay or config.boot.kernelPackages.kvmfr) ];
       extraModprobeConfig = ''
           options vfio-pci ids=${builtins.concatStringsSep "," cfg.pciIDs} disable_idle_d3=1
           options kvm ignore_msrs=1

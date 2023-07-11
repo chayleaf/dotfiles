@@ -1,5 +1,6 @@
 { config
 , lib
+, pkgs
 , ... }:
 
 let
@@ -49,8 +50,37 @@ in {
     enable = true;
     homeserver = "http://${lib.quoteListenAddr matrixAddr}:${toString matrixPort}/";
   };
-  # so synapse can read the registration
-  users.groups.heisenbridge.members = [ "matrix-synapse" ];
+  # TODO: remove when https://github.com/NixOS/nixpkgs/pull/242912 is merged
+  systemd.services.heisenbridge.preStart = let
+    bridgeConfig = builtins.toFile "heisenbridge-registration.yml" (builtins.toJSON {
+      inherit (config.services.heisenbridge) namespaces; id = "heisenbridge";
+      url = config.services.heisenbridge.registrationUrl; rate_limited = false;
+      sender_localpart = "heisenbridge";
+    });
+  in lib.mkForce ''
+    umask 077
+    set -e -u -o pipefail
+
+    if ! [ -f "/var/lib/heisenbridge/registration.yml" ]; then
+      # Generate registration file if not present (actually, we only care about the tokens in it)
+      ${config.services.heisenbridge.package}/bin/heisenbridge --generate --config /var/lib/heisenbridge/registration.yml
+    fi
+
+    # Overwrite the registration file with our generated one (the config may have changed since then),
+    # but keep the tokens. Two step procedure to be failure safe
+    ${pkgs.yq}/bin/yq --slurp \
+      '.[0] + (.[1] | {as_token, hs_token})' \
+      ${bridgeConfig} \
+      /var/lib/heisenbridge/registration.yml \
+      > /var/lib/heisenbridge/registration.yml.new
+    mv -f /var/lib/heisenbridge/registration.yml.new /var/lib/heisenbridge/registration.yml
+
+    # Grant Synapse access to the registration
+    if ${pkgs.getent}/bin/getent group matrix-synapse > /dev/null; then
+      chgrp -v matrix-synapse /var/lib/heisenbridge/registration.yml
+      chmod -v g+r /var/lib/heisenbridge/registration.yml
+    fi
+  '';
 
   services.matrix-synapse = {
     enable = true;
