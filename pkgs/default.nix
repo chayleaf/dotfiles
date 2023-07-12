@@ -35,7 +35,7 @@ in
       fetchSubmodules = true;
     };
   });
-  kvmfrOverlay = pkgs.linuxPackages_latest.kvmfr.overrideAttrs (old: {
+  kvmfrOverlay = kvmfr: kvmfr.overrideAttrs (old: {
     inherit (pkgs'.looking-glass-client) version src;
     patches = [ ./kvmfr-linux6_4.patch ];
   });

@@ -130,8 +130,11 @@ in {
         "vfio_iommu_type1"
         "vfio_pci"
       ];
+      # kvmfrOverlay is defined in pkgs/default.nix
+      # I use it to keep looking-glass and kvmfr's version pinned
+      # (and in this case also to keep linux 6.4 compatibility)
       extraModulePackages =
-        lib.mkIf enableIvshmem [ (pkgs.kvmfrOverlay or config.boot.kernelPackages.kvmfr) ];
+        lib.mkIf enableIvshmem [ ((pkgs.kvmfrOverlay or lib.id) config.boot.kernelPackages.kvmfr) ];
       extraModprobeConfig = ''
           options vfio-pci ids=${builtins.concatStringsSep "," cfg.pciIDs} disable_idle_d3=1
           options kvm ignore_msrs=1
