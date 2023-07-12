@@ -193,10 +193,10 @@ let
   # (normalizeCidr applies network mask to the address)
   netCidrs = builtins.mapAttrs (_: v: router-lib.serializeCidr (router-lib.normalizeCidr v)) netParsedCidrs;
 
-  netAddresses = builtins.mapAttrs (_: v: v.address) netParsedCidrs;
-
-  wanNetnsAddr4 = cfg.wanNetnsAddr;
-  wanNetnsAddr6 = cfg.wanNetnsAddr6;
+  netAddresses = builtins.mapAttrs (_: v: v.address) netParsedCidrs // {
+    netnsWan4 = cfg.wanNetnsAddr;
+    netnsWan6 = cfg.wanNetnsAddr6;
+  };
 
   parsedGatewayAddr4 = router-lib.parseIp4 netAddresses.lan4;
   parsedGatewayAddr6 = router-lib.parseIp6 netAddresses.lan6;
@@ -354,18 +354,14 @@ in {
   # this is "the" lan device
   router.interfaces.br0 = {
     dependentServices = [ { service = "unbound"; bindType = "wants"; } ];
-    ipv4.addresses = [ {
-      address = netAddresses.lan4;
-      inherit (netParsedCidrs.lan4) prefixLength;
+    ipv4.addresses = lib.toList (netParsedCidrs.lan4 // {
       dns = [ netAddresses.lan4 ];
       keaSettings.reservations = map (res: {
         hw-address = res.macAddress;
         ip-address = res.ipAddress;
       }) cfg.dhcpReservations;
-    } ];
-    ipv6.addresses = [ {
-      address = netAddresses.lan6;
-      inherit (netParsedCidrs.lan6) prefixLength;
+    });
+    ipv6.addresses = lib.toList (netParsedCidrs.lan6 // {
       dns = [ netAddresses.lan6 ];
       gateways = [ netAddresses.lan6 ];
       radvdSettings.AdvAutonomous = true;
@@ -377,7 +373,7 @@ in {
         hw-address = res.macAddress;
         ip-addresses = [ res.ipAddress ];
       }) cfg.dhcp6Reservations;
-    } ];
+    });
     ipv4.routes = [
       { extraArgs = [ netCidrs.lan4 "dev" "br0" "proto" "kernel" "scope" "link" "src" netAddresses.lan4 "table" wan_table ]; }
     ];
@@ -535,23 +531,23 @@ in {
       # default config duplicated for wan_table
       { extraArgs = [ netCidrs.netns4 "dev" "veth-wan-a" "proto" "kernel" "scope" "link" "src" netAddresses.netns4 "table" wan_table ]; }
       # default all traffic to wan in wan_table
-      { extraArgs = [ "default" "via" wanNetnsAddr4 "table" wan_table ]; }
+      { extraArgs = [ "default" "via" netAddresses.netnsWan4 "table" wan_table ]; }
     ];
     ipv6.routes = [
       # default config duplicated for wan_table
       { extraArgs = [ netCidrs.netns6 "dev" "veth-wan-a" "proto" "kernel" "metric" "256" "pref" "medium" "table" wan_table ]; }
       # default all traffic to wan in wan_table
-      { extraArgs = [ "default" "via" wanNetnsAddr6 "table" wan_table ]; }
+      { extraArgs = [ "default" "via" netAddresses.netnsWan6 "table" wan_table ]; }
     ];
   };
   router.interfaces.veth-wan-b = {
     networkNamespace = "wan";
     ipv4.addresses = [ {
-      address = wanNetnsAddr4;
+      address = netAddresses.netnsWan4;
       inherit (netParsedCidrs.netns4) prefixLength;
     } ];
     ipv6.addresses = [ {
-      address = wanNetnsAddr6;
+      address = netAddresses.netnsWan6;
       inherit (netParsedCidrs.netns6) prefixLength;
     } ];
     # allow wan->default namespace communication
@@ -565,8 +561,8 @@ in {
   router.networkNamespaces.wan = {
     # this is the even more boring nftables config
     nftables.jsonRules = mkRules {
-      selfIp4 = wanNetnsAddr4;
-      selfIp6 = wanNetnsAddr6;
+      selfIp4 = netAddresses.netnsWan4;
+      selfIp6 = netAddresses.netnsWan6;
       lans = [ "veth-wan-b" ];
       wans = [ "wan" ];
       netdevIngressWanRules = with notnft.dsl; with payload; [
