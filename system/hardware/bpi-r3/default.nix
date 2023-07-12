@@ -1,4 +1,5 @@
 { pkgs
+, pkgs2
 , config
 , ... }:
 
@@ -9,7 +10,7 @@
   };
 
   # boot.kernelPackages = pkgs.linuxPackages_testing;
-  boot.kernelPackages = pkgs.linuxPackages_bpiR3;
+  boot.kernelPackages = pkgs2.linuxPackages_bpiR3;
 
   hardware.deviceTree.enable = true;
   hardware.deviceTree.filter = "mt7986a-bananapi-bpi-r3.dtb";

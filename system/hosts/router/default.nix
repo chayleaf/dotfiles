@@ -465,6 +465,8 @@ in {
         allow_iot4 = add set { type = f: f.ipv4_addr; flags = f: with f; [ interval ]; };
         allow_iot6 = add set { type = f: f.ipv6_addr; flags = f: with f; [ interval ]; };
 
+        # TODO: is type=route hook=output better? it might help get rid of the routing inconsistency
+        # between router-originated and forwarded traffic
         prerouting = add chain { type = f: f.filter; hook = f: f.prerouting; prio = f: f.filter; policy = f: f.accept; } ([
           [(mangle meta.mark ct.mark)]
           [(is.ne meta.mark 0) accept]

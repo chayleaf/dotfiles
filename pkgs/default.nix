@@ -16,14 +16,10 @@ in
   nixForNixPlugins = pkgs.nixVersions.nix_2_16;
   clang-tools_latest = pkgs.clang-tools_16;
   clang_latest = pkgs.clang_16;
-  steam-run = pkgs.steam-run.overrideAttrs (old: {
-    multiArch = true;
-  });
   home-daemon = callPackage ./home-daemon { };
   /*ghidra = pkgs.ghidra.overrideAttrs (old: {
     patches = old.patches ++ [ ./ghidra-stdcall.patch ];
   });*/
-  lalrpop = callPackage ./lalrpop { };
   # pin version
   looking-glass-client = pkgs.looking-glass-client.overrideAttrs (old: {
     version = "B6";
@@ -37,7 +33,6 @@ in
   });
   kvmfrOverlay = kvmfr: kvmfr.overrideAttrs (old: {
     inherit (pkgs'.looking-glass-client) version src;
-    patches = [ ./kvmfr-linux6_4.patch ];
   });
   pineapplebot = callPackage ./pineapplebot.nix { };
   proton-ge = pkgs.stdenvNoCC.mkDerivation {

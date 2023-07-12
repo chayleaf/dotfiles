@@ -159,4 +159,6 @@
     man-pages man-pages-posix
   ];
   documentation.dev.enable = true;
+
+  impermanence.directories = [ /etc/nixos ];
 }

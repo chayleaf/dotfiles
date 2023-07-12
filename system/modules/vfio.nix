@@ -132,7 +132,6 @@ in {
       ];
       # kvmfrOverlay is defined in pkgs/default.nix
       # I use it to keep looking-glass and kvmfr's version pinned
-      # (and in this case also to keep linux 6.4 compatibility)
       extraModulePackages =
         lib.mkIf enableIvshmem [ ((pkgs.kvmfrOverlay or lib.id) config.boot.kernelPackages.kvmfr) ];
       extraModprobeConfig = ''

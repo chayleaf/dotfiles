@@ -15,7 +15,7 @@ in {
         };
         path = mkOption {
           type = types.path;
-          default = if cfg.enable then throw "You must set path to persistent storage" else "";
+          default = throw "You must set path to persistent storage";
           description = "Default path for persistence";
         };
         directories = mkOption {
@@ -48,15 +48,12 @@ in {
       hideMounts = true;
       directories = map (x:
         if builtins.isPath x then toString x
-        else if builtins.isAttrs x && x?directory && builtins.isPath x.directory then x // { directory = toString x.directory; }
-        else x)
-      ([
-        # nixos files
-        { directory = /etc/nixos; user = "root"; group = "root"; mode = "0755"; }
+        else if builtins.isPath (x.directory or null) then x // { directory = toString x.directory; }
+        else x
+      ) ([
+        # the following two can't be created by impermanence (i.e. they have to exist on disk in stage 1)
         { directory = /var/lib/nixos; user = "root"; group = "root"; mode = "0755"; }
-
         { directory = /var/log; user = "root"; group = "root"; mode = "0755"; }
-
         # persist this since everything here is cleaned up by systemd-tmpfiles over time anyway
         # ...or so I'd like to believe
         { directory = /var/lib/systemd; user = "root"; group = "root"; mode = "0755"; }
@@ -74,7 +71,7 @@ in {
         { directory = /var/lib/swtpm-localca; user = "root"; group = "root"; mode = "0750"; }
       ]) ++ lib.optionals config.networking.wireless.iwd.enable [
         { directory = /var/lib/iwd; user = "root"; group = "root"; mode = "0700"; }
-      ] ++ lib.optionals (builtins.any (x: x.useDHCP != false) (builtins.attrValues config.networking.interfaces) && config.networking.useDHCP) [
+      ] ++ lib.optionals (builtins.any (x: x.useDHCP != false) (builtins.attrValues config.networking.interfaces) || config.networking.useDHCP) [
         { directory = /var/db/dhcpcd; user = "root"; group = "root"; mode = "0755"; }
       ] ++ lib.optionals config.services.gitea.enable [
         { directory = /var/lib/gitea; user = "gitea"; group = "gitea"; mode = "0755"; }
@@ -121,8 +118,9 @@ in {
       ] ++ cfg.directories);
       files = map (x:
         if builtins.isPath x then toString x
-        else if builtins.isAttrs x && x?file && builtins.isPath x.file then x // { file = toString x.file; }
-        else x) ([
+        else if builtins.isPath (x.file or null) then x // { file = toString x.file; }
+        else x
+      ) ([
         # hardware-related
         /etc/adjtime
         # needed at least for /var/log

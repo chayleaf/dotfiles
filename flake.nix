@@ -2,7 +2,8 @@
   description = "NixOS + Home Manager configuration of chayleaf";
 
   inputs = {
-    nixpkgs.url = "github:nixos/nixpkgs/nixos-unstable";
+    nixpkgs.url = "github:nixos/nixpkgs/master";
+    nixpkgs2.url = "github:nixos/nixpkgs/nixos-unstable";
     nixos-hardware.url = "github:NixOS/nixos-hardware";
     impermanence.url = "github:nix-community/impermanence";
     nur.url = "github:nix-community/NUR";
@@ -45,7 +46,7 @@
     };
   };
 
-  outputs = inputs@{ self, nixpkgs, nixos-hardware, impermanence, home-manager, nur, nix-gaming, notlua, notnft, nixos-mailserver, nixos-router, maubot, ... }:
+  outputs = inputs@{ self, nixpkgs, nixpkgs2, nixos-hardware, impermanence, home-manager, nur, nix-gaming, notlua, notnft, nixos-mailserver, nixos-router, maubot, ... }:
   let
     # --impure required for developing
     # it takes the paths for modules from filesystem as opposed to flake inputs
@@ -103,6 +104,7 @@
         specialArgs.server-config = nixosConfigurations.nixserver.config;
         modules = [
           {
+            _module.args.pkgs2 = import nixpkgs2 { inherit system; overlays = [ overlay ]; };
             _module.args.notnft = if devNft then (import /${devPath}/notnft { inherit (nixpkgs) lib; }).config.notnft else notnft.lib.${system};
           }
           (import ./system/devices/bpi-r3-router.nix "emmc")
@@ -111,10 +113,13 @@
       };
       router-sd = rec {
         system = "aarch64-linux";
-        specialArgs.notnft = if devNft then (import /${devPath}/notnft { inherit (nixpkgs) lib; }).config.notnft else notnft.lib.${system};
         specialArgs.router-lib = if devNixRt then import /${devPath}/nixos-router/lib.nix { inherit (nixpkgs) lib; } else nixos-router.lib.${system};
         specialArgs.server-config = nixosConfigurations.nixserver.config;
         modules = [
+          {
+            _module.args.pkgs2 = import nixpkgs2 { inherit system; overlays = [ overlay ]; };
+            _module.args.notnft = if devNft then (import /${devPath}/notnft { inherit (nixpkgs) lib; }).config.notnft else notnft.lib.${system};
+          }
           (import ./system/devices/bpi-r3-router.nix "sd")
           (if devNixRt then (import /${devPath}/nixos-router) else nixos-router.nixosModules.default)
         ];
