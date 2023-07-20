@@ -479,7 +479,7 @@ in {
         allow_iot6 = add set { type = f: f.ipv6_addr; flags = f: with f; [ interval ]; };
 
         # TODO: is type=route hook=output better? It might help get rid of the routing inconsistency
-        # between router-originated and forwarded traffic. The problem is type=route is only supported
+        # between router-originated and forwarded traffic. The problem is type=route isn't supported
         # for family=inet, so I don't care enough to test it right now.
         prerouting = add chain { type = f: f.filter; hook = f: f.prerouting; prio = f: f.filter; policy = f: f.accept; } ([
           [(mangle meta.mark ct.mark)]
