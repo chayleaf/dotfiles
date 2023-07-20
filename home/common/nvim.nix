@@ -214,13 +214,13 @@
           } _
         ]; }
       { plugin = ps.nvim-web-devicons;
-        config = compile "nvim_web_devicons" ((REQ "nvim-web-devicons").setup {}); }
+        config = compile "nvim_web_devicons" ((REQ "nvim-web-devicons").setup { }); }
       { plugin = ps.nvim-tree-lua;
         config = compile "nvim_tree_lua" (LET (REQ "nvim-tree") (REQ "nvim-tree.api") (nvim-tree: nvim-tree-api: L [
           SET (vimg "loaded_netrw") 1 _
           SET (vimg "loaded_netrwPlugin") 1 _
           SET vim.o.termguicolors true _
-          nvim-tree.setup {} _ # :help nvim-tree-setup
+          nvim-tree.setup { } _ # :help nvim-tree-setup
           kmSetNs {
             "<C-N>" = {
               rhs = nvim-tree-api.tree.toggle;
@@ -246,7 +246,7 @@
           # call is required because cmp.setup is a table
           cmp.setup {
             snippet = {
-              expand = { body, ... }: luasnip.lsp_expand body {};
+              expand = { body, ... }: luasnip.lsp_expand body { };
             };
             view = { };
             window = {
@@ -265,9 +265,9 @@
               ];
             };
             mapping = {
-              "<C-p>" = cmp.mapping.select_prev_item {};
-              "<C-n>" = cmp.mapping.select_next_item {};
-              "<C-space>" = cmp.mapping.complete {};
+              "<C-p>" = cmp.mapping.select_prev_item { };
+              "<C-n>" = cmp.mapping.select_next_item { };
+              "<C-space>" = cmp.mapping.complete { };
               "<C-e>" = CALL cmp.mapping.close;
               "<cr>" = cmp.mapping.confirm {
                 behavior = cmp.ConfirmBehavior.Replace;
@@ -315,11 +315,11 @@
           nvim-autopairs.setup {
             disable_filetype = [ "TelescopePrompt" "vim" ];
           } _
-          cmp.event.on cmp.event "confirm_done" (cmp-autopairs.on_confirm_done {}) _
+          cmp.event.on cmp.event "confirm_done" (cmp-autopairs.on_confirm_done { }) _
         ])); }
       { plugin = ps.comment-nvim;
         config = compile' "comment_nvim" [
-          (REQ "Comment").setup {} _
+          (REQ "Comment").setup { } _
           kmSetNs {
             "<space>/" = {
               # metatables......
@@ -422,7 +422,7 @@
             # LET capabilities
             (vim.tbl_extend
               "keep"
-              ((REQ "cmp_nvim_lsp").default_capabilities {})
+              ((REQ "cmp_nvim_lsp").default_capabilities { })
               (CALL vim.lsp.protocol.make_client_capabilities))
           # BEGIN
           (on_attach: rust_settings: capabilities:
@@ -451,8 +451,8 @@
               # vim.lsp.set_log_level "debug" _
               # see https://github.com/neovim/nvim-lspconfig/blob/master/doc/server_configurations.md
               lib.mapAttrsToList setupLsp {
-                bashls = {};
-                clangd = {};
+                bashls = { };
+                clangd = { };
                 # https://github.com/python-lsp/python-lsp-server/blob/develop/CONFIGURATION.md
                 pylsp = {
                   settings = {
@@ -479,7 +479,7 @@
         config = compile' "which_key_nvim" [
           SET vim.o.timeout true _
           SET vim.o.timeoutlen 500 _
-          which-key.setup {} _
+          which-key.setup { } _
         ]; }
     ];
   };

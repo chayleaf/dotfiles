@@ -282,8 +282,8 @@ in {
     hostapd.settings = {
       inherit (cfg) ssid;
       hw_mode = "g";
-      channel = 1;
-      chanlist = [ 1 ];
+      channel = 3;
+      chanlist = [ 3 ];
       supported_rates = [ 60 90 120 180 240 360 480 540 ];
       basic_rates = [ 60 120 240 ];
       ht_capab = "[LDPC][SHORT-GI-20][SHORT-GI-40][TX-STBC][RX-STBC1][MAX-AMSDU-7935]";
@@ -297,8 +297,8 @@ in {
       ssid = "${cfg.ssid}_5G";
       ieee80211h = true;
       hw_mode = "a";
-      channel = 36;
-      chanlist = [ 36 ];
+      channel = 60;
+      chanlist = [ 60 ];
       tx_queue_data2_burst = 2;
       ht_capab = "[HT40+][LDPC][SHORT-GI-20][SHORT-GI-40][TX-STBC][RX-STBC1][MAX-AMSDU-7935]";
       vht_oper_chwidth = 1; # 80mhz ch width
@@ -344,7 +344,20 @@ in {
     ];
     systemdLinkLinkConfig.MACAddressPolicy = "none";
     systemdLinkLinkConfig.MACAddress = cfg.routerMac;
-    dhcpcd.enable = true;
+    dhcpcd = {
+      enable = true;
+      # technically this should be assigned to br0 instead of veth-wan-b
+      # however, br0 is in a different namespace!
+      # Considering this doesn't work at all because my ISP doesn't offer IPv6,
+      # I'd say this is "good enough" since it might still work in the wan
+      # namespace, though I can't test it.
+      extraConfig = ''
+        interface wan
+          ipv6rs
+          ia_na 0
+          ia_pd 1 veth-wan-b/0
+      '';
+    };
     networkNamespace = "wan";
   };
   # disable default firewall as it uses iptables
@@ -465,8 +478,9 @@ in {
         allow_iot4 = add set { type = f: f.ipv4_addr; flags = f: with f; [ interval ]; };
         allow_iot6 = add set { type = f: f.ipv6_addr; flags = f: with f; [ interval ]; };
 
-        # TODO: is type=route hook=output better? it might help get rid of the routing inconsistency
-        # between router-originated and forwarded traffic
+        # TODO: is type=route hook=output better? It might help get rid of the routing inconsistency
+        # between router-originated and forwarded traffic. The problem is type=route is only supported
+        # for family=inet, so I don't care enough to test it right now.
         prerouting = add chain { type = f: f.filter; hook = f: f.prerouting; prio = f: f.filter; policy = f: f.accept; } ([
           [(mangle meta.mark ct.mark)]
           [(is.ne meta.mark 0) accept]

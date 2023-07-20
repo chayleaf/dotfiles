@@ -38,7 +38,10 @@
     nixos-mailserver = {
       url = "gitlab:simple-nixos-mailserver/nixos-mailserver";
       inputs.nixpkgs.follows = "nixpkgs";
+      # prevent extra input from being in flake.lock
+      # (this doesn't affect any behavior)
       inputs.nixpkgs-22_11.follows = "nixpkgs";
+      inputs.nixpkgs-23_05.follows = "nixpkgs";
     };
     flake-compat = {
       url = "github:edolstra/flake-compat";
