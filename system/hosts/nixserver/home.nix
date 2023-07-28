@@ -81,7 +81,7 @@ in {
     bindAddress = "127.0.0.1";
     secretKeyFile = "/secrets/cache-priv-key.pem";
   };
-  nix.settings.allowed-users = [ "nix-serve" "hydra" "hydra-queue-runner" ];
+  nix.settings.allowed-users = [ "nix-serve" "hydra" "hydra-www" ];
   # only hydra has access to this file anyway
   nix.settings.extra-builtins-file = "/etc/nixos/private/extra-builtins.nix";
   impermanence.directories = [
