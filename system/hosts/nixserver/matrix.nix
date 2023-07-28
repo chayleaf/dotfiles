@@ -34,6 +34,7 @@ in {
   };
 
   services.nginx.virtualHosts."matrix.${cfg.domainName}" = {
+    quic = true;
     enableACME = true;
     forceSSL = true;
     locations = {
@@ -59,8 +60,8 @@ in {
       ];
       allow_guest_access = true;
       url_preview_enabled = true;
-      tls_certificate_path = config.security.acme.certs."matrix.${cfg.domainName}".directory + "/fullchain.pem";
-      tls_private_key_path = config.security.acme.certs."matrix.${cfg.domainName}".directory + "/key.pem";
+      # tls_certificate_path = config.security.acme.certs."matrix.${cfg.domainName}".directory + "/fullchain.pem";
+      # tls_private_key_path = config.security.acme.certs."matrix.${cfg.domainName}".directory + "/key.pem";
       public_baseurl = "https://matrix.${cfg.domainName}/";
       server_name = "matrix.${cfg.domainName}";
       max_upload_size = "100M";

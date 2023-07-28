@@ -1,5 +1,4 @@
 { config
-, pkgs
 , lib
 , ... }:
 
@@ -30,6 +29,7 @@ in {
 
   # Mumble music bot
   services.nginx.virtualHosts."mumble.${cfg.domainName}" = let inherit (config.services.botamusique) settings; in {
+    quic = true;
     enableACME = true;
     forceSSL = true;
     globalRedirect = cfg.domainName;
@@ -39,20 +39,6 @@ in {
 
   services.botamusique = {
     enable = true;
-    # TODO: remove after next nixpkgs version bump
-    package = pkgs.botamusique.override {
-      python3Packages = pkgs.python3Packages // {
-        pymumble = pkgs.python3Packages.pymumble.overrideAttrs (old: rec {
-          version = "1.6.1";
-          src = pkgs.fetchFromGitHub {
-            owner = "azlux";
-            repo = "pymumble";
-            rev = "refs/tags/${version}";
-            hash = "sha256-+sT5pqdm4A2rrUcUUmvsH+iazg80+/go0zM1vr9oeuE=";
-          };
-        });
-      };
-    };
     settings = {
       youtube_dl = {
         cookiefile = "/var/lib/private/botamusique/cookie_ydl";

@@ -7,25 +7,11 @@ let
   cfg = config.server;
 
   hosted-domains =
-    map
-      (prefix: if prefix == null then cfg.domainName else "${prefix}.${cfg.domainName}")
-  [
-    null
-    "dns"
-    "mumble"
-    "mail"
-    "music"
-    "www"
-    "matrix"
-    "search"
-    "git"
-    "cloud"
-    "ns1"
-    "ns2"
-  ];
-
-  unbound-python = pkgs.python3.withPackages (pkgs: with pkgs; [ pydbus dnspython ]);
-
+    builtins.concatLists
+      (builtins.attrValues
+        (builtins.mapAttrs
+          (k: v: [ k ] ++ v.serverAliases)
+          config.services.nginx.virtualHosts));
 in {
   imports = [
     ./options.nix
@@ -33,11 +19,13 @@ in {
     ./fdroid.nix
     ./mumble.nix
     ./mailserver.nix
+    ./home.nix
   ];
 
   system.stateVersion = "22.11";
   impermanence.directories = [
-    { directory = /var/www/${cfg.domainName}; }
+    { directory = /var/www; }
+    { directory = /secrets; mode = "0755"; }
   ];
   networking.useDHCP = true;
   networking.firewall = {
@@ -57,15 +45,17 @@ in {
     allowedUDPPorts = lib.mkIf config.services.unbound.enable [
       # dns
       53 853
+      # quic
+      443
     ];
   };
 
   # UNBOUND
   users.users.${config.common.mainUsername}.extraGroups = lib.mkIf config.services.unbound.enable [ config.services.unbound.group ];
 
-  #networking.resolvconf.extraConfig = ''
-  #  name_servers="127.0.0.1 ::1"
-  #'';
+  networking.resolvconf.extraConfig = lib.mkIf config.services.unbound.enable ''
+    name_servers="127.0.0.1 ::1"
+  '';
   services.unbound = {
     enable = false;
     package = pkgs.unbound-with-systemd.override {
@@ -78,64 +68,22 @@ in {
     settings = {
       server = {
         interface = [ "0.0.0.0" "::" ];
-        access-control =  [ "${cfg.lanCidrV4} allow" "${cfg.lanCidrV6} allow" ];
+        access-control =  [ "0.0.0.0/0 allow" "::/0 allow" ];
         aggressive-nsec = true;
         do-ip6 = true;
-        module-config = ''"validator python iterator"'';
-        local-zone = [
-          ''"local." static''
-        ] ++ (lib.optionals (cfg.localIpV4 != null || cfg.localIpV6 != null) [
-          ''"${cfg.domainName}." typetransparent''
-        ]);
-        local-data = builtins.concatLists (map (domain:
-          lib.optionals (cfg.localIpV4 != null) [
-            ''"${domain}. A ${cfg.localIpV4}"''
-          ] ++ (lib.optionals (cfg.localIpV6 != null) [
-            ''"${domain}. AAAA ${cfg.localIpV6}"''
-          ])) hosted-domains);
       };
-      python.python-script = toString (pkgs.fetchurl {
-        url = "https://raw.githubusercontent.com/NLnetLabs/unbound/a912786ca9e72dc1ccde98d5af7d23595640043b/pythonmod/examples/avahi-resolver.py";
-        sha256 = "0r1iqjf08wrkpzvj6pql1jqa884hbbfy9ix5gxdrkrva09msiqgi";
-      });
       remote-control.control-enable = true;
     };
   };
-  systemd.services.unbound = lib.mkIf config.services.unbound.enable {
-    environment = {
-      MDNS_ACCEPT_NAMES = "^.*\\.local\\.$";
-      PYTHONPATH = "${unbound-python}/${unbound-python.sitePackages}";
-    };
-  };
   # just in case
-  networking.hosts."127.0.0.1" = [ "localhost" ] ++ hosted-domains;
-
-  # CUPS
-  services.printing = {
-    enable = true;
-    allowFrom = [ cfg.lanCidrV4 cfg.lanCidrV6 ];
-    browsing = true;
-    clientConf = ''
-      ServerName ${cfg.domainName}
-    '';
-    defaultShared = true;
-    drivers = [ pkgs.hplip ];
-    startWhenNeeded = false;
-  };
+  networking.hosts."127.0.0.1" = hosted-domains;
+  networking.hosts."::1" = hosted-domains;
 
   services.postgresql.enable = true;
   services.postgresql.package = pkgs.postgresql_13;
 
   # SSH
-  services.openssh = {
-    enable = true;
-    # settings.PermitRootLogin = false;
-    /*listenAddresses = [{
-      addr = "0.0.0.0";
-    } {
-      addr = "::";
-    }];*/
-  };
+  services.openssh.enable = true;
   services.fail2ban = {
     enable = true;
     ignoreIP = lib.optionals (cfg.lanCidrV4 != "0.0.0.0/0") [ cfg.lanCidrV4 ]
@@ -189,6 +137,7 @@ in {
   services.uwsgi.instance.vassals.searx.pythonPackages = lib.mkForce (self: [ pkgs.searxng self.pytomlpp ]);
 
   services.nginx.virtualHosts."search.${cfg.domainName}" = let inherit (config.services.searx) settings; in {
+    quic = true;
     enableACME = true;
     forceSSL = true;
     # locations."/".proxyPass = "http://${lib.quoteListenAddr settings.server.bind_address}:${toString settings.server.port}";
@@ -200,6 +149,9 @@ in {
 
   # NGINX
   services.nginx.enable = true;
+  services.nginx.enableReload = true;
+  services.nginx.package = pkgs.nginxQuic;
+  /* DNS over TLS
   services.nginx.streamConfig =
     let
       inherit (config.security.acme.certs."${cfg.domainName}") directory;
@@ -215,16 +167,40 @@ in {
         ssl_trusted_certificate ${directory}/chain.pem;
         proxy_pass dns;
       }
-    '';
-  services.nginx.commonHttpConfig = "log_format postdata '{\"ip\":\"$remote_addr\",\"time\":\"$time_iso8601\",\"referer\":\"$http_referer\",\"body\":\"$request_body\",\"ua\":\"$http_user_agent\"}';";
-  services.nginx.recommendedTlsSettings = true;
-  services.nginx.recommendedOptimisation = true;
+    '';*/
+    services.nginx.commonHttpConfig =
+    let
+      realIpsFromList = lib.strings.concatMapStringsSep "\n" (x: "set_real_ip_from  ${x};");
+      fileToList = x: lib.strings.splitString "\n" (builtins.readFile x);
+      cfipv4 = fileToList (pkgs.fetchurl {
+        url = "https://www.cloudflare.com/ips-v4";
+        sha256 = "0ywy9sg7spafi3gm9q5wb59lbiq0swvf0q3iazl0maq1pj1nsb7h";
+      });
+      cfipv6 = fileToList (pkgs.fetchurl {
+        url = "https://www.cloudflare.com/ips-v6";
+        sha256 = "1ad09hijignj6zlqvdjxv7rjj8567z357zfavv201b9vx3ikk7cy";
+      });
+    in
+    ''
+      log_format postdata '{\"ip\":\"$remote_addr\",\"time\":\"$time_iso8601\",\"referer\":\"$http_referer\",\"body\":\"$request_body\",\"ua\":\"$http_user_agent\"}';
+
+      ${realIpsFromList cfipv4}
+      ${realIpsFromList cfipv6}
+      real_ip_header CF-Connecting-IP;
+  '';
+  # brotli and zstd requires recompilation so I don't enable it
+  # services.nginx.recommendedBrotliSettings = true;
+  # services.nginx.recommendedZstdSettings = true;
   services.nginx.recommendedGzipSettings = true;
+  services.nginx.recommendedOptimisation = true;
   services.nginx.recommendedProxySettings = true;
+  services.nginx.recommendedTlsSettings = true;
 
   # BLOG
-  services.nginx.virtualHosts."${cfg.domainName}" = {
+  services.nginx.virtualHosts.${cfg.domainName} = {
+    quic = true;
     enableACME = true;
+    serverAliases = [ "www.${cfg.domainName}" ];
     forceSSL = true;
     extraConfig = "autoindex on;";
     locations."/".root = "/var/www/${cfg.domainName}/";
@@ -242,13 +218,9 @@ in {
     };
   };
 
-  services.nginx.virtualHosts."www.${cfg.domainName}" = {
-    enableACME = true;
-    globalRedirect = cfg.domainName;
-  };
-
   # GITEA
   services.nginx.virtualHosts."git.${cfg.domainName}" = let inherit (config.services.gitea) settings; in {
+    quic = true;
     enableACME = true;
     forceSSL = true;
     locations."/".proxyPass = "http://${lib.quoteListenAddr settings.server.HTTP_ADDR}:${toString settings.server.HTTP_PORT}";
@@ -290,6 +262,7 @@ in {
 
   # NEXTCLOUD
   services.nginx.virtualHosts."cloud.${cfg.domainName}" = {
+    quic = true;
     enableACME = true;
     forceSSL = true;
   };
@@ -311,25 +284,61 @@ in {
     https = true;
   };
 
-  services.pleroma = {
+  services.akkoma = {
     enable = true;
-    secretConfigFile = "/var/lib/pleroma/secrets.exs";
-    configs = [ ''
-      import Config
-    '' ];
+    config.":pleroma"."Pleroma.Web.Endpoint" = {
+      url = {
+        scheme = "https";
+        host = "pleroma.${cfg.domainName}";
+        port = 443;
+      };
+      secret_key_base._secret = "/secrets/akkoma/secret_key_base";
+      signing_salt._secret = "/secrets/akkoma/signing_salt";
+      live_view.signing_salt._secret = "/secrets/akkoma/live_view_signing_salt";
+    };
+    extraStatic."static/terms-of-service.html" = pkgs.writeText "terms-of-service.html" ''
+      no bigotry kthx
+    '';
+    initDb = {
+      enable = false;
+      username = "pleroma";
+      password._secret = "/secrets/akkoma/postgres_password";
+    };
+    config.":pleroma".":instance" = {
+      name = cfg.domainName;
+      description = "Insert instance description here";
+      email = "webmaster-akkoma@${cfg.domainName}";
+      notify_email = "noreply@${cfg.domainName}";
+      limit = 5000;
+      registrations_open = true;
+    };
+    config.":pleroma"."Pleroma.Repo" = {
+      adapter = (pkgs.formats.elixirConf { }).lib.mkRaw "Ecto.Adapters.Postgres";
+      username = "pleroma";
+      password._secret = "/secrets/akkoma/postgres_password";
+      database = "pleroma";
+      hostname = "localhost";
+    };
+    config.":web_push_encryption".":vapid_details" = {
+      subject = "mailto:webmaster-akkoma@${cfg.domainName}";
+      public_key._secret = "/secrets/akkoma/push_public_key";
+      private_key._secret = "/secrets/akkoma/push_private_key";
+    };
+    config.":joken".":default_signer"._secret = "/secrets/akkoma/joken_signer";
+    nginx = {
+      serverAliases = [ "akkoma.${cfg.domainName}" ];
+      quic = true;
+      enableACME = true;
+      forceSSL = true;
+    };
   };
-  systemd.services.pleroma.path = [ pkgs.exiftool pkgs.gawk ];
-  systemd.services.pleroma.serviceConfig = {
+  systemd.services.akkoma.path = [ pkgs.exiftool pkgs.gawk ];
+  systemd.services.akkoma.serviceConfig = {
     Restart = "on-failure";
   };
-  systemd.services.pleroma.unitConfig = {
+  systemd.services.akkoma.unitConfig = {
     StartLimitIntervalSec = 60;
     StartLimitBurst = 3;
-  };
-  services.nginx.virtualHosts."pleroma.${cfg.domainName}" = {
-    enableACME = true;
-    forceSSL = true;
-    locations."/".proxyPass = "http://127.0.0.1:9970";
   };
 
   /*locations."/dns-query".extraConfig = ''

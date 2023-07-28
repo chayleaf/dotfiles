@@ -265,8 +265,8 @@ in rec {
       COMMON_CLK_MEDIATEK_FHCTL = yes;
       COMMON_CLK_MT7986 = yes;
       COMMON_CLK_MT7986_ETHSYS = yes;
-      CPU_THERMAL = yes;
-      THERMAL_OF = yes;
+      # CPU_THERMAL = yes;
+      # THERMAL_OF = yes;
       EINT_MTK = yes;
       MEDIATEK_GE_PHY = yes;
       MEDIATEK_WATCHDOG = yes;

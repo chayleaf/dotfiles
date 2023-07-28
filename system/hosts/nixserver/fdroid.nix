@@ -8,6 +8,13 @@ in {
   impermanence.directories = [
     { directory = /var/lib/fdroid; user = "fdroid"; group = "fdroid"; mode = "0755"; }
   ];
+  services.nginx.virtualHosts."fdroid.${cfg.domainName}" = {
+    quic = true;
+    enableACME = true;
+    forceSSL = true;
+    globalRedirect = cfg.domainName;
+    locations."/repo/".alias = "/var/lib/fdroid/repo/";
+  };
   services.nginx.virtualHosts."${cfg.domainName}" = {
     locations."/fdroid/".alias = "/var/lib/fdroid/repo/";
     locations."/fdroid/repo/".alias = "/var/lib/fdroid/repo/";

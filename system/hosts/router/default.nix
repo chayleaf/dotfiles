@@ -91,9 +91,7 @@ let
         # log if they are meant for us...
         [(is.eq ip.saddr selfIp4) (is.eq (fib (f: with f; [ daddr iif ]) (f: f.type)) (f: f.local)) (log "${logPrefix}self4 ") drop]
         [(is.eq ip6.saddr selfIp6) (is.eq (fib (f: with f; [ daddr iif ]) (f: f.type)) (f: f.local)) (log "${logPrefix}self6 ") drop]
-        # ...but drop silently if they're multicast/broadcast
-        [(is.eq ip.saddr selfIp4) drop]
-        [(is.eq ip6.saddr selfIp6) drop]
+        # ...but ignore if they're multicast/broadcast
         [return];
 
       ingress_lan_common = add chain
@@ -106,8 +104,17 @@ let
         netdevIngressWanRules
         [(jump "ingress_common")]
         # [(is.ne (fib (f: with f; [ daddr iif ]) (f: f.type)) (f: set [ f.local f.broadcast f.multicast ])) (log "${logPrefix}non-{local,broadcast,multicast} ") drop]
-        [(is.eq ip.protocol (f: f.icmp)) (limit { rate = 100; per = f: f.second; }) accept]
-        [(is.eq ip6.nexthdr (f: f.ipv6-icmp)) (limit { rate = 100; per = f: f.second; }) accept]
+        # separate limits for echo-request and all other icmp types
+        [(is.eq ip.protocol (f: f.icmp)) (is.eq icmp.type (f: f.echo-request)) (limit { rate = 50; per = f: f.second; }) accept]
+        [(is.eq ip.protocol (f: f.icmp)) (is.ne icmp.type (f: f.echo-request)) (limit { rate = 100; per = f: f.second; }) accept]
+        [(is.eq ip6.nexthdr (f: f.ipv6-icmp)) (is.eq icmpv6.type (f: f.echo-request)) (limit { rate = 50; per = f: f.second; }) accept]
+        [(is.eq ip6.nexthdr (f: f.ipv6-icmp)) (is.ne icmpv6.type (f: f.echo-request)) (limit { rate = 100; per = f: f.second; }) accept]
+        # always accept destination unreachable and time-exceeded
+        [(is.eq ip.protocol (f: f.icmp)) (is.eq icmp.type (f: with f; set [ destination-unreachable time-exceeded ])) accept]
+        [(is.eq ip6.nexthdr (f: f.ipv6-icmp)) (is.eq icmpv6.type (f: with f; set [ destination-unreachable time-exceeded ])) accept]
+        # don't log echo-request drops
+        [(is.eq ip.protocol (f: f.icmp)) (is.eq icmp.type (f: f.echo-request)) drop]
+        [(is.eq ip6.nexthdr (f: f.ipv6-icmp)) (is.eq icmpv6.type (f: f.echo-request)) drop]
         [(is.eq ip.protocol (f: f.icmp)) (log "${logPrefix}icmp flood ") drop]
         [(is.eq ip6.nexthdr (f: f.ipv6-icmp)) (log "${logPrefix}icmp6 flood ") drop];
     }
@@ -128,7 +135,7 @@ let
         [(is ct.status (f: f.dnat)) accept]
         [(is.eq (bit.and tcp.flags (f: f.syn)) 0) (is.eq ct.state (f: f.new)) (log "${logPrefix}new non-syn ") drop]
         # icmp: only accept ping requests
-        [(is.eq ip.protocol (f: f.icmp)) (is.eq icmp.type (f: with f; set [ echo-request ])) accept]
+        [(is.eq ip.protocol (f: f.icmp)) (is.eq icmp.type (f: f.echo-request)) accept]
         # icmpv6: accept no-route info from link-local addresses
         [(is.eq ip6.nexthdr (f: f.ipv6-icmp)) (is.eq ip6.saddr (cidr "fe80::/10")) (is.eq icmpv6.code (f: f.no-route))
           (is.eq icmpv6.type (f: with f; set [ mld-listener-query mld-listener-report mld-listener-done mld2-listener-report ]))
@@ -211,9 +218,14 @@ let
   vacuumAddress4 = addToIp parsedGatewayAddr4 2;
   vacuumAddress6 = addToIp parsedGatewayAddr6 2;
 
-  hosted-domains = builtins.attrNames server-config.services.nginx.virtualHosts;
+  hosted-domains =
+    builtins.concatLists
+      (builtins.attrValues
+        (builtins.mapAttrs
+          (k: v: [ k ] ++ v.serverAliases)
+          server-config.services.nginx.virtualHosts));
 in {
-  imports = [ ./options.nix ];
+  imports = [ ./options.nix ./metrics.nix ];
   system.stateVersion = "22.11";
 
   boot.kernel.sysctl = {
@@ -245,15 +257,19 @@ in {
 
   # dnat to server, take ports from its firewall config
   router-settings.dnatRules = let
+    bannedPorts = [
+      631 9100 # printing
+      5353 # avahi
+    ];
     inherit (server-config.networking.firewall) allowedTCPPorts allowedTCPPortRanges allowedUDPPorts allowedUDPPortRanges;
 
-    tcpAndUdp = builtins.filter (x: builtins.elem x allowedTCPPorts) allowedUDPPorts;
-    tcpOnly = builtins.filter (x: !(builtins.elem x allowedUDPPorts)) allowedTCPPorts;
-    udpOnly = builtins.filter (x: !(builtins.elem x allowedTCPPorts)) allowedUDPPorts;
+    tcpAndUdp = builtins.filter (x: !builtins.elem x bannedPorts && builtins.elem x allowedTCPPorts) allowedUDPPorts;
+    tcpOnly = builtins.filter (x: !builtins.elem x (bannedPorts ++ allowedUDPPorts)) allowedTCPPorts;
+    udpOnly = builtins.filter (x: !builtins.elem x (bannedPorts ++ allowedTCPPorts)) allowedUDPPorts;
 
     rangesTcpAndUdp = builtins.filter (x: builtins.elem x allowedTCPPortRanges) allowedUDPPortRanges;
-    rangesTcpOnly = builtins.filter (x: !(builtins.elem x allowedUDPPortRanges)) allowedTCPPortRanges;
-    rangesUdpOnly = builtins.filter (x: !(builtins.elem x allowedTCPPortRanges)) allowedUDPPortRanges;
+    rangesTcpOnly = builtins.filter (x: !builtins.elem x allowedUDPPortRanges) allowedTCPPortRanges;
+    rangesUdpOnly = builtins.filter (x: !builtins.elem x allowedTCPPortRanges) allowedUDPPortRanges;
   in lib.optional (tcpAndUdp != [ ]) {
     port = notnft.dsl.set tcpAndUdp; tcp = true; udp = true;
     target4.address = serverAddress4; target6.address = serverAddress6;
@@ -394,7 +410,7 @@ in {
       { extraArgs = [ netCidrs.lan6 "dev" "br0" "proto" "kernel" "metric" "256" "pref" "medium" "table" wan_table ]; }
     ];
     ipv4.kea.enable = true;
-    ipv6.radvd.enable = true;
+    ipv6.corerad.enable = true;
     ipv6.kea.enable = true;
   };
 
@@ -487,6 +503,12 @@ in {
           [(is.eq meta.iifname "br0") (mangle meta.mark vpn_table)]
           [(is.eq ip.daddr "@force_unvpn4") (mangle meta.mark wan_table)]
           [(is.eq ip6.daddr "@force_unvpn6") (mangle meta.mark wan_table)]
+          # don't vpn smtp requests so spf works fine (and in case the vpn blocks requests over port 25)
+          [(is.eq ip.saddr serverAddress4) (is.eq ip.protocol (f: f.tcp)) (is.eq tcp.dport 25) (mangle meta.mark wan_table)]
+          [(is.eq ip6.saddr serverAddress6) (is.eq ip6.nexthdr (f: f.tcp)) (is.eq tcp.dport 25) (mangle meta.mark wan_table)]
+          # but block requests to port 25 from other hosts so they can't send mail pretending to originate from my domain
+          [(is.ne ip.saddr serverAddress4) (is.eq ip.protocol (f: f.tcp)) (is.eq tcp.dport 25) drop]
+          [(is.ne ip6.saddr serverAddress6) (is.eq ip6.nexthdr (f: f.tcp)) (is.eq tcp.dport 25) drop]
           [(is.eq ip.daddr "@force_vpn4") (mangle meta.mark vpn_table)]
           [(is.eq ip6.daddr "@force_vpn6") (mangle meta.mark vpn_table)]
         ] ++ # 1. dnat non-vpn: change rttable to wan
@@ -523,9 +545,9 @@ in {
           [(is.eq ip.daddr "@block4") drop]
           [(is.eq ip6.daddr "@block6") drop]
           # this doesn't work... it still gets routed, even though iot_table doesn't have a default route
-          # instead of debugging that, simply change the approach
           # [(is.eq ip.saddr vacuumAddress4) (is.ne ip.daddr) (mangle meta.mark iot_table)]
           # [(is.eq ether.saddr cfg.vacuumMac) (mangle meta.mark iot_table)]
+          # instead of debugging that, simply change the approach
           [(is.eq ether.saddr cfg.vacuumMac) (is.ne ip.daddr (cidr netCidrs.lan4)) (is.ne ip.daddr "@allow_iot4") (log "iot4 ") drop]
           [(is.eq ether.saddr cfg.vacuumMac) (is.ne ip6.daddr (cidr netCidrs.lan6)) (is.ne ip6.daddr "@allow_iot6") (log "iot6 ") drop]
           [(mangle ct.mark meta.mark)]
@@ -659,14 +681,15 @@ in {
     # we override resolvconf above manually
     resolveLocalQueries = false;
     settings = {
-      server = {
+      server = rec {
         interface = [ netAddresses.netns4 netAddresses.netns6 netAddresses.lan4 netAddresses.lan6 ];
         access-control = [ "${netCidrs.netns4} allow" "${netCidrs.netns6} allow" "${netCidrs.lan4} allow" "${netCidrs.lan6} allow" ];
         aggressive-nsec = true;
         do-ip6 = true;
         module-config = ''"validator python iterator"'';
         local-zone = [
-          ''"local." static''
+          # incompatible with avahi resolver
+          # ''"local." static''
           ''"${server-config.server.domainName}." typetransparent''
         ];
         local-data = builtins.concatLists (map (domain:
@@ -674,6 +697,23 @@ in {
             ''"${domain}. A ${serverAddress4}"''
             ''"${domain}. AAAA ${serverAddress6}"''
           ]) hosted-domains);
+          # incompatible with avahi resolver
+          # ++ [
+          #   ''"retracker.local. A ${netAddresses.lan4}"''
+          #   ''"retracker.local. AAAA ${netAddresses.lan6}"''
+          # ];
+
+        # performance tuning
+        num-threads = 4; # cpu core count
+        msg-cache-slabs = 4; # nearest power of 2 to num-threads
+        rrset-cache-slabs = msg-cache-slabs;
+        infra-cache-slabs = msg-cache-slabs;
+        key-cache-slabs = msg-cache-slabs;
+        so-reuseport = true;
+        msg-cache-size = "50m"; # (default 4m)
+        rrset-cache-size = "100m"; # msg*2 (default 4m)
+        # timeouts
+        unknown-server-time-limit = 752; # default=376
       };
       # normally it would refer to the flake path, but then the service changes on every flake update
       # instead, write a new file in nix store
@@ -681,6 +721,10 @@ in {
       remote-control.control-enable = true;
     };
   };
+  environment.etc."unbound/iot_ips.json".text = builtins.toJSON [
+    # local multicast
+    "224.0.0.0/24"
+  ];
   environment.etc."unbound/iot_domains.json".text = builtins.toJSON [
     # ntp time sync
     "pool.ntp.org"
@@ -694,14 +738,17 @@ in {
       unbound-python = pkgs.python3.withPackages (ps: with ps; [ pydbus dnspython requests pytricia nftables ]);
     in
       "${unbound-python}/${unbound-python.sitePackages}";
-    environment.MDNS_ACCEPT_NAMES = "^.*\\.local\\.$";
+    environment.MDNS_ACCEPT_NAMES = "^(.*\\.)?local\\.$";
+    # resolve retracker.local to whatever router.local resolves to
+    # we can't add a local zone alongside using avahi resolver, so we have to use hacks like this
+    environment.DOMAIN_NAME_OVERRIDES = "retracker.local->router.local";
     # load vpn_domains.json and vpn_ips.json, as well as unvpn_domains.json and unvpn_ips.json
     # resolve domains and append it to ips and add it to the nftables sets
     environment.NFT_QUERIES = "vpn:force_vpn4,force_vpn6;unvpn!:force_unvpn4,force_unvpn6;iot:allow_iot4,allow_iot6";
     serviceConfig.EnvironmentFile = "/secrets/unbound_env";
     # it needs to run after nftables has been set up because it sets up the sets
-    after = [ "nftables-default.service" ];
-    wants = [ "nftables-default.service" ];
+    after = [ "nftables-default.service" "avahi-daemon.service" ];
+    wants = [ "nftables-default.service" "avahi-daemon.service" ];
     # allow it to call nft
     serviceConfig.AmbientCapabilities = [ "CAP_NET_ADMIN" ];
   };
@@ -775,6 +822,11 @@ in {
   services.iperf3 = {
     enable = true;
     bind = netAddresses.lan4;
+  };
+
+  services.opentracker = {
+    enable = true;
+    extraOptions = "-i ${netAddresses.lan4} -p 6969 -P 6969 -p 80";
   };
 
   # it takes a stupidly long time when done via qemu

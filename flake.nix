@@ -103,7 +103,6 @@
       };
       router-emmc = rec {
         system = "aarch64-linux";
-        specialArgs.router-lib = if devNixRt then import /${devPath}/nixos-router/lib.nix { inherit (nixpkgs) lib; } else nixos-router.lib.${system};
         specialArgs.server-config = nixosConfigurations.nixserver.config;
         modules = [
           {
@@ -116,7 +115,6 @@
       };
       router-sd = rec {
         system = "aarch64-linux";
-        specialArgs.router-lib = if devNixRt then import /${devPath}/nixos-router/lib.nix { inherit (nixpkgs) lib; } else nixos-router.lib.${system};
         specialArgs.server-config = nixosConfigurations.nixserver.config;
         modules = [
           {

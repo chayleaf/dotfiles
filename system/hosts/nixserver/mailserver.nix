@@ -13,7 +13,9 @@ in {
   # roundcube
   # TODO: fix sending mail via roundcube
   services.nginx.virtualHosts."mail.${cfg.domainName}" = {
+    quic = true;
     enableACME = true;
+    forceSSL = true;
   };
   services.roundcube = {
     enable = true;

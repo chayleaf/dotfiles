@@ -200,6 +200,7 @@ PROTO_UNSPEC = -1
 NFT_QUERIES = {}
 # dynamic query update token
 NFT_TOKEN = ""
+DOMAIN_NAME_OVERRIDES = {}
 
 sysbus = None
 avahi = None
@@ -263,14 +264,23 @@ class RecordBrowser:
         self.records = []
         self.error = None
         self.getone = getone
+        name1 = DOMAIN_NAME_OVERRIDES.get(name, name)
+        if name1 != name:
+            self.overrides = {
+                name1: name,
+            }
+            if name.endswith('.') and name1.endswith('.'):
+                self.overrides[name1[:-1]] = name[:-1]
+        else:
+            self.overrides = { }
 
         self.timer = None if timeout is None else GLib.timeout_add(timeout, self.timedOut)
 
-        self.browser_path = avahi.RecordBrowserNew(IF_UNSPEC, PROTO_UNSPEC, name, dns.rdataclass.IN, type_, 0)
+        self.browser_path = avahi.RecordBrowserNew(IF_UNSPEC, PROTO_UNSPEC, name1, dns.rdataclass.IN, type_, 0)
         trampoline[self.browser_path] = self
         self.browser = sysbus.get('.Avahi', self.browser_path)
         self.dbg('Created RecordBrowser(name=%s, type=%s, getone=%s, timeout=%s)'
-                   % (name, dns.rdatatype.to_text(type_), getone, timeout))
+                   % (name1, dns.rdatatype.to_text(type_), getone, timeout))
 
     def dbg(self, msg):
         dbg('[%s] %s' % (self.browser_path, msg))
@@ -288,13 +298,13 @@ class RecordBrowser:
 
     def itemNew(self, interface, protocol, name, class_, type_, rdata, flags):
         self.dbg('Got signal ItemNew')
-        self.records.append((name, class_, type_, rdata))
+        self.records.append((self.overrides.get(name, name), class_, type_, rdata))
         if self.getone:
             self._done()
 
     def itemRemove(self, interface, protocol, name, class_, type_, rdata, flags):
         self.dbg('Got signal ItemRemove')
-        self.records.remove((name, class_, type_, rdata))
+        self.records.remove((self.overrides.get(name, name), class_, type_, rdata))
 
     def failure(self, error):
         self.dbg('Got signal Failure')
@@ -490,7 +500,14 @@ def init(*args, **kwargs):
     global MDNS_TTL, MDNS_GETONE, MDNS_TIMEOUT
     global MDNS_REJECT_TYPES, MDNS_ACCEPT_TYPES
     global MDNS_REJECT_NAMES, MDNS_ACCEPT_NAMES
-    global NFT_QUERIES, NFT_TOKEN
+    global NFT_QUERIES, NFT_TOKEN, DOMAIN_NAME_OVERRIDES
+
+    domain_name_overrides = os.environ.get('DOMAIN_NAME_OVERRIDES', '')
+    if domain_name_overrides:
+        for kv in domain_name_overrides.split(';'):
+            k, v = kv.split('->')
+            DOMAIN_NAME_OVERRIDES[k] = v
+            DOMAIN_NAME_OVERRIDES[k + '.'] = v + '.'
 
     NFT_TOKEN = os.environ.get('NFT_TOKEN', '')
     nft_queries = os.environ.get('NFT_QUERIES', '')
@@ -829,8 +846,11 @@ def operate(id, event, qstate, qdata):
     if not m.set_return_msg(qstate):
         raise Exception("Error in set_return_msg")
 
-    if not storeQueryInCache(qstate, qstate.return_msg.qinfo, qstate.return_msg.rep, 0):
-        raise Exception("Error in storeQueryInCache")
+    # For some reason this breaks everything! Unbound responds with SERVFAIL instead of using the cache
+    # i.e. the first response is fine, but loading it from cache just doesn't work
+    # Resolution via Avahi works fast anyway so whatever
+    #if not storeQueryInCache(qstate, qstate.return_msg.qinfo, qstate.return_msg.rep, 0):
+    #    raise Exception("Error in storeQueryInCache")
 
     qstate.return_msg.rep.security = 2
     qstate.return_rcode = RCODE_NOERROR

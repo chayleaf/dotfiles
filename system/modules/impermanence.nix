@@ -96,6 +96,8 @@ in {
         { directory = /var/lib/opendkim; user = "opendkim"; group = "opendkim"; mode = "0700"; }
       ] ++ lib.optionals config.services.pleroma.enable [
         { directory = /var/lib/pleroma; user = "pleroma"; group = "pleroma"; mode = "0700"; }
+      ] ++ lib.optionals config.services.akkoma.enable [
+        { directory = /var/lib/akkoma; user = "akkoma"; group = "akkoma"; mode = "0700"; }
       ] ++ lib.optionals config.services.postfix.enable [
         { directory = /var/lib/postfix; user = "root"; group = "root"; mode = "0755"; }
       ] ++ lib.optionals config.services.postgresql.enable [
