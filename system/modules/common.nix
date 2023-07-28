@@ -89,12 +89,14 @@
       # rxvt-unicode-unwrapped.terminfo
       vim
     ]);
+    # this is supposed to default to false, but it doesn't because of nixos fish module
+    documentation.man.generateCaches = lib.mkOverride 999 false;
+    # and we don't need html files and so on on minimal machines (it's not like I ever use it anyway)
+    # as a bonus, this disables the HTML NixOS manual which takes a while to build and which I
+    # definitely don't need on minimal machines
+    documentation.doc.enable = lib.mkIf cfg.minimal (lib.mkDefault false);
     programs.fish.enable = true;
-    /*programs.zsh = {
-      enable = true;
-      enableBashCompletion = true;
-    };*/
-    users.defaultUserShell = lib.mkIf cfg.minimal pkgs.fish;
+    users.defaultUserShell = lib.mkDefault pkgs.fish;
     users.users.${cfg.mainUsername} = {
       uid = 1000;
       isNormalUser = true;
@@ -102,6 +104,7 @@
     };
     # nixos-hardware uses mkDefault here, so we use slightly higher priority
     services.xserver.libinput.enable = lib.mkOverride 999 (!cfg.minimal);
+    # TODO: minimal fish/vim config
     /*
     services.xserver = {
       enable = true;

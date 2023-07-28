@@ -829,10 +829,6 @@ in {
     extraOptions = "-i ${netAddresses.lan4} -p 6969 -P 6969 -p 80";
   };
 
-  # it takes a stupidly long time when done via qemu
-  # (also it's supposed to be disabled by default but it was enabled for me, why?)
-  documentation.man.generateCaches = false;
-
   impermanence.directories = [
     # for wireguard key
     { directory = /secrets; mode = "0000"; }
