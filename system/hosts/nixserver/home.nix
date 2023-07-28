@@ -85,7 +85,10 @@ in {
   # only hydra has access to this file anyway
   nix.settings.extra-builtins-file = "/etc/nixos/private/extra-builtins.nix";
   nix.settings.allowed-uris = [
+    # required for home-manager
     "https://git.sr.ht/~rycee/nmd/"
+    # required for server (I suppose since nvfetcher uses fetchTarball here...)
+    "https://github.com/searxng/searxng/"
   ];
   services.nginx.virtualHosts."binarycache.${cfg.domainName}" = {
     quic = true;
