@@ -2,8 +2,7 @@
   description = "NixOS + Home Manager configuration of chayleaf";
 
   inputs = {
-    nixpkgs.url = "github:nixos/nixpkgs/master";
-    nixpkgs2.url = "github:nixos/nixpkgs/nixos-unstable";
+    nixpkgs.url = "github:nixos/nixpkgs/nixos-unstable";
     nixos-hardware.url = "github:NixOS/nixos-hardware";
     impermanence.url = "github:nix-community/impermanence";
     nur.url = "github:nix-community/NUR";
@@ -49,7 +48,7 @@
     };
   };
 
-  outputs = inputs@{ self, nixpkgs, nixpkgs2, nixos-hardware, impermanence, home-manager, nur, nix-gaming, notlua, notnft, nixos-mailserver, nixos-router, maubot, ... }:
+  outputs = inputs@{ self, nixpkgs, nixos-hardware, impermanence, home-manager, nur, nix-gaming, notlua, notnft, nixos-mailserver, nixos-router, maubot, ... }:
   let
     # --impure required for developing
     # it takes the paths for modules from filesystem as opposed to flake inputs
@@ -90,28 +89,42 @@
     };
     # I override some settings down the line, but overlays always stay the same
     mkPkgs = config: import nixpkgs (config // {
-      overlays = (if config?overlays then config.overlays else [ ]) ++ [ overlay ];
+      overlays = (config.overlays or [ ]) ++ [ overlay ];
     });
     # this is actual config, it gets processed below
     config = let
-      mkBpiR3 = storage: config: config // {
+      mkBpiR3 = args: config: config // {
         system = "aarch64-linux";
-        modules = (config.modules or [ ]) ++ [ (import ./system/devices/bpi-r3-router.nix storage) ];
+        modules = (config.modules or [ ]) ++ [ (import ./system/devices/bpi-r3-router.nix args) ];
       };
       routerConfig = rec {
         system = "aarch64-linux";
         specialArgs.server-config = nixosConfigurations.nixserver.config;
         modules = [
           {
-            _module.args.pkgs2 = import nixpkgs2 { inherit system; overlays = [ overlay ]; };
             _module.args.notnft = if devNft then (import /${devPath}/notnft { inherit (nixpkgs) lib; }).config.notnft else notnft.lib.${system};
           }
           (if devNixRt then import /${devPath}/nixos-router else nixos-router.nixosModules.default)
         ];
       };
-    in {
+      crossConfig' = from: config: config // {
+        modules = config.modules ++ [
+          {
+            _module.args.fromSourcePkgs = (mkPkgs { system = from; }).pkgsCross.${{
+              aarch64-linux = "aarch64-multiplatform";
+            }.${config.system}};
+          }
+        ];
+      };
+      crossConfig = config: crossConfig' ({
+        x86_64-linux = "aarch64-linux";
+        aarch64-linux = "x86_64-linux";
+      }.${config.system or "x86_64-linux"}) config;
+    in rec {
       router-emmc = mkBpiR3 "emmc" routerConfig;
       router-sd = mkBpiR3 "sd" routerConfig;
+      router-emmc-cross = crossConfig router-emmc;
+      router-sd-cross = crossConfig router-emmc;
       nixserver = {
         modules = [
           nixos-mailserver.nixosModules.default
@@ -119,6 +132,7 @@
           (if devMaubot then import /${devPath}/maubot.nix/module else maubot.nixosModules.default)
         ];
       };
+      nixserver-cross = crossConfig nixserver;
       nixmsi = rec {
         system = "x86_64-linux";
         modules = [
@@ -134,6 +148,7 @@
           ./home/hosts/nixmsi.nix
         ];
       };
+      nixmsi-cross = crossConfig nixmsi;
     };
 
     # this is the system config processing part
@@ -252,7 +267,7 @@
       "x86_64-linux"
       "aarch64-linux"
     ] (system: let self = overlay self (import nixpkgs { inherit system; }); in self );
-    nixosImages.router = let pkgs = import nixpkgs { system = "aarch64-linux"; overlays = [ overlay ]; }; in {
+    nixosImages.router = let pkgs = mkPkgs { system = "aarch64-linux"; }; in {
       emmcImage = pkgs.callPackage ./system/hardware/bpi-r3/image.nix {
         inherit (nixosConfigurations.router-emmc) config;
         rootfsImage = nixosConfigurations.router-emmc.config.system.build.rootfsImage;
@@ -268,7 +283,7 @@
     hydraJobs = {
       server.${config.nixserver.system or "x86_64-linux"} = nixosConfigurations.nixserver.config.system.build.toplevel;
       workstation.${config.nixmsi.system or "x86_64-linux"} = nixosConfigurations.nixmsi.config.system.build.toplevel;
-      router.${config.router-emmc.system or "x86_64-linux"} = nixosConfigurations.router-emmc.config.system.build.toplevel;
+      router.${config.router-emmc.system or "x86_64-linux"} = nixosConfigurations.router-emmc-cross.config.system.build.toplevel;
       workstation-home.${config.nixmsi.system or "x86_64-linux"} = homeConfigurations."user@nixmsi".activation-script;
     };
   };

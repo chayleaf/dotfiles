@@ -67,7 +67,7 @@
     ghidra cutter2
     openrgb piper
     steam-run steam
-    faf-client
+    # faf-client
     (osu-lazer-bin.override {
       command_prefix = "${obs-studio-plugins.obs-vkcapture}/bin/obs-gamecapture";
     })

@@ -43,7 +43,7 @@ in
     '';
   };
   rofi-steam-game-list = callPackage ./rofi-steam-game-list { };
-  searxng = pkgs.searxng.overrideAttrs (old: {
+  searxng = pkgs.searxng.overridePythonAttrs (old: {
     inherit (sources.searxng) src;
     version = "unstable-" + sources.searxng.date;
     propagatedBuildInputs = old.propagatedBuildInputs ++ (with pkgs'.python3.pkgs; [

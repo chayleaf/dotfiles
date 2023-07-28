@@ -117,10 +117,6 @@ in rec {
     fixupPhase = "true";
   };
   linux_bpiR3 = pkgs.linux_latest.override {
-    stdenv = pkgs'.ccacheStdenv;
-    buildPackages = pkgs'.buildPackages // {
-      stdenv = pkgs'.buildPackages.ccacheStdenv;
-    };
     # there's probably more enabled-by-default configs that are better left disabled, but whatever
     structuredExtraConfig = with lib.kernel; {
       /* "Select this option if you are building a kernel for a server or
@@ -265,8 +261,8 @@ in rec {
       COMMON_CLK_MEDIATEK_FHCTL = yes;
       COMMON_CLK_MT7986 = yes;
       COMMON_CLK_MT7986_ETHSYS = yes;
-      # CPU_THERMAL = yes;
-      # THERMAL_OF = yes;
+      CPU_THERMAL = yes;
+      THERMAL_OF = yes;
       EINT_MTK = yes;
       MEDIATEK_GE_PHY = yes;
       MEDIATEK_WATCHDOG = yes;
@@ -312,7 +308,14 @@ in rec {
       MMC_MTK = yes;
     };
   };
+  linux_bpiR3_ccache = linux_bpiR3.override {
+    stdenv = pkgs'.ccacheStdenv;
+    buildPackages = pkgs'.buildPackages // {
+      stdenv = pkgs'.buildPackages.ccacheStdenv;
+    };
+  };
   linuxPackages_bpiR3 = pkgs.linuxPackagesFor linux_bpiR3;
+  linuxPackages_bpiR3_ccache = pkgs.linuxPackagesFor linux_bpiR3_ccache;
   # there are few direct hits with the linux kernel, so use CCACHE_NODIRECT
   # (direct hits are file-based, non-direct are preprocessed file-based)
   ccacheWrapper = pkgs.ccacheWrapper.override {
