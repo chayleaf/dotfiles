@@ -82,6 +82,11 @@ in {
     secretKeyFile = "/secrets/cache-priv-key.pem";
   };
   nix.settings.allowed-users = [ "nix-serve" "hydra" ];
+  # only hydra has access to this file anyway
+  nix.settings.extra-builtins-file = "/etc/nixos/private/extra-builtins.nix";
+  nix.settings.allowed-uris = [
+    "https://git.sr.ht/~rycee/nmd/"
+  ];
   services.nginx.virtualHosts."binarycache.${cfg.domainName}" = {
     quic = true;
     enableACME = true;
@@ -105,14 +110,17 @@ in {
   boot.binfmt.emulatedSystems = [ "aarch64-linux" ];
   nix.buildMachines = [
     {
+      # there were some bugs related to not specifying the machine
+      # not sure they're still there, but it surely won't hurt
       hostName = "localhost";
       protocol = null;
+      maxJobs = 8;
       supportedFeatures = [ "kvm" "local" "nixos-test" "benchmark" "big-parallel" ];
       systems = [ "builtin" "x86_64-linux" "i686-linux" "aarch64-linux" ];
     }
   ];
   # limit CI CPU usage since I'm running everything else off this server too
-  # systemd.services.nix-daemon.serviceConfig.CPUQuota = "50%";
+  systemd.services.nix-daemon.serviceConfig.CPUQuota = "50%";
   systemd.services.hydra-evaluator.serviceConfig.CPUQuota = "50%";
   programs.ccache.enable = true;
 
