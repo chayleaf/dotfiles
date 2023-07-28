@@ -149,19 +149,25 @@ in {
       node = {
         enable = true;
         enabledCollectors = [ "logind" "systemd" ];
+        listenAddress = "127.0.0.1";
         port = 9101; # cups is 9100
       };
       dovecot = {
         enable = true;
         scopes = [ "user" "global" ];
+        listenAddress = "127.0.0.1";
       };
       nextcloud = {
         enable = true;
         url = "https://cloud.${cfg.domainName}";
         username = "nextcloud-exporter";
         passwordFile = "/secrets/nextcloud_exporter_password";
+        listenAddress = "127.0.0.1";
       };
-      nginx = { enable = true; };
+      nginx = {
+        enable = true;
+        listenAddress = "127.0.0.1";
+      };
       nginxlog = {
         enable = true;
         group = "nginx";
@@ -172,13 +178,32 @@ in {
             source.files = [ "/var/log/nginx/comments.log" ];
           }
         ];
+        listenAddress = "127.0.0.1";
       };
-      postfix = { enable = true; };
-      postgres = { enable = true; };
-      process.enable = true;
-      redis.enable = true;
-      rspamd.enable = true;
-      smartctl.enable = true;
+      postfix = {
+        enable = true;
+        listenAddress = "127.0.0.1";
+      };
+      postgres = {
+        enable = true;
+        listenAddress = "127.0.0.1";
+      };
+      process = {
+        enable = true;
+        listenAddress = "127.0.0.1";
+      };
+      redis = {
+        enable = true;
+        listenAddress = "127.0.0.1";
+      };
+      rspamd = {
+        enable = true;
+        listenAddress = "127.0.0.1";
+      };
+      smartctl = {
+        enable = true;
+        listenAddress = "127.0.0.1";
+      };
     };
     checkConfig = "syntax-only";
     scrapeConfigs = [
