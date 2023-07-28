@@ -217,25 +217,6 @@
         ]);
       } // (builtins.removeAttrs args [ "home" "modules" "nixpkgs" ])))
       config;
-  in {
-    inherit nixosConfigurations;
-    overlays.default = overlay;
-    packages = lib.genAttrs [
-      "x86_64-linux"
-      "aarch64-linux"
-    ] (system: let self = overlay self (import nixpkgs { inherit system; }); in self );
-    nixosImages.router = let pkgs = import nixpkgs { system = "aarch64-linux"; overlays = [ overlay ]; }; in {
-      emmcImage = pkgs.callPackage ./system/hardware/bpi-r3/image.nix {
-        inherit (nixosConfigurations.router-emmc) config;
-        rootfsImage = nixosConfigurations.router-emmc.config.system.build.rootfsImage;
-        bpiR3Stuff = pkgs.bpiR3StuffEmmc;
-      };
-      sdImage = pkgs.callPackage ./system/hardware/bpi-r3/image.nix {
-        inherit (nixosConfigurations.router-sd) config;
-        rootfsImage = nixosConfigurations.router-sd.config.system.build.rootfsImage;
-        bpiR3Stuff = pkgs.bpiR3StuffSd;
-      };
-    };
 
     # for each hostname, for each user, generate an attribute "${user}@${hostname}"
     homeConfigurations =
@@ -270,5 +251,31 @@
                 })
                 (builtins.removeAttrs (sysConfig.home or { }) [ "common" ]))
             config));
+  in {
+    inherit nixosConfigurations homeConfigurations;
+    overlays.default = overlay;
+    packages = lib.genAttrs [
+      "x86_64-linux"
+      "aarch64-linux"
+    ] (system: let self = overlay self (import nixpkgs { inherit system; }); in self );
+    nixosImages.router = let pkgs = import nixpkgs { system = "aarch64-linux"; overlays = [ overlay ]; }; in {
+      emmcImage = pkgs.callPackage ./system/hardware/bpi-r3/image.nix {
+        inherit (nixosConfigurations.router-emmc) config;
+        rootfsImage = nixosConfigurations.router-emmc.config.system.build.rootfsImage;
+        bpiR3Stuff = pkgs.bpiR3StuffEmmc;
+      };
+      sdImage = pkgs.callPackage ./system/hardware/bpi-r3/image.nix {
+        inherit (nixosConfigurations.router-sd) config;
+        rootfsImage = nixosConfigurations.router-sd.config.system.build.rootfsImage;
+        bpiR3Stuff = pkgs.bpiR3StuffSd;
+      };
+    };
+
+    hydraJobs = {
+      server.${config.nixserver.system or "x86_64-linux"} = nixosConfigurations.nixserver;
+      workstation.${config.nixmsi.system or "x86_64-linux"} = nixosConfigurations.nixmsi;
+      router.${config.router.system or "x86_64-linux"} = nixosConfigurations.router;
+      workstation-home.${config.nixmsi.system or "x86_64-linux"} = homeConfigurations."user@nixmsi";
+    };
   };
 }
