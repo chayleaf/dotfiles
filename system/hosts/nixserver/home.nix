@@ -89,6 +89,8 @@ in {
     "https://git.sr.ht/~rycee/nmd/"
     # required for server (I suppose since nvfetcher uses fetchTarball here...)
     "https://github.com/searxng/searxng/"
+    # required for home config (nvfetcher)
+    "https://api.github.com/repos/FAForever/"
   ];
   services.nginx.virtualHosts."binarycache.${cfg.domainName}" = {
     quic = true;
