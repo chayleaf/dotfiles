@@ -93,36 +93,30 @@
       overlays = (if config?overlays then config.overlays else [ ]) ++ [ overlay ];
     });
     # this is actual config, it gets processed below
-    config = {
+    config = let
+      mkBpiR3 = storage: config: config // {
+        system = "aarch64-linux";
+        modules = (config.modules or [ ]) ++ [ (import ./system/devices/bpi-r3-router.nix storage) ];
+      };
+      routerConfig = rec {
+        system = "aarch64-linux";
+        specialArgs.server-config = nixosConfigurations.nixserver.config;
+        modules = [
+          {
+            _module.args.pkgs2 = import nixpkgs2 { inherit system; overlays = [ overlay ]; };
+            _module.args.notnft = if devNft then (import /${devPath}/notnft { inherit (nixpkgs) lib; }).config.notnft else notnft.lib.${system};
+          }
+          (if devNixRt then import /${devPath}/nixos-router else nixos-router.nixosModules.default)
+        ];
+      };
+    in {
+      router-emmc = mkBpiR3 "emmc" routerConfig;
+      router-sd = mkBpiR3 "sd" routerConfig;
       nixserver = {
         modules = [
           nixos-mailserver.nixosModules.default
           ./system/devices/hp-probook-g0-server.nix
           (if devMaubot then import /${devPath}/maubot.nix/module else maubot.nixosModules.default)
-        ];
-      };
-      router-emmc = rec {
-        system = "aarch64-linux";
-        specialArgs.server-config = nixosConfigurations.nixserver.config;
-        modules = [
-          {
-            _module.args.pkgs2 = import nixpkgs2 { inherit system; overlays = [ overlay ]; };
-            _module.args.notnft = if devNft then (import /${devPath}/notnft { inherit (nixpkgs) lib; }).config.notnft else notnft.lib.${system};
-          }
-          (import ./system/devices/bpi-r3-router.nix "emmc")
-          (if devNixRt then import /${devPath}/nixos-router else nixos-router.nixosModules.default)
-        ];
-      };
-      router-sd = rec {
-        system = "aarch64-linux";
-        specialArgs.server-config = nixosConfigurations.nixserver.config;
-        modules = [
-          {
-            _module.args.pkgs2 = import nixpkgs2 { inherit system; overlays = [ overlay ]; };
-            _module.args.notnft = if devNft then (import /${devPath}/notnft { inherit (nixpkgs) lib; }).config.notnft else notnft.lib.${system};
-          }
-          (import ./system/devices/bpi-r3-router.nix "sd")
-          (if devNixRt then (import /${devPath}/nixos-router) else nixos-router.nixosModules.default)
         ];
       };
       nixmsi = rec {
@@ -274,7 +268,7 @@
     hydraJobs = {
       server.${config.nixserver.system or "x86_64-linux"} = nixosConfigurations.nixserver;
       workstation.${config.nixmsi.system or "x86_64-linux"} = nixosConfigurations.nixmsi;
-      router.${config.router.system or "x86_64-linux"} = nixosConfigurations.router;
+      router.${config.router-emmc.system or "x86_64-linux"} = nixosConfigurations.router-emmc;
       workstation-home.${config.nixmsi.system or "x86_64-linux"} = homeConfigurations."user@nixmsi";
     };
   };

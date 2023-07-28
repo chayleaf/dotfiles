@@ -98,6 +98,12 @@ in {
         { directory = /var/lib/pleroma; user = "pleroma"; group = "pleroma"; mode = "0700"; }
       ] ++ lib.optionals config.services.akkoma.enable [
         { directory = /var/lib/akkoma; user = "akkoma"; group = "akkoma"; mode = "0700"; }
+      ] ++ lib.optionals config.services.hydra.enable [
+        { directory = /var/lib/hydra; user = "hydra"; group = "hydra"; mode = "0755"; }
+      ] ++ lib.optionals config.services.grafana.enable [
+        { directory = /var/lib/grafana; user = "grafana"; group = "grafana"; mode = "0755"; }
+      ] ++ lib.optionals config.services.prometheus.enable [
+        { directory = /var/lib/${config.services.prometheus.stateDir}; user = "prometheus"; group = "prometheus"; mode = "0755"; }
       ] ++ lib.optionals config.services.postfix.enable [
         { directory = /var/lib/postfix; user = "root"; group = "root"; mode = "0755"; }
       ] ++ lib.optionals config.services.postgresql.enable [

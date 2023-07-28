@@ -52,6 +52,10 @@ in {
       proxyWebsockets = true;
     };
     locations."/grafana/public/".alias = "${config.services.grafana.settings.server.static_root_path}/";
+    locations."/printer/" = {
+      proxyPass = "http://127.0.0.1:631/";
+      proxyWebsockets = true;
+    };
   };
   services.nginx.virtualHosts."hydra.${cfg.domainName}" = {
     quic = true;
@@ -98,9 +102,19 @@ in {
     # smtpHost = "mail.${cfg.domainName}";
     useSubstitutes = true;
   };
-  systemd.services.nix-daemon = {
-    serviceConfig.CPUQuota = "50%";
-  };
+  boot.binfmt.emulatedSystems = [ "aarch64-linux" ];
+  nix.buildMachines = [
+    {
+      hostName = "localhost";
+      protocol = null;
+      supportedFeatures = [ "kvm" "local" "nixos-test" "benchmark" "big-parallel" ];
+      systems = [ "builtin" "x86_64-linux" "i686-linux" "aarch64-linux" ];
+    }
+  ];
+  # limit CI CPU usage since I'm running everything else off this server too
+  # systemd.services.nix-daemon.serviceConfig.CPUQuota = "50%";
+  systemd.services.hydra-evaluator.serviceConfig.CPUQuota = "50%";
+  programs.ccache.enable = true;
 
   services.nginx.statusPage = true;
   services.gitea.settings.metrics.ENABLED = true;
@@ -168,7 +182,7 @@ in {
         job_name = "local_medium_freq";
         scrape_interval = "15m";
         static_configs = [ {
-          targets = [ "127.0.0.1:9548" ];
+          targets = [ "127.0.0.1:9548" "127.0.0.1:9198" ];
           labels.machine = "server";
         } ];
       }
@@ -279,7 +293,7 @@ in {
     };
   };*/
 
-  networking.firewall.allowedTCPPorts = [ 631 9100 ];
+  networking.firewall.allowedTCPPorts = [ 631 ];
   services.printing = {
     enable = true;
     allowFrom = [ cfg.lanCidrV4 cfg.lanCidrV6 ];
@@ -287,7 +301,7 @@ in {
     clientConf = ''
       ServerName home.${cfg.domainName}
     '';
-    listenAddresses = [ "*:631" "*:9100" ];
+    listenAddresses = [ "*:631" ];
     defaultShared = true;
     drivers = [ pkgs.hplip ];
     startWhenNeeded = false;
