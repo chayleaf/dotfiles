@@ -266,10 +266,10 @@
     };
 
     hydraJobs = {
-      server.${config.nixserver.system or "x86_64-linux"} = nixosConfigurations.nixserver;
-      workstation.${config.nixmsi.system or "x86_64-linux"} = nixosConfigurations.nixmsi;
-      router.${config.router-emmc.system or "x86_64-linux"} = nixosConfigurations.router-emmc;
-      workstation-home.${config.nixmsi.system or "x86_64-linux"} = homeConfigurations."user@nixmsi";
+      server.${config.nixserver.system or "x86_64-linux"} = nixosConfigurations.nixserver.config.system.build.toplevel;
+      workstation.${config.nixmsi.system or "x86_64-linux"} = nixosConfigurations.nixmsi.config.system.build.toplevel;
+      router.${config.router-emmc.system or "x86_64-linux"} = nixosConfigurations.router-emmc.config.system.build.toplevel;
+      workstation-home.${config.nixmsi.system or "x86_64-linux"} = homeConfigurations."user@nixmsi".activation-script;
     };
   };
 }
