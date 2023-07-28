@@ -128,8 +128,12 @@ in {
     }
   ];
   # limit CI CPU usage since I'm running everything else off this server too
-  systemd.services.nix-daemon.serviceConfig.CPUQuota = "50%";
-  systemd.services.hydra-evaluator.serviceConfig.CPUQuota = "50%";
+  systemd.services.nix-daemon.serviceConfig.CPUQuota = "100%";
+  nix.daemonCPUSchedPolicy = "idle";
+  nix.daemonIOSchedClass = "idle";
+  systemd.services.hydra-evaluator.serviceConfig.CPUQuota = "100%";
+  systemd.services.hydra-evaluator.serviceConfig.CPUSchedulingPolicy = "idle";
+  systemd.services.hydra-evaluator.serviceConfig.IOSchedulingClass = "idle";
   programs.ccache.enable = true;
 
   services.nginx.statusPage = true;

@@ -96,7 +96,8 @@
     # definitely don't need on minimal machines
     documentation.doc.enable = lib.mkIf cfg.minimal (lib.mkDefault false);
     programs.fish.enable = true;
-    users.defaultUserShell = lib.mkDefault pkgs.fish;
+    # conflicts with bash module's mkDefault
+    users.defaultUserShell = lib.mkOverride 999 pkgs.fish;
     users.users.${cfg.mainUsername} = {
       uid = 1000;
       isNormalUser = true;
