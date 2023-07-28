@@ -252,7 +252,25 @@
     # nyxt qutebrowser
 
     # for updating parts of this repo
-    nvfetcher config.nur.repos.rycee.mozilla-addons-to-nix
+    (nvfetcher.overrideAttrs (old: {
+      # HACK: replace nix with the nix version I use
+      postInstall = ''
+        wrapProgram "$out/bin/nvfetcher" --prefix 'PATH' ':' "${
+          pkgs.lib.makeBinPath [
+            pkgs.nvchecker
+            config.nix.package # nix-prefetch-url
+            pkgs.nix-prefetch-git
+            pkgs.nix-prefetch-docker
+          ]
+        }"
+      '' + (let
+        old-lines = lib.splitString "\n" old.postInstall;
+        first = builtins.head old-lines;
+        rest = builtins.tail old-lines;
+      in
+        assert lib.hasPrefix "wrapProgram " first; builtins.concatStringsSep "\n" rest);
+    }))
+    config.nur.repos.rycee.mozilla-addons-to-nix
 
     anki-bin
   ];
