@@ -87,8 +87,23 @@
     ] ++ lib.optionals cfg.minimal [
       kitty.terminfo
       # rxvt-unicode-unwrapped.terminfo
-      vim
     ]);
+    programs.vim = lib.mkIf cfg.minimal {
+      defaultEditor = lib.mkDefault true;
+      package = pkgs.vim-full.customize {
+        vimrcConfig.customRC = ''
+          syntax on
+          au FileType markdown set colorcolumn=73 textwidth=72
+          au FileType gitcommit set colorcolumn=73
+          au BufReadPre * set foldmethod=syntax
+          au BufReadPost * folddoc foldopen!
+          autocmd BufReadPost * if @% !~# '\.git[\/\\]COMMIT_EDITMSG$' && line("'\"") > 1 && line("'\"") <= line("$") | exe "normal! g`\"" | endif
+        '';
+        vimrcConfig.packages.myVimPackage = with pkgs.vimPlugins; {
+          start = [ vim-sleuth ];
+        };
+      };
+    };
     # this is supposed to default to false, but it doesn't because of nixos fish module
     documentation.man.generateCaches = lib.mkOverride 999 false;
     # and we don't need html files and so on on minimal machines (it's not like I ever use it anyway)
@@ -97,7 +112,9 @@
     documentation.doc.enable = lib.mkIf cfg.minimal (lib.mkDefault false);
     programs.fish.enable = true;
     # conflicts with bash module's mkDefault
-    users.defaultUserShell = lib.mkOverride 999 pkgs.fish;
+    # only override on minimal systems because on non-minimal systems
+    # my fish config doesn't work well in fb/drm console
+    users.defaultUserShell = lib.mkIf cfg.minimal (lib.mkOverride 999 pkgs.fish);
     users.users.${cfg.mainUsername} = {
       uid = 1000;
       isNormalUser = true;
