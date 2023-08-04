@@ -133,8 +133,6 @@ in {
       enable_http2 = true;         # See https://www.python-httpx.org/http2/
     };
   };
-  # workaround for a bug, will probably get fixed upstream some day
-  services.uwsgi.instance.vassals.searx.pythonPackages = lib.mkForce (self: [ pkgs.searxng self.pytomlpp ]);
 
   services.nginx.virtualHosts."search.${cfg.domainName}" = let inherit (config.services.searx) settings; in {
     quic = true;

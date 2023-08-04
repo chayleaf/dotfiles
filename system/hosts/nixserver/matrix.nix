@@ -26,7 +26,7 @@ in {
   imports = [ ./maubot.nix ];
 
   networking.firewall.allowedTCPPorts = [ 8008 8448 ];
-  systemd.services.matrix-synapse.serviceConfig.TimeoutStartSec = 180;
+  systemd.services.matrix-synapse.serviceConfig.TimeoutStartSec = 900;
 
   services.nginx.virtualHosts."${cfg.domainName}" = {
     locations."= /.well-known/matrix/server".extraConfig = matrixServerConfigResponse;

@@ -67,6 +67,9 @@ in {
       ${lib.optionalString (cfg.lanCidrV4 != "0.0.0.0/0") "allow ${cfg.lanCidrV4};"}
       ${lib.optionalString (cfg.lanCidrV6 != "::/0") "allow ${cfg.lanCidrV6};"}
       deny all;
+      proxy_read_timeout 300;
+      proxy_connect_timeout 300;
+      proxy_send_timeout 300;
     '';
     locations."/".proxyPass = "http://${lib.quoteListenAddr config.services.hydra.listenHost}:${toString config.services.hydra.port}/";
     locations."/static/".root = "${config.services.hydra.package}/libexec/hydra/root/";
@@ -75,13 +78,16 @@ in {
 
   services.nix-serve = {
     enable = true;
-    package = pkgs.nix-serve-ng.override {
-      nix = config.nix.package;
-    };
+    package = pkgs.nix-serve-ng;
     bindAddress = "127.0.0.1";
     secretKeyFile = "/secrets/cache-priv-key.pem";
   };
-  nix.settings.allowed-users = [ "nix-serve" "hydra" "hydra-www" ];
+  /*services.harmonia = {
+    enable = true;
+    signKeyPath = "/secrets/cache-priv-key.pem";
+    settings.bind = "[::1]:5000";
+  };*/
+  nix.settings.allowed-users = [ "nix-serve" "harmonia" "hydra" "hydra-www" ];
   # only hydra has access to this file anyway
   nix.settings.extra-builtins-file = "/etc/nixos/private/extra-builtins.nix";
   impermanence.directories = [
@@ -98,16 +104,30 @@ in {
   services.nginx.virtualHosts."binarycache.${cfg.domainName}" = {
     quic = true;
     enableACME = true;
-    addSSL = true;
+    forceSSL = true;
     basicAuthFile = "/secrets/home_password";
     locations."/".proxyPass = "http://${config.services.nix-serve.bindAddress}:${toString config.services.nix-serve.port}";
+    extraConfig = ''
+      proxy_read_timeout 300;
+      proxy_connect_timeout 300;
+      proxy_send_timeout 300;
+    '';
+    # TODO: fix
+    # https://github.com/nix-community/harmonia/issues/120
+    /*locations."/".proxyPass = "http://${config.services.harmonia.settings.bind or "[::1]:5000"}";
+    locations."/".extraConfig = ''
+      proxy_set_header Host $host;
+      proxy_http_version 1.1;
+      proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+      proxy_set_header Upgrade $http_upgrade;
+      proxy_set_header Connection $connection_upgrade;
+    '';*/
+    # zstd on;
+    # zstd_types application/x-nix-archive;
   };
 
   services.hydra = {
     enable = true;
-    package = pkgs.hydra_unstable.override {
-      nix = config.nix.package;
-    };
     hydraURL = "home.${cfg.domainName}/hydra";
     listenHost = "127.0.0.1";
     minimumDiskFree = 30;

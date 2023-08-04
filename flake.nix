@@ -266,7 +266,7 @@
     packages = lib.genAttrs [
       "x86_64-linux"
       "aarch64-linux"
-    ] (system: let self = overlay self (import nixpkgs { inherit system; }); in self );
+    ] (system: let self = overlay ((mkPkgs { inherit system; }) // self) (import nixpkgs { inherit system; }); in self);
     nixosImages.router = let pkgs = mkPkgs { system = "aarch64-linux"; }; in {
       emmcImage = pkgs.callPackage ./system/hardware/bpi-r3/image.nix {
         inherit (nixosConfigurations.router-emmc) config;

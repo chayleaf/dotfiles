@@ -9,17 +9,38 @@ let
   sources = import ./_sources/generated.nix {
     inherit (pkgs) fetchgit fetchurl fetchFromGitHub dockerTools;
   };
+  nixForNixPlugins = pkgs.nixVersions.nix_2_15;
 in
 
 {
   inherit (nix-gaming) faf-client osu-lazer-bin;
-  nixForNixPlugins = pkgs.nixVersions.nix_2_16;
+  inherit nixForNixPlugins;
+  nix-plugins = pkgs.nix-plugins.overrideAttrs (old: {
+    src = old.src.override {
+      rev = "8b9d06ef5b1b4f53cc99fcfde72bae75c7a7aa9c";
+      hash = "sha256-7Lo+YxpiRz0+ZLFDvYMJWWK2j0CyPDRoP1wAc+OaPJY=";
+    };
+  });
+  nix = nixForNixPlugins;
+  nixVersions = pkgs.nixVersions.extend (self: super: {
+    stable = nixForNixPlugins;
+    unstable = nixForNixPlugins;
+  });
+  /* Various patches to change Nix version of existing packages so they don't error out because of nix-plugins in nix.conf
+  hydra_unstable = pkgs.hydra_unstable.override { nix = nixForNixPlugins; };
+  harmonia = pkgs.harmonia.override { nix = nixForNixPlugins; };
+  nix-init = pkgs.nix-init.override { nix = nixForNixPlugins; };
+  nix-serve = pkgs.nix-serve.override { nix = nixForNixPlugins; };
+  nix-serve-ng = pkgs.nix-serve-ng.override { nix = nixForNixPlugins; };
+  nurl = pkgs.nurl.override { nixVersions = builtins.mapAttrs (k: v: nixForNixPlugins) pkgs.nixVersions; };
+  */
+
   clang-tools_latest = pkgs.clang-tools_16;
   clang_latest = pkgs.clang_16;
-  home-daemon = callPackage ./home-daemon { };
   /*ghidra = pkgs.ghidra.overrideAttrs (old: {
     patches = old.patches ++ [ ./ghidra-stdcall.patch ];
   });*/
+  home-daemon = callPackage ./home-daemon { };
   # pin version
   looking-glass-client = pkgs.looking-glass-client.overrideAttrs (old: {
     version = "B6";
@@ -43,13 +64,10 @@ in
     '';
   };
   rofi-steam-game-list = callPackage ./rofi-steam-game-list { };
-  searxng = pkgs.searxng.overridePythonAttrs (old: {
+  searxng = pkgs'.python3.pkgs.toPythonModule (pkgs.searxng.overrideAttrs (old: {
     inherit (sources.searxng) src;
     version = "unstable-" + sources.searxng.date;
-    propagatedBuildInputs = old.propagatedBuildInputs ++ (with pkgs'.python3.pkgs; [
-      pytomlpp
-    ]);
-  });
+  }));
   # system76-scheduler = callPackage ./system76-scheduler.nix { };
   techmino = callPackage ./techmino { };
 

@@ -63,7 +63,8 @@
     CARGO_TARGET_X86_64_UNKNOWN_LINUX_GNU_RUSTFLAGS = "-C link-arg=--ld-path=${pkgs.mold}/bin/mold";
   };
   home.packages = with pkgs; [
-    mold
+    gimp krita blender-hip
+    kdenlive glaxnimate mediainfo
     ghidra cutter2
     openrgb piper
     steam-run steam
@@ -81,16 +82,12 @@
     winetricks
     # protontricks # proton-caller
     # bottles
-    virtmanager
-    gimp krita blender-hip
-    tdesktop
-    clang_latest rustc rustfmt cargo clippy
-    kdenlive
-    mediainfo
-    glaxnimate
+    virtmanager looking-glass-client
+    clang_latest mold
+    rustc rustfmt cargo clippy
     lalrpop
-    looking-glass-client
     tio
+    tdesktop
   ];
   xdg.configFile."looking-glass/client.ini".text = ''
     [app]

@@ -29,6 +29,7 @@
   programs = {
     atuin = {
       enable = true;
+      enableFishIntegration = false;
       settings = {
         update_check = false;
       };
