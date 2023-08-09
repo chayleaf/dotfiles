@@ -27,13 +27,22 @@ in
     unstable = nixForNixPlugins;
   });
   /* Various patches to change Nix version of existing packages so they don't error out because of nix-plugins in nix.conf
-  hydra_unstable = pkgs.hydra_unstable.override { nix = nixForNixPlugins; };
   harmonia = pkgs.harmonia.override { nix = nixForNixPlugins; };
   nix-init = pkgs.nix-init.override { nix = nixForNixPlugins; };
   nix-serve = pkgs.nix-serve.override { nix = nixForNixPlugins; };
   nix-serve-ng = pkgs.nix-serve-ng.override { nix = nixForNixPlugins; };
   nurl = pkgs.nurl.override { nixVersions = builtins.mapAttrs (k: v: nixForNixPlugins) pkgs.nixVersions; };
   */
+  # TODO:
+  /*hydra_unstable = (pkgs.hydra_unstable.override {
+    nix = nixForNixPlugins;
+  }).overrideAttrs (old: {
+    version = "2023-05-08";
+    src = old.src.override {
+      rev = "13ef4e3c5d87bc6f68c91a36d78cdc7d589d8ff2";
+      sha256 = "sha256-niw0RHfwpo2/86wvtHrbU/DQYlkkwtrM+qG7GEC0qAo=";
+    };
+  });*/
 
   clang-tools_latest = pkgs.clang-tools_16;
   clang_latest = pkgs.clang_16;

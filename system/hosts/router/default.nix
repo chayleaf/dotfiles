@@ -43,10 +43,15 @@ let
     preamble = true;
     country3 = "0x49"; # indoor
   };
+
   # routing tables
   wan_table = 1;
   # vpn table, assign an id but don't actually add a rule for it, so it is the default
   vpn_table = 2;
+
+  vpn_mtu = config.networking.wireguard.interfaces.wg0.mtu;
+  vpn_ipv4_mss = vpn_mtu - 40;
+  vpn_ipv6_mss = vpn_mtu - 60;
 
   dnatRuleMode = rule:
     if rule.mode != "" then rule.mode
@@ -109,9 +114,9 @@ let
         [(is.eq ip.protocol (f: f.icmp)) (is.ne icmp.type (f: f.echo-request)) (limit { rate = 100; per = f: f.second; }) accept]
         [(is.eq ip6.nexthdr (f: f.ipv6-icmp)) (is.eq icmpv6.type (f: f.echo-request)) (limit { rate = 50; per = f: f.second; }) accept]
         [(is.eq ip6.nexthdr (f: f.ipv6-icmp)) (is.ne icmpv6.type (f: f.echo-request)) (limit { rate = 100; per = f: f.second; }) accept]
-        # always accept destination unreachable and time-exceeded
-        [(is.eq ip.protocol (f: f.icmp)) (is.eq icmp.type (f: with f; set [ destination-unreachable time-exceeded ])) accept]
-        [(is.eq ip6.nexthdr (f: f.ipv6-icmp)) (is.eq icmpv6.type (f: with f; set [ destination-unreachable time-exceeded ])) accept]
+        # always accept destination unreachable, time-exceeded, parameter-problem, packet-too-big
+        [(is.eq ip.protocol (f: f.icmp)) (is.eq icmp.type (f: with f; set [ destination-unreachable time-exceeded parameter-problem ])) accept]
+        [(is.eq ip6.nexthdr (f: f.ipv6-icmp)) (is.eq icmpv6.type (f: with f; set [ destination-unreachable time-exceeded parameter-problem packet-too-big ])) accept]
         # don't log echo-request drops
         [(is.eq ip.protocol (f: f.icmp)) (is.eq icmp.type (f: f.echo-request)) drop]
         [(is.eq ip6.nexthdr (f: f.ipv6-icmp)) (is.eq icmpv6.type (f: f.echo-request)) drop]
@@ -279,16 +284,16 @@ in {
   } ++ lib.optional (udpOnly != [ ]) {
     port = notnft.dsl.set udpOnly; tcp = false; udp = true;
     target4.address = serverAddress4; target6.address = serverAddress6;
-  } ++ map (range: {
+  } ++ lib.flip map rangesTcpAndUdp (range: {
     port = notnft.dsl.range range.from range.to; tcp = true; udp = true;
     target4.address = serverAddress4; target6.address = serverAddress6;
-  }) rangesTcpAndUdp ++ map (range: {
+  }) ++ lib.flip map rangesTcpOnly (range: {
     port = notnft.dsl.range range.from range.to; tcp = true; udp = false;
     target4.address = serverAddress4; target6.address = serverAddress6;
-  }) rangesTcpOnly ++ map (range: {
+  }) ++ lib.flip map rangesUdpOnly (range: {
     port = notnft.dsl.range range.from range.to; tcp = false; udp = true;
     target4.address = serverAddress4; target6.address = serverAddress6;
-  }) rangesUdpOnly;
+  });
 
   router.enable = true;
   # 2.4g ap
@@ -325,32 +330,32 @@ in {
   # ethernet lan0-3
   router.interfaces.lan0 = {
     bridge = "br0";
-    systemdLinkLinkConfig.MACAddressPolicy = "persistent";
+    systemdLink.linkConfig.MACAddressPolicy = "persistent";
   };
   router.interfaces.lan1 = {
     bridge = "br0";
-    systemdLinkLinkConfig.MACAddressPolicy = "persistent";
+    systemdLink.linkConfig.MACAddressPolicy = "persistent";
   };
   router.interfaces.lan2 = {
     bridge = "br0";
-    systemdLinkLinkConfig.MACAddressPolicy = "persistent";
+    systemdLink.linkConfig.MACAddressPolicy = "persistent";
   };
   router.interfaces.lan3 = {
     bridge = "br0";
-    systemdLinkLinkConfig.MACAddressPolicy = "persistent";
+    systemdLink.linkConfig.MACAddressPolicy = "persistent";
   };
   # sfp lan4
   router.interfaces.lan4 = {
     bridge = "br0";
-    systemdLinkLinkConfig.MACAddressPolicy = "persistent";
+    systemdLink.linkConfig.MACAddressPolicy = "persistent";
   };
   /*
   # sfp lan5
   router.interfaces.lan5 = {
     bridge = "br0";
     # i could try to figure out why this doesn't work... but i don't even have sfp to plug into this
-    systemdLinkMatchConfig.OriginalName = "eth1";
-    systemdLinkLinkConfig.MACAddressPolicy = "persistent";
+    systemdLink.matchConfig.OriginalName = "eth1";
+    systemdLink.linkConfig.MACAddressPolicy = "persistent";
   };
   */
   # ethernet wan
@@ -358,8 +363,8 @@ in {
     dependentServices = [
       { service = "wireguard-wg0"; inNetns = false; }
     ];
-    systemdLinkLinkConfig.MACAddressPolicy = "none";
-    systemdLinkLinkConfig.MACAddress = cfg.routerMac;
+    systemdLink.linkConfig.MACAddressPolicy = "none";
+    systemdLink.linkConfig.MACAddress = cfg.routerMac;
     dhcpcd = {
       enable = true;
       # technically this should be assigned to br0 instead of veth-wan-b
@@ -463,7 +468,7 @@ in {
               [ (is.eq meta.iifname "wg0") (is.eq ip.protocol protocols) (is.eq th.dport rule.port)
                 (if rule4.port == null then dnat.ip rule4.address else dnat.ip rule4.address rule4.port) ]
             ] ++ lib.optionals (rule6 != null) [
-              [ (is.eq meta.iifname "wg0") (is.eq ip6.protocol protocols) (is.eq th.dport rule.port)
+              [ (is.eq meta.iifname "wg0") (is.eq ip6.nexthdr protocols) (is.eq th.dport rule.port)
                 (if rule6.port == null then dnat.ip6 rule6.address else dnat.ip6 rule6.address rule6.port) ]
             ])
           (builtins.filter (x: x.inVpn && (x.tcp || x.udp)) cfg.dnatRules));
@@ -500,15 +505,17 @@ in {
         prerouting = add chain { type = f: f.filter; hook = f: f.prerouting; prio = f: f.filter; policy = f: f.accept; } ([
           [(mangle meta.mark ct.mark)]
           [(is.ne meta.mark 0) accept]
+          [(is.eq ip.daddr "@block4") drop]
+          [(is.eq ip6.daddr "@block6") drop]
           [(is.eq meta.iifname "br0") (mangle meta.mark vpn_table)]
           [(is.eq ip.daddr "@force_unvpn4") (mangle meta.mark wan_table)]
           [(is.eq ip6.daddr "@force_unvpn6") (mangle meta.mark wan_table)]
-          # don't vpn smtp requests so spf works fine (and in case the vpn blocks requests over port 25)
-          [(is.eq ip.saddr serverAddress4) (is.eq ip.protocol (f: f.tcp)) (is.eq tcp.dport 25) (mangle meta.mark wan_table)]
-          [(is.eq ip6.saddr serverAddress6) (is.eq ip6.nexthdr (f: f.tcp)) (is.eq tcp.dport 25) (mangle meta.mark wan_table)]
-          # but block requests to port 25 from other hosts so they can't send mail pretending to originate from my domain
+          # block requests to port 25 from hosts other than the server so they can't send mail pretending to originate from my domain
           [(is.ne ip.saddr serverAddress4) (is.eq ip.protocol (f: f.tcp)) (is.eq tcp.dport 25) drop]
           [(is.ne ip6.saddr serverAddress6) (is.eq ip6.nexthdr (f: f.tcp)) (is.eq tcp.dport 25) drop]
+          # don't vpn smtp requests so spf works fine (and in case the vpn blocks requests over port 25, which it usually does)
+          [(is.eq ip.protocol (f: f.tcp)) (is.eq tcp.dport 25) (mangle meta.mark wan_table)]
+          [(is.eq ip6.nexthdr (f: f.tcp)) (is.eq tcp.dport 25) (mangle meta.mark wan_table)]
           [(is.eq ip.daddr "@force_vpn4") (mangle meta.mark vpn_table)]
           [(is.eq ip6.daddr "@force_vpn6") (mangle meta.mark vpn_table)]
         ] ++ # 1. dnat non-vpn: change rttable to wan
@@ -537,19 +544,22 @@ in {
               [ (is ct.status (f: f.dnat)) (is.eq meta.iifname "br0") (is.eq ip.protocol protocols) (is.eq ip.saddr rule4.address)
                 (is.eq th.sport (if rule4.port != null then rule4.port else rule.port)) (mangle meta.mark vpn_table) ]
             ] ++ lib.optionals (rule6 != null) [
-              [ (is ct.status (f: f.dnat)) (is.eq meta.iifname "br0") (is.eq ip6.protocol protocols) (is.eq ip6.saddr rule6.address)
+              [ (is ct.status (f: f.dnat)) (is.eq meta.iifname "br0") (is.eq ip6.nexthdr protocols) (is.eq ip6.saddr rule6.address)
                 (is.eq th.sport (if rule6.port != null then rule6.port else rule.port)) (mangle meta.mark vpn_table) ]
             ])
           (builtins.filter (x: x.inVpn && (x.tcp || x.udp) && dnatRuleMode x == "mark") cfg.dnatRules))
         ++ [
-          [(is.eq ip.daddr "@block4") drop]
-          [(is.eq ip6.daddr "@block6") drop]
           # this doesn't work... it still gets routed, even though iot_table doesn't have a default route
-          # [(is.eq ip.saddr vacuumAddress4) (is.ne ip.daddr) (mangle meta.mark iot_table)]
           # [(is.eq ether.saddr cfg.vacuumMac) (mangle meta.mark iot_table)]
           # instead of debugging that, simply change the approach
           [(is.eq ether.saddr cfg.vacuumMac) (is.ne ip.daddr (cidr netCidrs.lan4)) (is.ne ip.daddr "@allow_iot4") (log "iot4 ") drop]
           [(is.eq ether.saddr cfg.vacuumMac) (is.ne ip6.daddr (cidr netCidrs.lan6)) (is.ne ip6.daddr "@allow_iot6") (log "iot6 ") drop]
+          # MSS clamping - since VPN reduces max MTU
+          # We only do this for the first packet in a connection, which should be enough
+          [(is.eq ip6.nexthdr (f: f.tcp)) (is.eq meta.mark vpn_table)
+           (is.gt tcpOpt.maxseg.size vpn_ipv6_mss) (mangle tcpOpt.maxseg.size vpn_ipv6_mss)]
+          [(is.eq ip.protocol (f: f.tcp)) (is.eq meta.mark vpn_table)
+           (is.gt tcpOpt.maxseg.size vpn_ipv4_mss) (mangle tcpOpt.maxseg.size vpn_ipv4_mss)]
           [(mangle ct.mark meta.mark)]
         ]);
       };

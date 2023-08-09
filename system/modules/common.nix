@@ -3,7 +3,10 @@
 , config
 , ... }:
 
-{
+let
+  # force some defaults even if they were set with mkDefault already...
+  mkForceDefault = lib.mkOverride 999;
+in {
   options.common = with lib; mkOption {
     type = types.submodule {
       options = {
@@ -35,9 +38,18 @@
     cfg = config.common;
   in {
     nix = {
+      channel.enable = false;
       settings = {
         allowed-users = [ cfg.mainUsername ];
         auto-optimise-store = true;
+        use-xdg-base-directories = true;
+        experimental-features = [
+          "ca-derivations"
+          "flakes"
+          "nix-command"
+          "no-url-literals"
+          "repl-flake"
+        ];
       };
       gc = {
         automatic = true;
@@ -45,9 +57,6 @@
         options = "--delete-older-than 30d";
       };
       package = pkgs.nixForNixPlugins;
-      extraOptions = ''
-        experimental-features = nix-command flakes
-      '';
     };
     systemd.services.nix-daemon.serviceConfig.LimitSTACKSoft = "infinity";
     boot.kernelParams = lib.optionals (cfg.resolution != null) [
@@ -105,23 +114,21 @@
       };
     };
     # this is supposed to default to false, but it doesn't because of nixos fish module
-    documentation.man.generateCaches = lib.mkOverride 999 false;
-    # and we don't need html files and so on on minimal machines (it's not like I ever use it anyway)
-    # as a bonus, this disables the HTML NixOS manual which takes a while to build and which I
-    # definitely don't need on minimal machines
+    documentation.man.generateCaches = lib.mkIf cfg.minimal (mkForceDefault false);
+    # we don't need stuff like html files (NixOS manual and so on) on minimal machines
     documentation.doc.enable = lib.mkIf cfg.minimal (lib.mkDefault false);
     programs.fish.enable = true;
     # conflicts with bash module's mkDefault
     # only override on minimal systems because on non-minimal systems
-    # my fish config doesn't work well in fb/drm console
-    users.defaultUserShell = lib.mkIf cfg.minimal (lib.mkOverride 999 pkgs.fish);
+    # because my fish config doesn't work well in fb/drm console
+    users.defaultUserShell = lib.mkIf cfg.minimal (mkForceDefault pkgs.fish);
     users.users.${cfg.mainUsername} = {
       uid = 1000;
       isNormalUser = true;
       extraGroups = [ "wheel" ];
     };
     # nixos-hardware uses mkDefault here, so we use slightly higher priority
-    services.xserver.libinput.enable = lib.mkOverride 999 (!cfg.minimal);
+    services.xserver.libinput.enable = mkForceDefault (!cfg.minimal);
     # TODO: minimal fish/vim config
     /*
     services.xserver = {

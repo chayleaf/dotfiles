@@ -228,11 +228,11 @@
         ]
       },
       "locked": {
-        "lastModified": 1690432004,
-        "narHash": "sha256-mGK512GjUbTNdy6AorlX6OF3oAZ5GkGWuxEKWj8xpUw=",
+        "lastModified": 1691308996,
+        "narHash": "sha256-eXxZ7Mib2U1pfcchrCqSGDRZBjCIbVIWEq93OcE6pEI=",
         "owner": "chayleaf",
         "repo": "nixos-router",
-        "rev": "c86131f52922907d77653d553851f03a8e064071",
+        "rev": "c9528e1dc5acc77273543c88db47088ea5dd28b4",
         "type": "github"
       },
       "original": {
@@ -243,16 +243,15 @@
     },
     "nixpkgs": {
       "locked": {
-        "lastModified": 1690548937,
-        "narHash": "sha256-x3ZOPGLvtC0/+iFAg9Kvqm/8hTAIkGjc634SqtgaXTA=",
-        "owner": "nixos",
+        "lastModified": 1691178599,
+        "narHash": "sha256-P4r79P2toVs0dfjXvyIp8QdnNcrFQQRFEUl/fHJBNz0=",
+        "owner": "chayleaf",
         "repo": "nixpkgs",
-        "rev": "2a9d660ff0f7ffde9d73be328ee6e6f10ef66b28",
+        "rev": "f18d5184718a901ba5b1ab437570ad291cc1873c",
         "type": "github"
       },
       "original": {
-        "owner": "nixos",
-        "ref": "nixos-unstable",
+        "owner": "chayleaf",
         "repo": "nixpkgs",
         "type": "github"
       }
@@ -302,11 +301,11 @@
         ]
       },
       "locked": {
-        "lastModified": 1689260608,
-        "narHash": "sha256-GHnXziKo8EzGnvMzKEExA5/H3N1Hp3GtRy84E2z4YN8=",
+        "lastModified": 1691303305,
+        "narHash": "sha256-9JUabsdRAZl4ixq4/m7+vryk4Tv4Dq3JTNAUxGV+nOU=",
         "owner": "chayleaf",
         "repo": "notnft",
-        "rev": "98ff79679cfdc31f49abaeb513cb6d36905dd32e",
+        "rev": "f7fa096c285c0705bffc180d0d08ea82f3b8e957",
         "type": "github"
       },
       "original": {

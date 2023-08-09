@@ -70,23 +70,25 @@ in {
       proxy_read_timeout 300;
       proxy_connect_timeout 300;
       proxy_send_timeout 300;
+      client_body_timeout 300;
+      send_timeout 300;
     '';
     locations."/".proxyPass = "http://${lib.quoteListenAddr config.services.hydra.listenHost}:${toString config.services.hydra.port}/";
-    locations."/static/".root = "${config.services.hydra.package}/libexec/hydra/root/";
+    locations."/static/".root = lib.mkIf config.services.hydra.enable "${config.services.hydra.package}/libexec/hydra/root/";
   };
   users.users.nginx.extraGroups = [ "grafana" ];
 
-  services.nix-serve = {
+  /*services.nix-serve = {
     enable = true;
     package = pkgs.nix-serve-ng;
     bindAddress = "127.0.0.1";
     secretKeyFile = "/secrets/cache-priv-key.pem";
-  };
-  /*services.harmonia = {
+  };*/
+  services.harmonia = {
     enable = true;
     signKeyPath = "/secrets/cache-priv-key.pem";
     settings.bind = "[::1]:5000";
-  };*/
+  };
   nix.settings.allowed-users = [ "nix-serve" "harmonia" "hydra" "hydra-www" ];
   # only hydra has access to this file anyway
   nix.settings.extra-builtins-file = "/etc/nixos/private/extra-builtins.nix";
@@ -106,28 +108,31 @@ in {
     enableACME = true;
     forceSSL = true;
     basicAuthFile = "/secrets/home_password";
-    locations."/".proxyPass = "http://${config.services.nix-serve.bindAddress}:${toString config.services.nix-serve.port}";
+    /*locations."/".proxyPass = "http://${config.services.nix-serve.bindAddress}:${toString config.services.nix-serve.port}";
     extraConfig = ''
       proxy_read_timeout 300;
       proxy_connect_timeout 300;
       proxy_send_timeout 300;
-    '';
+    '';*/
     # TODO: fix
     # https://github.com/nix-community/harmonia/issues/120
-    /*locations."/".proxyPass = "http://${config.services.harmonia.settings.bind or "[::1]:5000"}";
+    locations."/".proxyPass = "http://${config.services.harmonia.settings.bind or "[::1]:5000"}";
     locations."/".extraConfig = ''
       proxy_set_header Host $host;
       proxy_http_version 1.1;
       proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
       proxy_set_header Upgrade $http_upgrade;
       proxy_set_header Connection $connection_upgrade;
-    '';*/
+      location ~ "^/nar/([a-z0-9]{32})-.*\.narinfo$" {
+        proxy_pass http://127.0.0.1:5000/$1.narinfo$is_args$args;
+      }
+    '';
     # zstd on;
     # zstd_types application/x-nix-archive;
   };
 
   services.hydra = {
-    enable = true;
+    enable = false;
     hydraURL = "home.${cfg.domainName}/hydra";
     listenHost = "127.0.0.1";
     minimumDiskFree = 30;
@@ -151,9 +156,11 @@ in {
   systemd.services.nix-daemon.serviceConfig.CPUQuota = "100%";
   nix.daemonCPUSchedPolicy = "idle";
   nix.daemonIOSchedClass = "idle";
-  systemd.services.hydra-evaluator.serviceConfig.CPUQuota = "100%";
-  systemd.services.hydra-evaluator.serviceConfig.CPUSchedulingPolicy = "idle";
-  systemd.services.hydra-evaluator.serviceConfig.IOSchedulingClass = "idle";
+  systemd.services.hydra-evaluator = lib.mkIf config.services.hydra.enable {
+    serviceConfig.CPUQuota = "100%";
+    serviceConfig.CPUSchedulingPolicy = "idle";
+    serviceConfig.IOSchedulingClass = "idle";
+  };
   programs.ccache.enable = true;
 
   services.nginx.statusPage = true;
