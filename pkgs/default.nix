@@ -13,7 +13,7 @@ let
 in
 
 {
-  linux-firmware = pkgs.stdenvNoCC.mkDerivation {
+  linux-firmware = if pkgs.system == "x86_64-linux" then pkgs.stdenvNoCC.mkDerivation {
     inherit (pkgs.linux-firmware) pname version src meta;
     dontFixup = true;
     passthru = { inherit (pkgs.linux-firmware) version; };
@@ -27,8 +27,7 @@ in
         hash = "sha256-HnKjEb2di7BiKB09JYUjIUuZNCVgXlwRSbjijnuYBcM=";
       }} amd-ucode/microcode_amd_fam17h.bin
     '';
-  };
-
+  } else pkgs.linux-firmware;
   inherit (nix-gaming) faf-client osu-lazer-bin;
   inherit nixForNixPlugins;
   nix-plugins = pkgs.nix-plugins.overrideAttrs (old: {

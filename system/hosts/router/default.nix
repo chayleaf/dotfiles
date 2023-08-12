@@ -85,11 +85,14 @@ let
     inetSnatRules ? [],
     inetDnatRules ? [],
     logPrefix ? "",
-  }: with notnft.dsl; with payload; ruleset {
+  }:
+  let
+    logIfWan = prefix: lib.optional (logPrefix == "wan") (notnft.dsl.log prefix);
+  in with notnft.dsl; with payload; ruleset {
     filter = add table.netdev ({
       ingress_common = add chain
-        [(is.eq (bit.and tcp.flags (f: bit.or f.fin f.syn)) (f: bit.or f.fin f.syn)) (log "${logPrefix}fin+syn drop ") drop]
-        [(is.eq (bit.and tcp.flags (f: bit.or f.syn f.rst)) (f: bit.or f.syn f.rst)) (log "${logPrefix}syn+rst drop ") drop]
+        ([(is.eq (bit.and tcp.flags (f: bit.or f.fin f.syn)) (f: bit.or f.fin f.syn))] ++ logIfWan "${logPrefix}fin+syn drop " ++ [drop])
+        ([(is.eq (bit.and tcp.flags (f: bit.or f.syn f.rst)) (f: bit.or f.syn f.rst))] ++ logIfWan "${logPrefix}syn+rst drop " ++ [drop])
         [(is.eq (bit.and tcp.flags (f: with f; bit.or fin syn rst psh ack urg)) 0) (log "${logPrefix}null drop ") drop]
         [(is tcp.flags (f: f.syn)) (is.eq tcpOpt.maxseg.size (range 0 500)) (log "${logPrefix}maxseg drop ") drop]
         # reject requests with own saddr
@@ -138,7 +141,7 @@ let
       inbound_wan_common = add chain
         [(vmap ct.state { established = accept; related = accept; invalid = drop; })]
         [(is ct.status (f: f.dnat)) accept]
-        [(is.eq (bit.and tcp.flags (f: f.syn)) 0) (is.eq ct.state (f: f.new)) (log "${logPrefix}new non-syn ") drop]
+        ([(is.eq (bit.and tcp.flags (f: f.syn)) 0) (is.eq ct.state (f: f.new))] ++ logIfWan "${logPrefix}new non-syn " ++ [drop])
         # icmp: only accept ping requests
         [(is.eq ip.protocol (f: f.icmp)) (is.eq icmp.type (f: f.echo-request)) accept]
         # icmpv6: accept no-route info from link-local addresses
@@ -505,19 +508,30 @@ in {
         prerouting = add chain { type = f: f.filter; hook = f: f.prerouting; prio = f: f.filter; policy = f: f.accept; } ([
           [(mangle meta.mark ct.mark)]
           [(is.ne meta.mark 0) accept]
-          [(is.eq ip.daddr "@block4") drop]
-          [(is.eq ip6.daddr "@block6") drop]
-          [(is.eq meta.iifname "br0") (mangle meta.mark vpn_table)]
+          # ban requests to/from block4/block6
+          # (might as well do this in ingress but i'm lazy)
+          [(is.eq ip.daddr "@block4") (log "block4 ") drop]
+          [(is.eq ip6.daddr "@block6") (log "block6 ") drop]
+          [(is.eq ip.saddr "@block4") (log "block4/s ") drop]
+          [(is.eq ip6.saddr "@block6") (log "block6/s ") drop]
+          # default to vpn...
+          [(mangle meta.mark vpn_table)]
+          # ...but unvpn traffic to/from force_unvpn4/force_unvpn6
           [(is.eq ip.daddr "@force_unvpn4") (mangle meta.mark wan_table)]
           [(is.eq ip6.daddr "@force_unvpn6") (mangle meta.mark wan_table)]
+          [(is.eq ip.saddr "@force_unvpn4") (mangle meta.mark wan_table)]
+          [(is.eq ip6.saddr "@force_unvpn6") (mangle meta.mark wan_table)]
           # block requests to port 25 from hosts other than the server so they can't send mail pretending to originate from my domain
-          [(is.ne ip.saddr serverAddress4) (is.eq ip.protocol (f: f.tcp)) (is.eq tcp.dport 25) drop]
-          [(is.ne ip6.saddr serverAddress6) (is.eq ip6.nexthdr (f: f.tcp)) (is.eq tcp.dport 25) drop]
+          # only do this for br0 since other adapters aren't forwarded from
+          [(is.eq meta.iifname "br0") (is.ne ether.saddr cfg.serverMac) (is.eq ip.protocol (f: f.tcp)) (is.eq tcp.dport 25) (log "smtp ") drop]
           # don't vpn smtp requests so spf works fine (and in case the vpn blocks requests over port 25, which it usually does)
           [(is.eq ip.protocol (f: f.tcp)) (is.eq tcp.dport 25) (mangle meta.mark wan_table)]
           [(is.eq ip6.nexthdr (f: f.tcp)) (is.eq tcp.dport 25) (mangle meta.mark wan_table)]
+          # finally, force vpn to/from force_vpn4/force_vpn6 even if we previously decided to unvpn this connection
           [(is.eq ip.daddr "@force_vpn4") (mangle meta.mark vpn_table)]
           [(is.eq ip6.daddr "@force_vpn6") (mangle meta.mark vpn_table)]
+          [(is.eq ip.saddr "@force_vpn4") (mangle meta.mark vpn_table)]
+          [(is.eq ip6.saddr "@force_vpn6") (mangle meta.mark vpn_table)]
         ] ++ # 1. dnat non-vpn: change rttable to wan
         builtins.concatLists (map
           (rule: let
@@ -541,25 +555,32 @@ in {
             rule4 = rule.target4; rule6 = rule.target6;
           in with notnft.dsl; with payload;
             lib.optionals (rule4 != null) [
-              [ (is ct.status (f: f.dnat)) (is.eq meta.iifname "br0") (is.eq ip.protocol protocols) (is.eq ip.saddr rule4.address)
+              [ (is.eq meta.iifname "br0") (is.eq ip.protocol protocols) (is.eq ip.saddr rule4.address)
                 (is.eq th.sport (if rule4.port != null then rule4.port else rule.port)) (mangle meta.mark vpn_table) ]
             ] ++ lib.optionals (rule6 != null) [
-              [ (is ct.status (f: f.dnat)) (is.eq meta.iifname "br0") (is.eq ip6.nexthdr protocols) (is.eq ip6.saddr rule6.address)
+              [ (is.eq meta.iifname "br0") (is.eq ip6.nexthdr protocols) (is.eq ip6.saddr rule6.address)
                 (is.eq th.sport (if rule6.port != null then rule6.port else rule.port)) (mangle meta.mark vpn_table) ]
             ])
           (builtins.filter (x: x.inVpn && (x.tcp || x.udp) && dnatRuleMode x == "mark") cfg.dnatRules))
         ++ [
-          # this doesn't work... it still gets routed, even though iot_table doesn't have a default route
-          # [(is.eq ether.saddr cfg.vacuumMac) (mangle meta.mark iot_table)]
-          # instead of debugging that, simply change the approach
+          # for the robot vacuum, only allow traffic to/from allow_iot4/allow_iot6
           [(is.eq ether.saddr cfg.vacuumMac) (is.ne ip.daddr (cidr netCidrs.lan4)) (is.ne ip.daddr "@allow_iot4") (log "iot4 ") drop]
           [(is.eq ether.saddr cfg.vacuumMac) (is.ne ip6.daddr (cidr netCidrs.lan6)) (is.ne ip6.daddr "@allow_iot6") (log "iot6 ") drop]
+          [(is.eq ether.daddr cfg.vacuumMac) (is.ne ip.saddr (cidr netCidrs.lan4)) (is.ne ip.saddr "@allow_iot4") (log "iot4/d ") drop]
+          [(is.eq ether.daddr cfg.vacuumMac) (is.ne ip6.saddr (cidr netCidrs.lan6)) (is.ne ip6.saddr "@allow_iot6") (log "iot6/d ") drop]
           # MSS clamping - since VPN reduces max MTU
           # We only do this for the first packet in a connection, which should be enough
-          [(is.eq ip6.nexthdr (f: f.tcp)) (is.eq meta.mark vpn_table)
-           (is.gt tcpOpt.maxseg.size vpn_ipv6_mss) (mangle tcpOpt.maxseg.size vpn_ipv6_mss)]
-          [(is.eq ip.protocol (f: f.tcp)) (is.eq meta.mark vpn_table)
+          [(is.eq meta.iifname "br0") (is.eq meta.nfproto (f: f.ipv4)) (is.eq meta.mark vpn_table)
            (is.gt tcpOpt.maxseg.size vpn_ipv4_mss) (mangle tcpOpt.maxseg.size vpn_ipv4_mss)]
+          [(is.eq meta.iifname "br0") (is.eq meta.nfproto (f: f.ipv6)) (is.eq meta.mark vpn_table)
+           (is.gt tcpOpt.maxseg.size vpn_ipv6_mss) (mangle tcpOpt.maxseg.size vpn_ipv6_mss)]
+          # warn about dns requests to foreign servers
+          # TODO: check back and see if I should forcefully redirect DNS requests from certain IPs to router
+          [(is.eq meta.iifname "br0") (is.ne ip.daddr (netAddresses.lan4)) (is.eq ip.protocol (f: set [ f.tcp f.udp ]))
+           (is.eq th.dport (set [ 53 853 ])) (log "dns4 ")]
+          [(is.eq meta.iifname "br0") (is.ne ip6.daddr (netAddresses.lan6)) (is.eq ip6.nexthdr (f: set [ f.tcp f.udp ]))
+           (is.eq th.dport (set [ 53 853 ])) (log "dns6 ")]
+          # finally, preserve the mark via conntrack
           [(mangle ct.mark meta.mark)]
         ]);
       };
@@ -754,6 +775,7 @@ in {
     environment.DOMAIN_NAME_OVERRIDES = "retracker.local->router.local";
     # load vpn_domains.json and vpn_ips.json, as well as unvpn_domains.json and unvpn_ips.json
     # resolve domains and append it to ips and add it to the nftables sets
+    # TODO: allow changing family/table name
     environment.NFT_QUERIES = "vpn:force_vpn4,force_vpn6;unvpn!:force_unvpn4,force_unvpn6;iot:allow_iot4,allow_iot6";
     serviceConfig.EnvironmentFile = "/secrets/unbound_env";
     # it needs to run after nftables has been set up because it sets up the sets
