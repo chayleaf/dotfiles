@@ -38,7 +38,8 @@ in {
     cfg = config.common;
   in {
     nix = {
-      channel.enable = false;
+      # nix.channel.enable is needed for NIX_PATH to work for some reason
+      # channel.enable = false;
       settings = {
         allowed-users = [ cfg.mainUsername ];
         auto-optimise-store = true;
@@ -59,6 +60,8 @@ in {
       package = pkgs.nixForNixPlugins;
     };
     systemd.services.nix-daemon.serviceConfig.LimitSTACKSoft = "infinity";
+    nix.daemonCPUSchedPolicy = lib.mkDefault "idle";
+    nix.daemonIOSchedClass = lib.mkDefault "idle";
     boot.kernelParams = lib.optionals (cfg.resolution != null) [
       "consoleblank=60"
     ] ++ (lib.optionals (cfg.resolution == "1920x1080") [
