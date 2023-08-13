@@ -67,6 +67,10 @@ let
       else if rule.udp then udp
       else throw "Invalid rule: either tcp or udp must be set";
 
+  setIfNeeded = arr:
+    if builtins.length arr == 1 then builtins.head arr
+    else notnft.dsl.set arr;
+
   # nftables rules generator
   # selfIp4/selfIp6 = block packets from these addresses
   # extraInetEntries = stuff to add to inet table
@@ -163,7 +167,7 @@ let
         [(is.eq ip6.nexthdr (f: f.ipv6-icmp)) (is.eq icmpv6.code (f: f.no-route))
           (is.eq icmpv6.type (f: with f; set [ packet-too-big parameter-problem ])) accept]
         [(is.eq ip6.nexthdr (f: f.ipv6-icmp)) (is.eq icmpv6.code (f: f.admin-prohibited))
-          (is.eq icmpv6.type (f: with f; set [ parameter-problem ])) accept]
+          (is.eq icmpv6.type (f: f.parameter-problem)) accept]
         inetInboundWanRules;
 
       # trust the lan
@@ -183,22 +187,22 @@ let
         [(vmap ct.state { established = accept; related = accept; invalid = drop; })]
         [(is ct.status (f: f.dnat)) accept]
         # accept lan->wan fw
-        [(is.eq meta.iifname (set lans)) (is.eq meta.oifname (set wans)) accept]
+        [(is.eq meta.iifname (setIfNeeded lans)) (is.eq meta.oifname (setIfNeeded wans)) accept]
         # accept lan->lan fw
-        [(is.eq meta.iifname (set lans)) (is.eq meta.oifname (set lans)) accept]
+        [(is.eq meta.iifname (setIfNeeded lans)) (is.eq meta.oifname (setIfNeeded lans)) accept]
         # accept wan->lan icmpv6 forward
-        [(is.eq meta.iifname (set wans)) (is.eq icmpv6.type (f: with f; set [ destination-unreachable time-exceeded echo-request echo-reply ])) accept]
-        [(is.eq meta.iifname (set wans)) (is.eq icmpv6.code (f: f.no-route)) (is.eq icmpv6.type (f: with f; set [ packet-too-big parameter-problem ])) accept]
-        [(is.eq meta.iifname (set wans)) (is.eq icmpv6.code (f: f.admin-prohibited)) (is.eq icmpv6.type (f: f.parameter-problem)) accept]
+        [(is.eq meta.iifname (setIfNeeded wans)) (is.eq icmpv6.type (f: with f; set [ destination-unreachable time-exceeded echo-request echo-reply ])) accept]
+        [(is.eq meta.iifname (setIfNeeded wans)) (is.eq icmpv6.code (f: f.no-route)) (is.eq icmpv6.type (f: with f; set [ packet-too-big parameter-problem ])) accept]
+        [(is.eq meta.iifname (setIfNeeded wans)) (is.eq icmpv6.code (f: f.admin-prohibited)) (is.eq icmpv6.type (f: f.parameter-problem)) accept]
         inetForwardRules
         [(log "${logPrefix}forward drop ")];
 
-      postrouting = add chain { type = f: f.nat; hook = f: f.postrouting; prio = f: f.srcnat; policy = f: f.accept; }
+      snat = add chain { type = f: f.nat; hook = f: f.postrouting; prio = f: f.srcnat; policy = f: f.accept; }
         # masquerade ipv6 because my isp doesn't provide it and my vpn gives a single ipv6
-        [(is.eq meta.protocol (f: set [ f.ip f.ip6 ])) (is.eq meta.iifname (set lans)) (is.eq meta.oifname (set wans)) masquerade]
+        [(is.eq meta.protocol (f: set [ f.ip f.ip6 ])) (is.eq meta.iifname (setIfNeeded lans)) (is.eq meta.oifname (setIfNeeded wans)) masquerade]
         inetSnatRules;
 
-      prerouting = add chain { type = f: f.nat; hook = f: f.prerouting; prio = f: f.dstnat; policy = f: f.accept; }
+      dnat = add chain { type = f: f.nat; hook = f: f.prerouting; prio = f: f.dstnat; policy = f: f.accept; }
         inetDnatRules;
     } // extraInetEntries);
   };
@@ -288,13 +292,13 @@ in {
     rangesTcpOnly = builtins.filter (x: !builtins.elem x allowedUDPPortRanges) allowedTCPPortRanges;
     rangesUdpOnly = builtins.filter (x: !builtins.elem x allowedTCPPortRanges) allowedUDPPortRanges;
   in lib.optional (tcpAndUdp != [ ]) {
-    port = notnft.dsl.set tcpAndUdp; tcp = true; udp = true;
+    port = setIfNeeded tcpAndUdp; tcp = true; udp = true;
     target4.address = serverAddress4; target6.address = serverAddress6;
   } ++ lib.optional (tcpOnly != [ ]) {
-    port = notnft.dsl.set tcpOnly; tcp = true; udp = false;
+    port = setIfNeeded tcpOnly; tcp = true; udp = false;
     target4.address = serverAddress4; target6.address = serverAddress6;
   } ++ lib.optional (udpOnly != [ ]) {
-    port = notnft.dsl.set udpOnly; tcp = false; udp = true;
+    port = setIfNeeded udpOnly; tcp = false; udp = true;
     target4.address = serverAddress4; target6.address = serverAddress6;
   } ++ lib.flip map rangesTcpAndUdp (range: {
     port = notnft.dsl.range range.from range.to; tcp = true; udp = true;
@@ -475,14 +479,23 @@ in {
             protocols = dnatRuleProtos rule;
             rule4 = rule.target4; rule6 = rule.target6;
           in with notnft.dsl; with payload;
-            lib.optionals (rule4 != null) [
+            lib.optional (rule4 != null)
               [ (is.eq meta.iifname "wg0") (is.eq ip.protocol protocols) (is.eq th.dport rule.port)
                 (if rule4.port == null then dnat.ip rule4.address else dnat.ip rule4.address rule4.port) ]
-            ] ++ lib.optionals (rule6 != null) [
+            ++ lib.optional (rule6 != null)
               [ (is.eq meta.iifname "wg0") (is.eq ip6.nexthdr protocols) (is.eq th.dport rule.port)
                 (if rule6.port == null then dnat.ip6 rule6.address else dnat.ip6 rule6.address rule6.port) ]
-            ])
-          (builtins.filter (x: x.inVpn && (x.tcp || x.udp)) cfg.dnatRules));
+            )
+          (builtins.filter (x: x.inVpn && (x.tcp || x.udp)) cfg.dnatRules))
+        ++ (with notnft.dsl; with payload; [
+          # hijack Microsoft DNS server hosted on Cloudflare
+          [(is.eq meta.iifname "br0") (is.eq ip.daddr "162.159.36.2") (is.eq ip.protocol (f: set [ f.tcp f.udp ])) (dnat.ip netAddresses.lan4)]
+        ] ++ lib.optionals (cfg.naughtyMacs != []) [
+          [(is.eq meta.iifname "br0") (is.eq ether.saddr (setIfNeeded cfg.naughtyMacs)) (is.eq ip.protocol (f: set [ f.tcp f.udp ]))
+           (is.eq th.dport (set [ 53 853 ])) (dnat.ip netAddresses.lan4)]
+          [(is.eq meta.iifname "br0") (is.eq ether.saddr (setIfNeeded cfg.naughtyMacs)) (is.eq ip6.nexthdr (f: set [ f.tcp f.udp ]))
+           (is.eq th.dport (set [ 53 853 ])) (dnat.ip6 netAddresses.lan6)]
+        ]);
       inetForwardRules = with notnft.dsl; with payload; [
         # allow access to lan from the wan namespace
         [(is.eq meta.iifname "veth-wan-a") (is.eq meta.oifname "br0") accept]
@@ -758,6 +771,8 @@ in {
   environment.etc."unbound/iot_ips.json".text = builtins.toJSON [
     # local multicast
     "224.0.0.0/24"
+    # local broadcast
+    "255.255.255.255"
   ];
   environment.etc."unbound/iot_domains.json".text = builtins.toJSON [
     # ntp time sync

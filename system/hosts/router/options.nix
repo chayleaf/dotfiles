@@ -13,14 +13,13 @@
       description = "server's mac address";
       type = lib.types.str;
     };
-    # TODO: take this from server config
-    domainName = lib.mkOption {
-      description = "server's domain name";
-      type = lib.types.str;
-    };
     vacuumMac = lib.mkOption {
       description = "robot vacuum's mac address";
       type = lib.types.str;
+    };
+    naughtyMacs = lib.mkOption {
+      description = "misbehaving (using wrong DNS server) clients' macs";
+      type = with lib.types; listOf str;
     };
     network = lib.mkOption {
       description = "network gateway+cidr (ex: 192.168.1.1/24)";
