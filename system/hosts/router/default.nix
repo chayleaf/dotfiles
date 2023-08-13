@@ -588,10 +588,10 @@ in {
           [(is.eq ether.daddr cfg.vacuumMac) (is.ne ip6.saddr (cidr netCidrs.lan6)) (is.ne ip6.saddr "@allow_iot6") (log "iot6/d ") drop]
           # MSS clamping - since VPN reduces max MTU
           # We only do this for the first packet in a connection, which should be enough
-          [(is.eq meta.iifname "br0") (is.eq meta.nfproto (f: f.ipv4)) (is.eq meta.mark vpn_table)
-           (is.gt tcpOpt.maxseg.size vpn_ipv4_mss) (mangle tcpOpt.maxseg.size vpn_ipv4_mss)]
-          [(is.eq meta.iifname "br0") (is.eq meta.nfproto (f: f.ipv6)) (is.eq meta.mark vpn_table)
-           (is.gt tcpOpt.maxseg.size vpn_ipv6_mss) (mangle tcpOpt.maxseg.size vpn_ipv6_mss)]
+          [(is.eq meta.nfproto (f: f.ipv4)) (is.eq meta.mark vpn_table) (is.gt tcpOpt.maxseg.size vpn_ipv4_mss)
+           (mangle tcpOpt.maxseg.size vpn_ipv4_mss)]
+          [(is.eq meta.nfproto (f: f.ipv6)) (is.eq meta.mark vpn_table) (is.gt tcpOpt.maxseg.size vpn_ipv6_mss)
+           (mangle tcpOpt.maxseg.size vpn_ipv6_mss)]
           # warn about dns requests to foreign servers
           # TODO: check back and see if I should forcefully redirect DNS requests from certain IPs to router
           [(is.eq meta.iifname "br0") (is.ne ip.daddr (netAddresses.lan4)) (is.eq ip.protocol (f: set [ f.tcp f.udp ]))
