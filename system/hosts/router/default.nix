@@ -58,6 +58,15 @@ let
     else if rule.target4.address or null == netAddresses.lan4 || rule.target6.address or null == netAddresses.lan6 then "rule"
     else "mark";
 
+  dnatRuleProtos = rule:
+    let
+      inherit (notnft.inetProtos) tcp udp;
+    in
+      if rule.tcp && rule.udp then notnft.dsl.set [ tcp udp ]
+      else if rule.tcp then tcp
+      else if rule.udp then udp
+      else throw "Invalid rule: either tcp or udp must be set";
+
   # nftables rules generator
   # selfIp4/selfIp6 = block packets from these addresses
   # extraInetEntries = stuff to add to inet table
@@ -463,8 +472,7 @@ in {
       inetDnatRules = 
         builtins.concatLists (map
           (rule: let
-            inherit (notnft.inetProtos) tcp udp;
-            protocols = if rule.tcp && rule.udp then notnft.dsl.set [ tcp udp ] else if rule.tcp then tcp else udp;
+            protocols = dnatRuleProtos rule;
             rule4 = rule.target4; rule6 = rule.target6;
           in with notnft.dsl; with payload;
             lib.optionals (rule4 != null) [
@@ -521,22 +529,20 @@ in {
           [(is.eq ip6.daddr "@force_unvpn6") (mangle meta.mark wan_table)]
           [(is.eq ip.saddr "@force_unvpn4") (mangle meta.mark wan_table)]
           [(is.eq ip6.saddr "@force_unvpn6") (mangle meta.mark wan_table)]
-          # block requests to port 25 from hosts other than the server so they can't send mail pretending to originate from my domain
-          # only do this for br0 since other adapters aren't forwarded from
-          [(is.eq meta.iifname "br0") (is.ne ether.saddr cfg.serverMac) (is.eq ip.protocol (f: f.tcp)) (is.eq tcp.dport 25) (log "smtp ") drop]
-          # don't vpn smtp requests so spf works fine (and in case the vpn blocks requests over port 25, which it usually does)
-          [(is.eq ip.protocol (f: f.tcp)) (is.eq tcp.dport 25) (mangle meta.mark wan_table)]
-          [(is.eq ip6.nexthdr (f: f.tcp)) (is.eq tcp.dport 25) (mangle meta.mark wan_table)]
-          # finally, force vpn to/from force_vpn4/force_vpn6 even if we previously decided to unvpn this connection
+          # force vpn to/from force_vpn4/force_vpn6 even if we previously decided to unvpn this connection
           [(is.eq ip.daddr "@force_vpn4") (mangle meta.mark vpn_table)]
           [(is.eq ip6.daddr "@force_vpn6") (mangle meta.mark vpn_table)]
           [(is.eq ip.saddr "@force_vpn4") (mangle meta.mark vpn_table)]
           [(is.eq ip6.saddr "@force_vpn6") (mangle meta.mark vpn_table)]
+          # block requests to port 25 from hosts other than the server so they can't send mail pretending to originate from my domain
+          # only do this for br0 since traffic from other interfaces isn't forwarded to wan
+          [(is.eq meta.iifname "br0") (is.ne ether.saddr cfg.serverMac) (is.eq meta.l4proto (f: f.tcp)) (is.eq tcp.dport 25) (log "smtp ") drop]
+          # don't vpn smtp requests so spf works fine (and in case the vpn blocks requests over port 25, which it usually does)
+          [(is.eq meta.l4proto (f: f.tcp)) (is.eq tcp.dport 25) (mangle meta.mark wan_table)]
         ] ++ # 1. dnat non-vpn: change rttable to wan
         builtins.concatLists (map
           (rule: let
-            inherit (notnft.inetProtos) tcp udp;
-            protocols = if rule.tcp && rule.udp then notnft.dsl.set [ tcp udp ] else if rule.tcp then tcp else udp;
+            protocols = dnatRuleProtos rule;
             rule4 = rule.target4; rule6 = rule.target6;
           in with notnft.dsl; with payload;
             lib.optionals (rule4 != null) [
@@ -550,8 +556,7 @@ in {
         ++ # 2. dnat vpn: change rttable to vpn
         builtins.concatLists (map
           (rule: let
-            inherit (notnft.inetProtos) tcp udp;
-            protocols = if rule.tcp && rule.udp then notnft.dsl.set [ tcp udp ] else if rule.tcp then tcp else udp;
+            protocols = dnatRuleProtos rule;
             rule4 = rule.target4; rule6 = rule.target6;
           in with notnft.dsl; with payload;
             lib.optionals (rule4 != null) [
@@ -640,8 +645,7 @@ in {
       inetDnatRules = 
         builtins.concatLists (map
           (rule: let
-            inherit (notnft.inetProtos) tcp udp;
-            protocols = if rule.tcp && rule.udp then notnft.dsl.set [ tcp udp ] else if rule.tcp then tcp else udp;
+            protocols = dnatRuleProtos rule;
             rule4 = rule.target4; rule6 = rule.target6;
           in with notnft.dsl; with payload;
             lib.optionals (rule4 != null) [
@@ -657,8 +661,7 @@ in {
         # if i ever need this again, i have it right here
         builtins.concatLists (map
           (rule: let
-            inherit (notnft.inetProtos) tcp udp;
-            protocols = if rule.tcp && rule.udp then notnft.dsl.set [ tcp udp ] else if rule.tcp then tcp else udp;
+            protocols = dnatRuleProtos rule;
             rule4 = rule.target4; rule6 = rule.target6;
           in with notnft.dsl; with payload;
             lib.optionals (rule4 != null) [
