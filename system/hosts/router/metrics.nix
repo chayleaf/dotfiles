@@ -1,5 +1,6 @@
 { config
 , router-lib
+, lib
 , ... }:
 let
   cfg = config.router-settings;
@@ -25,20 +26,59 @@ in {
     kea = {
       enable = true;
       controlSocketPaths = [
-        "/run/kea/kea-dhcp4-ctrl.sock"
-        "/run/kea/kea-dhcp6-ctrl.sock"
+        config.router.interfaces.br0.ipv4.kea.settings.control-socket.socket-name
+        config.router.interfaces.br0.ipv6.kea.settings.control-socket.socket-name
       ];
       listenAddress = netAddresses.lan4;
     };
   };
-  router.interfaces.br0 = {
-    ipv4.kea.settings.control-socket = {
-      socket-name = "/run/kea/kea-dhcp4-ctrl.sock";
-      socket-type = "unix";
+  router.interfaces.br0 = let
+    # all of this just to avoid logging commands...
+    keaLogs = v: [
+      "alloc-engine"
+      "auth"
+      "bad-packets"
+      "database"
+      "ddns"
+      "dhcp${toString v}"
+      "dhcpsrv"
+      "eval"
+      "hosts"
+      "leases"
+      "options"
+      "packets"
+      "tcp"
+    ];
+  in {
+    ipv4.kea.settings = {
+      control-socket = {
+        socket-name = "/run/kea/kea-dhcp4-ctrl.sock";
+        socket-type = "unix";
+      };
+      loggers = lib.toList {
+        name = "kea-dhcp4";
+        severity = "WARN";
+        output_options = [ { output = "syslog"; } ];
+      } ++ map (name: {
+        name = "kea-dhcp4.${name}";
+        severity = "INFO";
+        output_options = [ { output = "syslog"; } ];
+      }) (keaLogs 4);
     };
-    ipv6.kea.settings.control-socket = {
-      socket-name = "/run/kea/kea-dhcp6-ctrl.sock";
-      socket-type = "unix";
+    ipv6.kea.settings = {
+      control-socket = {
+        socket-name = "/run/kea/kea-dhcp6-ctrl.sock";
+        socket-type = "unix";
+      };
+      loggers = lib.toList {
+        name = "kea-dhcp6";
+        severity = "WARN";
+        output_options = [ { output = "syslog"; } ];
+      } ++ map (name: {
+        name = "kea-dhcp6.${name}";
+        severity = "INFO";
+        output_options = [ { output = "syslog"; } ];
+      }) (keaLogs 6);
     };
     ipv6.corerad.settings.debug = {
       address = "${netAddresses.lan4}:9430";
