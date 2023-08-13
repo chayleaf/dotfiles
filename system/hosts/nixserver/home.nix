@@ -114,8 +114,6 @@ in {
       proxy_connect_timeout 300;
       proxy_send_timeout 300;
     '';*/
-    # TODO: fix
-    # https://github.com/nix-community/harmonia/issues/120
     locations."/".proxyPass = "http://${config.services.harmonia.settings.bind or "[::1]:5000"}";
     locations."/".extraConfig = ''
       proxy_set_header Host $host;
@@ -132,7 +130,7 @@ in {
   };
 
   services.hydra = {
-    enable = false;
+    enable = true;
     hydraURL = "home.${cfg.domainName}/hydra";
     listenHost = "127.0.0.1";
     minimumDiskFree = 30;

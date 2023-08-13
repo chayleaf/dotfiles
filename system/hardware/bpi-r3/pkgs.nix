@@ -60,6 +60,32 @@ let
     url = "ftp://ftp.denx.de/pub/u-boot/u-boot-${ubootVersion}.tar.bz2";
     hash = "sha256-tqp9fnGPQFeNGrkU/A6AusDEz7neh2KiR9HWbR7+WTY=";
   };
+  # there are few direct hits with the linux kernel, so use CCACHE_NODIRECT
+  # (direct hits are file-based, non-direct are preprocessed file-based)
+  ccacheConfig = ''
+    export CCACHE_COMPRESS=1
+    export CCACHE_DIR="/var/cache/ccache"
+    export CCACHE_UMASK=007
+    export CCACHE_SLOPPINESS=include_file_mtime,time_macros
+    export CCACHE_NODIRECT=1
+    if [ ! -d "$CCACHE_DIR" ]; then
+      echo "====="
+      echo "Directory '$CCACHE_DIR' does not exist"
+      echo "Please create it with:"
+      echo "  sudo mkdir -m0770 '$CCACHE_DIR'"
+      echo "  sudo chown root:nixbld '$CCACHE_DIR'"
+      echo "====="
+      exit 1
+    fi
+    if [ ! -w "$CCACHE_DIR" ]; then
+      echo "====="
+      echo "Directory '$CCACHE_DIR' is not accessible for user $(whoami)"
+      echo "Please verify its access permissions"
+      echo "====="
+      exit 1
+    fi
+  '';
+
 in rec {
   ubootBpiR3Sd = pkgs.buildUBoot {
     defconfig = "mt7986a_bpir3_sd_defconfig";
@@ -309,38 +335,11 @@ in rec {
     };
   };
   linux_bpiR3_ccache = linux_bpiR3.override {
-    stdenv = pkgs'.ccacheStdenv;
+    stdenv = pkgs'.ccacheStdenv.override { extraConfig = ccacheConfig; };
     buildPackages = pkgs'.buildPackages // {
-      stdenv = pkgs'.buildPackages.ccacheStdenv;
+      stdenv = pkgs'.buildPackages.ccacheStdenv.override { extraConfig = ccacheConfig; };
     };
   };
   linuxPackages_bpiR3 = pkgs.linuxPackagesFor linux_bpiR3;
   linuxPackages_bpiR3_ccache = pkgs.linuxPackagesFor linux_bpiR3_ccache;
-  # there are few direct hits with the linux kernel, so use CCACHE_NODIRECT
-  # (direct hits are file-based, non-direct are preprocessed file-based)
-  ccacheWrapper = pkgs.ccacheWrapper.override {
-    extraConfig = ''
-      export CCACHE_COMPRESS=1
-      export CCACHE_DIR="/var/cache/ccache"
-      export CCACHE_UMASK=007
-      export CCACHE_SLOPPINESS=include_file_mtime,time_macros
-      export CCACHE_NODIRECT=1
-      if [ ! -d "$CCACHE_DIR" ]; then
-        echo "====="
-        echo "Directory '$CCACHE_DIR' does not exist"
-        echo "Please create it with:"
-        echo "  sudo mkdir -m0770 '$CCACHE_DIR'"
-        echo "  sudo chown root:nixbld '$CCACHE_DIR'"
-        echo "====="
-        exit 1
-      fi
-      if [ ! -w "$CCACHE_DIR" ]; then
-        echo "====="
-        echo "Directory '$CCACHE_DIR' is not accessible for user $(whoami)"
-        echo "Please verify its access permissions"
-        echo "====="
-        exit 1
-      fi
-    '';
-  };
 }

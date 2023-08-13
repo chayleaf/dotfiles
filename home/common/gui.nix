@@ -34,7 +34,7 @@
     tabbed
     # for preview
     ffmpeg ffmpegthumbnailer nsxiv imagemagick
-    zathura /*TODO libreoffice*/ fontpreview djvulibre poppler_utils
+    zathura /*libreoffice*/ fontpreview djvulibre poppler_utils
   ] ++ lib.optionals (!config.programs.mpv.enable) [ mpv ];
   xdg.configFile."alsoft.conf".text = ''
     [general]
@@ -162,7 +162,8 @@
       # vaapi-device / vulkan-device
       # screen / vulkan-display-display
       audio-device = "pipewire";
-      # because ao=pipewire doesn't work for whatever reason...
+      # because ao=pipewire doesn't work for audio-only files for whatever reason...
+      # TODO: hopefully remove it when it's fixed upstream
       ao = "pulse,alsa,jack,pipewire,"; 
       audio-file-auto = "fuzzy";
       sub-auto = "fuzzy";
@@ -251,25 +252,9 @@
     # might check out some day (tm)
     # nyxt qutebrowser
 
-    # for updating parts of this repo
-    (nvfetcher.overrideAttrs (old: {
-      # HACK: replace nix with the nix version I use
-      postInstall = ''
-        wrapProgram "$out/bin/nvfetcher" --prefix 'PATH' ':' "${
-          pkgs.lib.makeBinPath [
-            pkgs.nvchecker
-            config.nix.package # nix-prefetch-url
-            pkgs.nix-prefetch-git
-            pkgs.nix-prefetch-docker
-          ]
-        }"
-      '' + (let
-        old-lines = lib.splitString "\n" old.postInstall;
-        first = builtins.head old-lines;
-        rest = builtins.tail old-lines;
-      in
-        assert lib.hasPrefix "wrapProgram " first; builtins.concatStringsSep "\n" rest);
-    }))
+    # for working with nix
+    nix-init
+    nvfetcher
     config.nur.repos.rycee.mozilla-addons-to-nix
 
     anki-bin

@@ -5,7 +5,7 @@
     copyToStore = pkgs: path:
       let
         archive = exec [
-          "sh" "-c"
+          "/bin/sh" "-c"
           "echo '\"' && (cd /etc/nixos/private && tar czv ${path} 2>/dev/null | base64 -w0) && echo '\"'"
         ];
       in "${pkgs.stdenvNoCC.mkDerivation {

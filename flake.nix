@@ -2,8 +2,8 @@
   description = "NixOS + Home Manager configuration of chayleaf";
 
   inputs = {
-    # nixpkgs.url = "github:nixos/nixpkgs/nixos-unstable";
-    nixpkgs.url = "github:chayleaf/nixpkgs";
+    # nixpkgs.url = "github:nixos/nixpkgs/master";
+    nixpkgs.url = "github:chayleaf/nixpkgs/ccache";
     nixos-hardware.url = "github:NixOS/nixos-hardware";
     impermanence.url = "github:nix-community/impermanence";
     nur.url = "github:nix-community/NUR";

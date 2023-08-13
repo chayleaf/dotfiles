@@ -28,13 +28,8 @@
   programs.firefox = {
     enable = true;
     package =
-      let
-        # TODO: remove this override soon (it's already upstreamed)
-        librewolf-unwrapped = pkgs.librewolf-unwrapped.overrideAttrs (prev: {
-          MOZ_REQUIRE_SIGNING = "";
-        });
-      in pkgs.wrapFirefox librewolf-unwrapped {
-        inherit (librewolf-unwrapped) extraPrefsFiles extraPoliciesFiles;
+      pkgs.wrapFirefox pkgs.librewolf-unwrapped {
+        inherit (pkgs.librewolf-unwrapped) extraPrefsFiles extraPoliciesFiles;
         wmClass = "LibreWolf";
         libName = "librewolf";
         # TODO: keepass in extraNativeMessagingHosts?

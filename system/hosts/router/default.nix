@@ -240,11 +240,12 @@ let
   vacuumAddress6 = addToIp parsedGatewayAddr6 2;
 
   hosted-domains =
-    builtins.concatLists
-      (builtins.attrValues
-        (builtins.mapAttrs
-          (k: v: [ k ] ++ v.serverAliases)
-          server-config.services.nginx.virtualHosts));
+    builtins.filter (domain: domain != "localhost")
+      (builtins.concatLists
+        (builtins.attrValues
+          (builtins.mapAttrs
+            (k: v: [ k ] ++ v.serverAliases)
+            server-config.services.nginx.virtualHosts)));
 in {
   imports = [ ./options.nix ./metrics.nix ];
   system.stateVersion = "22.11";
@@ -721,11 +722,7 @@ in {
   users.users.${config.common.mainUsername}.extraGroups = [ config.services.unbound.group ];
   services.unbound = {
     enable = true;
-    package = pkgs.unbound-with-systemd.override {
-      stdenv = pkgs.ccacheStdenv;
-      withPythonModule = true;
-      python = pkgs.python3;
-    };
+    package = pkgs.unbound-full;
     localControlSocketPath = "/run/unbound/unbound.ctl";
     # we override resolvconf above manually
     resolveLocalQueries = false;

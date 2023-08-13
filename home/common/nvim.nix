@@ -179,7 +179,8 @@
     plugins = let ps = pkgs.vimPlugins; in map (x: if x?config && x?plugin then { type = "lua"; } // x else x) [
       ps.vim-svelte
       # TODO remove on next nvim update (0.8.3/0.9? whenever they add builtin nix syntax)
-      ps.vim-nix
+      # testing the removal
+      # ps.vim-nix
       { plugin = pkgs.vimUtils.buildVimPluginFrom2Nix {
           pname = "vscode-nvim";
           version = "2023-02-10";

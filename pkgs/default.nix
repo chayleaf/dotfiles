@@ -9,7 +9,7 @@ let
   sources = import ./_sources/generated.nix {
     inherit (pkgs) fetchgit fetchurl fetchFromGitHub dockerTools;
   };
-  nixForNixPlugins = pkgs.nixVersions.nix_2_15;
+  nixForNixPlugins = pkgs.nixVersions.nix_2_17;
 in
 
 {
@@ -31,33 +31,38 @@ in
   inherit (nix-gaming) faf-client osu-lazer-bin;
   inherit nixForNixPlugins;
   nix-plugins = pkgs.nix-plugins.overrideAttrs (old: {
-    src = old.src.override {
-      rev = "8b9d06ef5b1b4f53cc99fcfde72bae75c7a7aa9c";
-      hash = "sha256-7Lo+YxpiRz0+ZLFDvYMJWWK2j0CyPDRoP1wAc+OaPJY=";
-    };
+    version = "12.0.0";
+    patches = [
+      (pkgs.fetchpatch {
+        url = "https://github.com/shlevy/nix-plugins/pull/15/commits/f7534b96e70ca056ef793918733d1820af89a433.patch";
+        hash = "sha256-ePRAnZAobasF6jA3QC73p8zyzayXORuodhus96V+crs=";
+      })
+    ];
   });
   nix = nixForNixPlugins;
   nixVersions = pkgs.nixVersions.extend (self: super: {
     stable = nixForNixPlugins;
     unstable = nixForNixPlugins;
   });
-  /* Various patches to change Nix version of existing packages so they don't error out because of nix-plugins in nix.conf
+  # Various patches to change Nix version of existing packages so they don't error out because of nix-plugins in nix.conf
   harmonia = pkgs.harmonia.override { nix = nixForNixPlugins; };
   nix-init = pkgs.nix-init.override { nix = nixForNixPlugins; };
   nix-serve = pkgs.nix-serve.override { nix = nixForNixPlugins; };
   nix-serve-ng = pkgs.nix-serve-ng.override { nix = nixForNixPlugins; };
-  nurl = pkgs.nurl.override { nixVersions = builtins.mapAttrs (k: v: nixForNixPlugins) pkgs.nixVersions; };
-  */
-  # TODO:
-  /*hydra_unstable = (pkgs.hydra_unstable.override {
-    nix = nixForNixPlugins;
+  hydra_unstable = (pkgs.hydra_unstable.override {
+    nix = nixForNixPlugins.overrideAttrs (old: {
+      # TODO: remove when https://github.com/NixOS/nix/issues/8796 is fixed or hydra code stops needing a fix
+      configureFlags = builtins.filter (x: x != "--enable-lto") (old.configureFlags or []);
+    });
   }).overrideAttrs (old: {
-    version = "2023-05-08";
-    src = old.src.override {
-      rev = "13ef4e3c5d87bc6f68c91a36d78cdc7d589d8ff2";
-      sha256 = "sha256-niw0RHfwpo2/86wvtHrbU/DQYlkkwtrM+qG7GEC0qAo=";
-    };
-  });*/
+    patches = (old.patches or [ ]) ++ [
+      (pkgs.fetchpatch {
+        url = "https://github.com/NixOS/hydra/pull/1296/commits/b23431a657d8a9b2f478c95dd81034780751a262.patch";
+        hash = "sha256-ruTAIPUrPtfy8JkXYK2qigBrSa6KPXpJlORTNkUYrG0=";
+      })
+    ];
+  });
+  nurl = pkgs.nurl.override { nix = nixForNixPlugins; };
 
   clang-tools_latest = pkgs.clang-tools_16;
   clang_latest = pkgs.clang_16;
@@ -91,6 +96,9 @@ in
   searxng = pkgs'.python3.pkgs.toPythonModule (pkgs.searxng.overrideAttrs (old: {
     inherit (sources.searxng) src;
     version = "unstable-" + sources.searxng.date;
+    propagatedBuildInputs = old.propagatedBuildInputs ++ [
+      (pkgs'.python3.pkgs.callPackage ./chompjs.nix { })
+    ];
   }));
   # system76-scheduler = callPackage ./system76-scheduler.nix { };
   techmino = callPackage ./techmino { };
@@ -116,10 +124,4 @@ in
     qemu = pkgs'.qemu_7;
     stdenv = pkgs'.ccacheStdenv;
   };
-
-  cutter2 = pkgs.callPackage ./rizin/wrapper.nix {
-    unwrapped = pkgs.cutter;
-  } [ (pkgs.libsForQt5.callPackage ./rizin/rz-ghidra.nix {
-    enableCutterPlugin = true;
-  }) ];
 } // (import ../system/hardware/bpi-r3/pkgs.nix { inherit pkgs pkgs' lib sources; })

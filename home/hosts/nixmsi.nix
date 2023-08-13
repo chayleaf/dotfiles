@@ -65,7 +65,7 @@
   home.packages = with pkgs; [
     gimp krita blender-hip
     kdenlive glaxnimate mediainfo
-    ghidra cutter2
+    ghidra (cutter.withPlugins (p: with p; [ sigdb rz-ghidra ]))
     openrgb piper
     steam-run steam
     # faf-client

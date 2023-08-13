@@ -100,6 +100,7 @@ in {
       kitty.terminfo
       # rxvt-unicode-unwrapped.terminfo
     ]);
+    # TODO: minimal fish config
     programs.vim = lib.mkIf cfg.minimal {
       defaultEditor = lib.mkDefault true;
       package = pkgs.vim-full.customize {
@@ -132,7 +133,6 @@ in {
     };
     # nixos-hardware uses mkDefault here, so we use slightly higher priority
     services.xserver.libinput.enable = mkForceDefault (!cfg.minimal);
-    # TODO: minimal fish/vim config
     /*
     services.xserver = {
       enable = true;
