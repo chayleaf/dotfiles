@@ -511,6 +511,8 @@ in {
           (cidr "194.190.157.0" 24)
           (cidr "194.190.21.0" 24)
           (cidr "194.226.130.0" 23)
+          # no idea what this IP is, but it got a port 53 connection from one of the devices in this network - so off it goes
+          "84.1.213.156"
         ];
 
         block6 = add set { type = f: f.ipv6_addr; flags = f: with f; [ interval ]; };
