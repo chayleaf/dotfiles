@@ -564,9 +564,13 @@ in {
             lib.optionals (rule4 != null) [
               [ (is.eq meta.iifname "br0") (is.eq ip.protocol protocols) (is.eq ip.saddr rule4.address)
                 (is.eq th.sport (if rule4.port != null then rule4.port else rule.port)) (mangle meta.mark wan_table) ]
+              [ (is.eq meta.iifname "veth-wan-a") (is.eq ip.protocol protocols) (is.eq ip.daddr rule4.address)
+                (is.eq th.dport (if rule4.port != null then rule4.port else rule.port)) (mangle meta.mark wan_table) ]
             ] ++ lib.optionals (rule6 != null) [
               [ (is.eq meta.iifname "br0") (is.eq ip6.nexthdr protocols) (is.eq ip6.saddr rule6.address)
                 (is.eq th.sport (if rule6.port != null then rule6.port else rule.port)) (mangle meta.mark wan_table) ]
+              [ (is.eq meta.iifname "veth-wan-a") (is.eq ip6.nexthdr protocols) (is.eq ip6.daddr rule6.address)
+                (is.eq th.dport (if rule6.port != null then rule6.port else rule.port)) (mangle meta.mark wan_table) ]
             ])
           (builtins.filter (x: !x.inVpn && (x.tcp || x.udp) && dnatRuleMode x == "mark") cfg.dnatRules))
         ++ # 2. dnat vpn: change rttable to vpn
@@ -578,9 +582,13 @@ in {
             lib.optionals (rule4 != null) [
               [ (is.eq meta.iifname "br0") (is.eq ip.protocol protocols) (is.eq ip.saddr rule4.address)
                 (is.eq th.sport (if rule4.port != null then rule4.port else rule.port)) (mangle meta.mark vpn_table) ]
+              [ (is.eq meta.iifname "wg0") (is.eq ip.protocol protocols) (is.eq ip.daddr rule4.address)
+                (is.eq th.dport (if rule4.port != null then rule4.port else rule.port)) (mangle meta.mark vpn_table) ]
             ] ++ lib.optionals (rule6 != null) [
               [ (is.eq meta.iifname "br0") (is.eq ip6.nexthdr protocols) (is.eq ip6.saddr rule6.address)
                 (is.eq th.sport (if rule6.port != null then rule6.port else rule.port)) (mangle meta.mark vpn_table) ]
+              [ (is.eq meta.iifname "wg0") (is.eq ip6.nexthdr protocols) (is.eq ip6.daddr rule6.address)
+                (is.eq th.dport (if rule6.port != null then rule6.port else rule.port)) (mangle meta.mark vpn_table) ]
             ])
           (builtins.filter (x: x.inVpn && (x.tcp || x.udp) && dnatRuleMode x == "mark") cfg.dnatRules))
         ++ [
