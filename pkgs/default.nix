@@ -30,6 +30,12 @@ in
   } else pkgs.linux-firmware;
   inherit (nix-gaming) faf-client osu-lazer-bin;
   inherit nixForNixPlugins;
+  nix = nixForNixPlugins;
+  nixVersions = pkgs.nixVersions.extend (self: super: {
+    stable = nixForNixPlugins;
+    unstable = nixForNixPlugins;
+  });
+  # Various patches to change Nix version of existing packages so they don't error out because of nix-plugins in nix.conf
   nix-plugins = pkgs.nix-plugins.overrideAttrs (old: {
     version = "12.0.0";
     patches = [
@@ -39,13 +45,14 @@ in
       })
     ];
   });
-  nix = nixForNixPlugins;
-  nixVersions = pkgs.nixVersions.extend (self: super: {
-    stable = nixForNixPlugins;
-    unstable = nixForNixPlugins;
-  });
-  # Various patches to change Nix version of existing packages so they don't error out because of nix-plugins in nix.conf
-  harmonia = pkgs.harmonia.override { nix = nixForNixPlugins; };
+  harmonia = (pkgs.harmonia.override { nix = nixForNixPlugins; }).overrideAttrs {
+    patches = [
+      (pkgs.fetchpatch {
+        url = "https://github.com/nix-community/harmonia/pull/145/commits/394c939a45fa9c590347e149400876c318610b1e.patch";
+        hash = "sha256-DvyE7/0PW3XRtFgIrl4IQa7RIQLQZoKLddxCZvhpu3I=";
+      })
+    ];
+  };
   nix-init = pkgs.nix-init.override { nix = nixForNixPlugins; };
   nix-serve = pkgs.nix-serve.override { nix = nixForNixPlugins; };
   nix-serve-ng = pkgs.nix-serve-ng.override { nix = nixForNixPlugins; };
