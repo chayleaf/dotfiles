@@ -47,6 +47,7 @@ in {
     '';
     # locations."/.well-known/acme-challenge".extraConfig = "auth_basic off;";
     locations."/".root = "/var/www/home.${cfg.domainName}/";
+    locations."/scan/".proxyPass = "http://${lib.quoteListenAddr config.services.scanservjs.settings.host}:${toString config.services.scanservjs.settings.port}/";
     locations."/grafana/" = {
       proxyPass = "http://grafana/";
       proxyWebsockets = true;
@@ -383,4 +384,12 @@ in {
     publish.addresses = true;
     publish.userServices = true;
   };
+  hardware.sane = {
+    enable = true;
+    extraBackends = with pkgs; [ hplipWithPlugin ];
+  };
+  nixpkgs.config.allowUnfreePredicate = pkg: lib.getName pkg == "hplip";
+  services.scanservjs.enable = true;
+  services.scanservjs.settings.host = "127.0.0.1";
+  services.scanservjs.settings.port = 3952;
 }

@@ -120,6 +120,7 @@
   # programs.wireshark.enable = true;
   # users.groups.wireshark.members = [ config.common.mainUsername ];
   services.printing.enable = true;
+  services.printing.drivers = [ pkgs.hplip ];
   services.pipewire = {
     enable = true;
     alsa.enable = true;
@@ -171,6 +172,8 @@
   services.udev.packages = [
     pkgs.android-udev-rules
   ];
+  services.avahi.enable = true;
+  services.avahi.nssmdns = true;
   environment.systemPackages = with pkgs; [
     comma
     neovim

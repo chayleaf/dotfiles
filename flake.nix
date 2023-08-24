@@ -131,6 +131,7 @@
           nixos-mailserver.nixosModules.default
           ./system/devices/hp-probook-g0-server.nix
           (if devMaubot then import /${devPath}/maubot.nix/module else maubot.nixosModules.default)
+          ./system/modules/scanservjs.nix
         ];
       };
       nixserver-cross = crossConfig nixserver;

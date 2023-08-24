@@ -5,7 +5,7 @@
 , pkgs' ? pkgs
 , ... }:
 let
-  inherit (pkgs) callPackage;
+  inherit (pkgs') callPackage;
   sources = import ./_sources/generated.nix {
     inherit (pkgs) fetchgit fetchurl fetchFromGitHub dockerTools;
   };
@@ -13,21 +13,6 @@ let
 in
 
 {
-  linux-firmware = if pkgs.system == "x86_64-linux" then pkgs.stdenvNoCC.mkDerivation {
-    inherit (pkgs.linux-firmware) pname version src meta;
-    dontFixup = true;
-    passthru = { inherit (pkgs.linux-firmware) version; };
-    installFlags = [ "DESTDIR=$(out)" ];
-
-    # revert microcode updates which break boot for me
-    patches = [ ./revert-amd-ucode-update.patch ];
-    postPatch = ''
-      cp ${pkgs.fetchurl {
-        url = "https://git.kernel.org/pub/scm/linux/kernel/git/firmware/linux-firmware.git/plain/amd-ucode/microcode_amd_fam17h.bin?id=b250b32ab1d044953af2dc5e790819a7703b7ee6";
-        hash = "sha256-HnKjEb2di7BiKB09JYUjIUuZNCVgXlwRSbjijnuYBcM=";
-      }} amd-ucode/microcode_amd_fam17h.bin
-    '';
-  } else pkgs.linux-firmware;
   inherit (nix-gaming) faf-client osu-lazer-bin;
   inherit nixForNixPlugins;
   nix = nixForNixPlugins;
@@ -100,6 +85,7 @@ in
     '';
   };
   rofi-steam-game-list = callPackage ./rofi-steam-game-list { };
+  scanservjs = callPackage ./scanservjs.nix { };
   searxng = pkgs'.python3.pkgs.toPythonModule (pkgs.searxng.overrideAttrs (old: {
     inherit (sources.searxng) src;
     version = "unstable-" + sources.searxng.date;

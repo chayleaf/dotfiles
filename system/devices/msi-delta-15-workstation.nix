@@ -11,7 +11,7 @@ let
   dataroot = "/dev/disk/by-uuid/${datarootUuid}";
 in {
   imports = [
-    ../hardware/msi-delta-15.nix
+    ../hardware/msi-delta-15
     ../hosts/nixmsi.nix
   ];
 
