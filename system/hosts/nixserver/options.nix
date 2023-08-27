@@ -9,6 +9,11 @@
           default = "pavluk.org";
           description = "domain name";
         };
+        keycloakRealm = mkOption {
+          type = types.str;
+          default = "master";
+          description = "keycloak realm";
+        };
         lanCidrV4 = mkOption {
           type = types.str;
           description = "LAN mask (IPv4)";

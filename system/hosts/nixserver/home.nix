@@ -14,6 +14,7 @@ let
         (lib.filterAttrs (k: v: builtins.elem k names && v.enable) config.services.prometheus.exporters));
 in {
   # a bunch of services for personal use not intended for the public
+  # TODO: keycloakify this
   services.grafana = {
     enable = true;
     settings = {
@@ -33,6 +34,10 @@ in {
     };
   };
   services.nginx.upstreams.grafana.servers."unix:/${config.services.grafana.settings.server.socket}" = {};
+
+  # TODO: 
+  # services.keycloak.plugins = [ pkgs.keycloak.plugins.keycloak-metrics-spi ];
+  services.keycloak.settings.metrics-enabled = true;
 
   services.nginx.virtualHosts."home.${cfg.domainName}" = {
     quic = true;

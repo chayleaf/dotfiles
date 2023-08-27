@@ -123,6 +123,8 @@ in {
         { directory = /var/lib/dovecot; user = "root"; group = "root"; mode = "0755"; }
       ] ++ lib.optionals config.security.sudo.enable [
         { directory = /var/db/sudo/lectured; user = "root"; group = "root"; mode = "0700"; }
+      ] ++ lib.optionals config.services.openldap.enable [
+        { directory = /var/lib/openldap; inherit (config.services.openldap) user group; mode = "0755"; }
       ] ++ cfg.directories);
       files = map (x:
         if builtins.isPath x then toString x

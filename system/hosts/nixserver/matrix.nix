@@ -66,7 +66,7 @@ in {
       server_name = "matrix.${cfg.domainName}";
       max_upload_size = "100M";
       email = {
-        smtp_host = "mail.pavluk.org";
+        smtp_host = "mail.${cfg.domainName}";
         smtp_port = 587;
         smtp_user = "noreply";
         smtp_password = cfg.unhashedNoreplyPassword;

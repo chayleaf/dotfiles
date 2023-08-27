@@ -20,6 +20,7 @@ in {
     ./mumble.nix
     ./mailserver.nix
     ./home.nix
+    ./keycloak.nix
   ];
 
   system.stateVersion = "22.11";
