@@ -38,7 +38,7 @@ in {
 
   # See also https://meta.akkoma.dev/t/390
   # https://<pleroma>/oauth/keycloak?scope=openid+profile
-  # ...but this doesnt even work, the callback simply gets ignored
+  # ...but this doesnt even work, the callback fails with %OAuth2.Error{reason: :invalid_request}
   # oh well
   services.akkoma.config = {
     ":ueberauth" = let

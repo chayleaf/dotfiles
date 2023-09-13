@@ -545,11 +545,12 @@ in {
           [(is.eq ip6.daddr "@force_unvpn6") (mangle meta.mark wan_table)]
           [(is.eq ip.saddr "@force_unvpn4") (mangle meta.mark wan_table)]
           [(is.eq ip6.saddr "@force_unvpn6") (mangle meta.mark wan_table)]
-          # force vpn to/from force_vpn4/force_vpn6 even if we previously decided to unvpn this connection
-          [(is.eq ip.daddr "@force_vpn4") (mangle meta.mark vpn_table)]
-          [(is.eq ip6.daddr "@force_vpn6") (mangle meta.mark vpn_table)]
-          [(is.eq ip.saddr "@force_vpn4") (mangle meta.mark vpn_table)]
-          [(is.eq ip6.saddr "@force_vpn6") (mangle meta.mark vpn_table)]
+          # ...force vpn to/from force_vpn4/force_vpn6
+          # (temporarily disable this because it breaks codeforces.org)
+          # [(is.eq ip.daddr "@force_vpn4") (mangle meta.mark vpn_table)]
+          # [(is.eq ip6.daddr "@force_vpn6") (mangle meta.mark vpn_table)]
+          # [(is.eq ip.saddr "@force_vpn4") (mangle meta.mark vpn_table)]
+          # [(is.eq ip6.saddr "@force_vpn6") (mangle meta.mark vpn_table)]
           # block requests to port 25 from hosts other than the server so they can't send mail pretending to originate from my domain
           # only do this for br0 since traffic from other interfaces isn't forwarded to wan
           [(is.eq meta.iifname "br0") (is.ne ether.saddr cfg.serverMac) (is.eq meta.l4proto (f: f.tcp)) (is.eq tcp.dport 25) (log "smtp ") drop]
