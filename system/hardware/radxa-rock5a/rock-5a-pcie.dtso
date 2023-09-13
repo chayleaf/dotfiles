@@ -1,0 +1,20 @@
+/dts-v1/;
+/plugin/;
+
+/ {
+	compatible = "radxa,rock-5a", "rockchip,rk3588s";
+
+	fragment@0 {
+		target = <&pcie2x1l2>;
+		__overlay__ {
+			status = "okay";
+		};
+	};
+
+	fragment@1 {
+		target = <&combphy0_ps>;
+		__overlay__ {
+			status = "okay";
+		};
+	};
+};

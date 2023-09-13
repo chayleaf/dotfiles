@@ -2,8 +2,10 @@
   description = "NixOS + Home Manager configuration of chayleaf";
 
   inputs = {
-    # nixpkgs.url = "github:nixos/nixpkgs/master";
-    nixpkgs.url = "github:chayleaf/nixpkgs/ccache";
+    #nixpkgs.url = "github:nixos/nixpkgs/3dc2b4f8166f744c3b3e9ff8224e7c5d74a5424f";
+    nixpkgs.url = "github:nixos/nixpkgs/nixos-unstable";
+    nixpkgs2.url = "github:nixos/nixpkgs/master";
+    # nixpkgs.url = "github:chayleaf/nixpkgs/ccache2";
     nixos-hardware.url = "github:NixOS/nixos-hardware";
     impermanence.url = "github:nix-community/impermanence";
     nur.url = "github:nix-community/NUR";
@@ -49,7 +51,7 @@
     };
   };
 
-  outputs = inputs@{ self, nixpkgs, nixos-hardware, impermanence, home-manager, nur, nix-gaming, notlua, notnft, nixos-mailserver, nixos-router, maubot, ... }:
+  outputs = inputs@{ self, nixpkgs, nixpkgs2, nixos-hardware, impermanence, home-manager, nur, nix-gaming, notlua, notnft, nixos-mailserver, nixos-router, maubot, ... }:
   let
     # --impure required for developing
     # it takes the paths for modules from filesystem as opposed to flake inputs
@@ -100,9 +102,9 @@
       };
       routerConfig = rec {
         system = "aarch64-linux";
-        specialArgs.server-config = nixosConfigurations.nixserver.config;
         modules = [
           {
+            _module.args.server-config = nixosConfigurations.nixserver.config;
             _module.args.notnft = if devNft then (import /${devPath}/notnft { inherit (nixpkgs) lib; }).config.notnft else notnft.lib.${system};
           }
           (if devNixRt then import /${devPath}/nixos-router else nixos-router.nixosModules.default)
@@ -127,9 +129,11 @@
       router-emmc-cross = crossConfig router-emmc;
       router-sd-cross = crossConfig router-emmc;
       nixserver = {
+        system = "aarch64-linux";
         modules = [
+          { _module.args.router-config = nixosConfigurations.router-emmc.config; }
           nixos-mailserver.nixosModules.default
-          ./system/devices/hp-probook-g0-server.nix
+          ./system/devices/radxa-rock5a-server.nix
           (if devMaubot then import /${devPath}/maubot.nix/module else maubot.nixosModules.default)
           ./system/modules/scanservjs.nix
         ];
@@ -146,6 +150,7 @@
           notlua = notlua.lib.${system};
         };
         home.user = [
+          { _module.args.pkgs2 = import nixpkgs2 { inherit system; overlays = [ overlay ]; }; }
           nur.nixosModules.nur
           ./home/hosts/nixmsi.nix
         ];
@@ -282,11 +287,18 @@
       };
     };
 
-    hydraJobs = {
-      server.${config.nixserver.system or "x86_64-linux"} = nixosConfigurations.nixserver.config.system.build.toplevel;
-      workstation.${config.nixmsi.system or "x86_64-linux"} = nixosConfigurations.nixmsi.config.system.build.toplevel;
-      router.${config.router-emmc.system or "x86_64-linux"} = nixosConfigurations.router-emmc-cross.config.system.build.toplevel;
-      workstation-home.${config.nixmsi.system or "x86_64-linux"} = homeConfigurations."user@nixmsi".activation-script;
+    hydraJobs = let
+      addMeta = x: x // {
+        meta = (x.meta or {}) // {
+          timeout = 60 * 60 * 10;
+          maxSilent = 60 * 60 * 10;
+        };
+      };
+    in {
+      server.${config.nixserver.system or "x86_64-linux"} = addMeta nixosConfigurations.nixserver.config.system.build.toplevel;
+      workstation.${config.nixmsi.system or "x86_64-linux"} = addMeta nixosConfigurations.nixmsi.config.system.build.toplevel;
+      router.${config.router-emmc.system or "x86_64-linux"} = addMeta nixosConfigurations.router-emmc-cross.config.system.build.toplevel;
+      workstation-home.${config.nixmsi.system or "x86_64-linux"} = addMeta homeConfigurations."user@nixmsi".activation-script;
     };
   };
 }

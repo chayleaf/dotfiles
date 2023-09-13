@@ -1,18 +1,18 @@
 diff --git a/WHENCE b/WHENCE
-index dcb86fa..b92e529 100644
+index dbcdced..9ae8ff7 100644
 --- a/WHENCE
 +++ b/WHENCE
-@@ -3909,7 +3909,7 @@ Raw: amd-ucode/microcode_amd_fam16h.bin
+@@ -3919,7 +3919,7 @@ Version: 2018-05-24
+ RawFile: amd-ucode/microcode_amd_fam16h.bin
  Version: 2014-10-28
- File: amd-ucode/microcode_amd_fam17h.bin
- Raw: amd-ucode/microcode_amd_fam17h.bin
+ RawFile: amd-ucode/microcode_amd_fam17h.bin
 -Version: 2023-07-19
 +Version: 2023-04-13
- File: amd-ucode/microcode_amd_fam19h.bin
- Raw: amd-ucode/microcode_amd_fam19h.bin
- Version: 2023-07-18
+ RawFile: amd-ucode/microcode_amd_fam19h.bin
+ Version: 2023-08-08
+ File: amd-ucode/README
 diff --git a/amd-ucode/README b/amd-ucode/README
-index 1d39da3..4308fe2 100644
+index f47743c..5dc5108 100644
 --- a/amd-ucode/README
 +++ b/amd-ucode/README
 @@ -32,9 +32,8 @@ Microcode patches in microcode_amd_fam16h.bin:
@@ -25,7 +25,7 @@ index 1d39da3..4308fe2 100644
 +  Family=0x17 Model=0x31 Stepping=0x00: Patch=0x08301072 Length=3200 bytes
  
  Microcode patches in microcode_amd_fam19h.bin:
-   Family=0x19 Model=0x01 Stepping=0x01: Patch=0x0a0011d1 Length=5568 bytes
+   Family=0x19 Model=0x11 Stepping=0x01: Patch=0x0a10113e Length=5568 bytes
 diff --git a/amd-ucode/microcode_amd_fam17h.bin.asc b/amd-ucode/microcode_amd_fam17h.bin.asc
 index 34a4024..27da52c 100644
 --- a/amd-ucode/microcode_amd_fam17h.bin.asc

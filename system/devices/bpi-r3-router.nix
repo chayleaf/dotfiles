@@ -1,6 +1,6 @@
 storage:
 
-{ config, lib, ... }:
+{ config, ... }:
 
 let
   rootUuid = "44444444-4444-4444-8888-888888888888";

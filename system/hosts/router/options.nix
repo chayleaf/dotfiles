@@ -13,8 +13,16 @@
       description = "server's mac address";
       type = lib.types.str;
     };
+    serverInitrdMac = lib.mkOption {
+      description = "server's mac address in initrd";
+      type = lib.types.str;
+    };
     vacuumMac = lib.mkOption {
       description = "robot vacuum's mac address";
+      type = lib.types.str;
+    };
+    lightBulbMac = lib.mkOption {
+      description = "light bulb's mac address";
       type = lib.types.str;
     };
     naughtyMacs = lib.mkOption {

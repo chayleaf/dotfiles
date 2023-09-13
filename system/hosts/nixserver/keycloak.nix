@@ -40,6 +40,7 @@ in {
   # https://<pleroma>/oauth/keycloak?scope=openid+profile
   # ...but this doesnt even work, the callback fails with %OAuth2.Error{reason: :invalid_request}
   # oh well
+  /*
   services.akkoma.config = {
     ":ueberauth" = let
       url = "https://keycloak.${cfg.domainName}";
@@ -76,8 +77,8 @@ in {
         version = "2.1.0";
        
         src = fetchHex {
-          pkg = "${name}";
-          version = "${version}";
+          pkg = name;
+          inherit version;
           sha256 = "0h9bps7gq7bac5gc3q0cgpsj46qnchpqbv5hzsnd2z9hnf2pzh4a";
         };
        
@@ -88,8 +89,8 @@ in {
         version = "0.4.0";
        
         src = fetchHex {
-          pkg = "${name}";
-          version = "${version}";
+          pkg = name;
+          inherit version;
           sha256 = "06r10w0azlpypjgggar1lf7h2yazn2dpyicy97zxkjyxgf9jfc60";
         };
        
@@ -101,5 +102,5 @@ in {
   systemd.services.akkoma = {
     environment.OAUTH_CONSUMER_STRATEGIES = "keycloak:ueberauth_keycloak_strategy";
     serviceConfig.EnvironmentFile = "/secrets/akkoma/envrc";
-  };
+  };*/
 }

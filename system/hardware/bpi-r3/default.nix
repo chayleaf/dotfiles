@@ -8,7 +8,8 @@
     generic-extlinux-compatible.enable = true;
   };
 
-  boot.kernelPackages = config._module.args.fromSourcePkgs.linuxPackages_bpiR3_ccache or pkgs.linuxPackages_bpiR3_ccache;
+  #boot.kernelPackages = config._module.args.fromSourcePkgs.linuxPackages_bpiR3_ccache or pkgs.linuxPackages_bpiR3_ccache;
+  boot.kernelPackages = config._module.args.fromSourcePkgs.linuxPackages_bpiR3 or pkgs.linuxPackages_bpiR3;
 
   hardware.deviceTree.enable = true;
   hardware.deviceTree.filter = "mt7986a-bananapi-bpi-r3.dtb";

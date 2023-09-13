@@ -235,9 +235,15 @@ let
   # server
   serverAddress4 = addToIp parsedGatewayAddr4 1;
   serverAddress6 = addToIp parsedGatewayAddr6 1;
-  # robot vacuum
+  # robot vacuum (valetudo)
   vacuumAddress4 = addToIp parsedGatewayAddr4 2;
   vacuumAddress6 = addToIp parsedGatewayAddr6 2;
+  # light bulb (tasmota)
+  lightBulbAddress4 = addToIp parsedGatewayAddr4 3;
+  lightBulbAddress6 = addToIp parsedGatewayAddr6 3;
+  # server in initrd
+  serverInitrdAddress4 = addToIp parsedGatewayAddr4 4;
+  serverInitrdAddress6 = addToIp parsedGatewayAddr6 4;
 
   hosted-domains =
     builtins.filter (domain: domain != "localhost")
@@ -269,12 +275,20 @@ in {
       macAddress = cfg.serverMac; }
     { ipAddress = vacuumAddress4;
       macAddress = cfg.vacuumMac; }
+    { ipAddress = lightBulbAddress4;
+      macAddress = cfg.lightBulbMac; }
+    { ipAddress = serverInitrdAddress4;
+      macAddress = cfg.serverInitrdMac; }
   ];
   router-settings.dhcp6Reservations = [
     { ipAddress = serverAddress6;
       macAddress = cfg.serverMac; }
     { ipAddress = vacuumAddress6;
       macAddress = cfg.vacuumMac; }
+    { ipAddress = lightBulbAddress6;
+      macAddress = cfg.lightBulbMac; }
+    { ipAddress = serverInitrdAddress6;
+      macAddress = cfg.serverInitrdMac; }
   ];
 
   # dnat to server, take ports from its firewall config
@@ -310,7 +324,10 @@ in {
   }) ++ lib.flip map rangesUdpOnly (range: {
     port = notnft.dsl.range range.from range.to; tcp = false; udp = true;
     target4.address = serverAddress4; target6.address = serverAddress6;
-  });
+  }) ++ lib.toList {
+    port = 24; tcp = true; udp = true; target4.port = 22; target6.port = 22;
+    target4.address = serverInitrdAddress4; target6.address = serverInitrdAddress6;
+  };
 
   router.enable = true;
   # 2.4g ap

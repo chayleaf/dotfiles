@@ -1,4 +1,4 @@
-{ config, pkgs, lib, ... }:
+{ config, pkgs, pkgs2, lib, ... }:
 {
   imports = [ ./terminal.nix ];
   i18n.inputMethod = let fcitx5-qt = pkgs.libsForQt5.fcitx5-qt; in {
@@ -254,7 +254,7 @@
 
     # for working with nix
     nix-init
-    nvfetcher
+    pkgs2.nvfetcher
     config.nur.repos.rycee.mozilla-addons-to-nix
 
     anki-bin

@@ -16,6 +16,8 @@
     s = "sudo -A";
     se = "sudo -AE";
     l = "lsd";
+    la = "lsd -A";
+    ll = "lsd -l";
     g = "git";
     gp = "git push";
     gpuo = "git push -u origin";
@@ -59,7 +61,8 @@
         gnused mktemp fzf coreutils-full findutils xdg-utils gnupg whois curl
         file mediainfo unzip gnutar man rclone sshfs trash-cli
         # for preview
-        exa bat
+        # exa - TODO: replace with eza wrapper?
+        bat
         libarchive atool
         glow w3m
         # for opening

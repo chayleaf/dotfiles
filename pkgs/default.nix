@@ -21,40 +21,44 @@ in
     unstable = nixForNixPlugins;
   });
   # Various patches to change Nix version of existing packages so they don't error out because of nix-plugins in nix.conf
-  nix-plugins = pkgs.nix-plugins.overrideAttrs (old: {
+  nix-plugins = pkgs.nix-plugins.override { nix = nixForNixPlugins; }; /*.overrideAttrs (old: {
     version = "12.0.0";
     patches = [
       (pkgs.fetchpatch {
-        url = "https://github.com/shlevy/nix-plugins/pull/15/commits/f7534b96e70ca056ef793918733d1820af89a433.patch";
+        # pull 17
+        url = "https://github.com/shlevy/nix-plugins/commit/f7534b96e70ca056ef793918733d1820af89a433.patch";
         hash = "sha256-ePRAnZAobasF6jA3QC73p8zyzayXORuodhus96V+crs=";
       })
     ];
-  });
-  harmonia = (pkgs.harmonia.override { nix = nixForNixPlugins; }).overrideAttrs {
+  });*/
+  harmonia = (pkgs.harmonia.override { nix = nixForNixPlugins; }); /*.overrideAttrs {
     patches = [
       (pkgs.fetchpatch {
         url = "https://github.com/nix-community/harmonia/pull/145/commits/394c939a45fa9c590347e149400876c318610b1e.patch";
         hash = "sha256-DvyE7/0PW3XRtFgIrl4IQa7RIQLQZoKLddxCZvhpu3I=";
       })
     ];
-  };
+  };*/
   nix-init = pkgs.nix-init.override { nix = nixForNixPlugins; };
   nix-serve = pkgs.nix-serve.override { nix = nixForNixPlugins; };
   nix-serve-ng = pkgs.nix-serve-ng.override { nix = nixForNixPlugins; };
   hydra_unstable = (pkgs.hydra_unstable.override {
-    nix = nixForNixPlugins.overrideAttrs (old: {
+    nix = nixForNixPlugins; /*.overrideAttrs (old: {
       # TODO: remove when https://github.com/NixOS/nix/issues/8796 is fixed or hydra code stops needing a fix
       configureFlags = builtins.filter (x: x != "--enable-lto") (old.configureFlags or []);
-    });
-  }).overrideAttrs (old: {
+    });*/
+  });/*.overrideAttrs (old: {
     patches = (old.patches or [ ]) ++ [
       (pkgs.fetchpatch {
         url = "https://github.com/NixOS/hydra/pull/1296/commits/b23431a657d8a9b2f478c95dd81034780751a262.patch";
         hash = "sha256-ruTAIPUrPtfy8JkXYK2qigBrSa6KPXpJlORTNkUYrG0=";
       })
     ];
-  });
+  });*/
   nurl = pkgs.nurl.override { nix = nixForNixPlugins; };
+  nvfetcher = pkgs.nvfetcher.overrideAttrs (old: {
+    meta = builtins.removeAttrs old.meta [ "broken" ];
+  });
 
   clang-tools_latest = pkgs.clang-tools_16;
   clang_latest = pkgs.clang_16;
@@ -117,4 +121,6 @@ in
     qemu = pkgs'.qemu_7;
     stdenv = pkgs'.ccacheStdenv;
   };
-} // (import ../system/hardware/bpi-r3/pkgs.nix { inherit pkgs pkgs' lib sources; })
+  gimp = callPackage ./gimp.nix { inherit (pkgs) gimp; };
+}
+// (import ../system/hardware/bpi-r3/pkgs.nix { inherit pkgs pkgs' lib sources; })

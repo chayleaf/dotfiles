@@ -82,7 +82,7 @@
     winetricks
     # protontricks # proton-caller
     # bottles
-    virtmanager looking-glass-client
+    virt-manager looking-glass-client
     clang_latest mold
     rustc rustfmt cargo clippy
     lalrpop

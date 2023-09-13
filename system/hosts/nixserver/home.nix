@@ -136,7 +136,7 @@ in {
   };
 
   services.hydra = {
-    enable = true;
+    enable = false;
     hydraURL = "home.${cfg.domainName}/hydra";
     listenHost = "127.0.0.1";
     minimumDiskFree = 30;
@@ -144,7 +144,10 @@ in {
     # smtpHost = "mail.${cfg.domainName}";
     useSubstitutes = true;
   };
-  boot.binfmt.emulatedSystems = [ "aarch64-linux" ];
+  boot.binfmt.emulatedSystems = {
+    "x86_64-linux" = [ "aarch64-linux" ];
+    "aarch64-linux" = [ "x86_64-linux" ];
+  }.${pkgs.system};
   nix.buildMachines = [
     {
       # there were some bugs related to not specifying the machine
@@ -153,7 +156,7 @@ in {
       protocol = null;
       maxJobs = 8;
       supportedFeatures = [ "kvm" "local" "nixos-test" "benchmark" "big-parallel" ];
-      systems = [ "builtin" "x86_64-linux" "i686-linux" "aarch64-linux" ];
+      systems = [ "builtin" "x86_64-linux" "aarch64-linux" ];
     }
   ];
   # limit CI CPU usage since I'm running everything else off this server too
