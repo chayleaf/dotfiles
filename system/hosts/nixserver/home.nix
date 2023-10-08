@@ -136,7 +136,7 @@ in {
   };
 
   services.hydra = {
-    enable = false;
+    enable = true;
     hydraURL = "home.${cfg.domainName}/hydra";
     listenHost = "127.0.0.1";
     minimumDiskFree = 30;

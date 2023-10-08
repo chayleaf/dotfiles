@@ -1,6 +1,7 @@
 { config
 , lib
 , router-config
+, hardware
 , ... }:
 
 let
@@ -16,6 +17,14 @@ in
   imports = [
     ../hardware/radxa-rock5a
     ../hosts/nixserver
+    hardware.common-pc-ssd
+  ];
+
+  boot.initrd.availableKernelModules = [
+    # network in initrd
+    "dwmac-rk" 
+    # fde unlock in initrd
+    "dm_mod" "dm_crypt" "encrypted_keys"
   ];
 
   networking.useDHCP = true;
