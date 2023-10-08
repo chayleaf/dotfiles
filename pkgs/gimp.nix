@@ -100,11 +100,9 @@ in gimp.overrideAttrs (old: rec {
     "-Dappdata-test=disabled"
   ];
   enableParallelBuilding = false;
-  env = old.env // {
-    GIO_EXTRA_MODULES = "${glib-networking}/lib/gio/modules";
-  };
+  env = old.env // { GIO_EXTRA_MODULES = "${glib-networking}/lib/gio/modules"; };
   preConfigure = "";
-    postPatch = ''
+  postPatch = ''
     patchShebangs \
       app/tests/create_test_env.sh \
       tools/gimp-mkenums
@@ -126,7 +124,10 @@ in gimp.overrideAttrs (old: rec {
   '';
 
   preFixup = ''
-    gappsWrapperArgs+=(--prefix PATH : "${lib.makeBinPath [ graphviz ]}:$out/bin")
+    gappsWrapperArgs+=(\
+      --prefix PATH : "${lib.makeBinPath [ graphviz ]}:$out/bin" \
+      --suffix XDG_DATA_DIRS : "${gnome.adwaita-icon-theme}/share" \
+    )
   '';
   postFixup = ''
     moveToOutput "share/doc" "$devdoc"
