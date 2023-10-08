@@ -122,7 +122,7 @@
       crossConfig = config: crossConfig' ({
         x86_64-linux = "aarch64-linux";
         aarch64-linux = "x86_64-linux";
-      }.${config.system or "x86_64-linux"}) config;
+      }.${config.system}) config;
     in rec {
       router-emmc = mkBpiR3 "emmc" routerConfig;
       router-sd = mkBpiR3 "sd" routerConfig;
@@ -159,7 +159,7 @@
     };
 
     # this is the system config processing part
-    nixosConfigurations = builtins.mapAttrs (hostname: args @ { system ? "x86_64-linux", modules, specialArgs ? {}, nixpkgs ? {}, home ? {}, ... }:
+    nixosConfigurations = builtins.mapAttrs (hostname: args @ { system, modules, specialArgs ? {}, nixpkgs ? {}, home ? {}, ... }:
       lib.nixosSystem ({
         inherit system;
         # allow modules to access nixpkgs directly, use customized lib,
@@ -243,7 +243,7 @@
           (lib.mapAttrsToList
             (hostname: sysConfig:
             let
-              system = if sysConfig?system then sysConfig.system else "x86_64-linux";
+              inherit (sysConfig) system;
               common' = builtins.removeAttrs (sysConfig.home.common or { }) [ "nix" "nixpkgs" "enableNixosModule" ];
               pkgs = mkPkgs ({ inherit system; } // ((sysConfig.home.common or { }).nixpkgs or {}));
               common = common' // { inherit pkgs; };
@@ -295,10 +295,10 @@
         };
       };
     in {
-      server.${config.nixserver.system or "x86_64-linux"} = addMeta nixosConfigurations.nixserver.config.system.build.toplevel;
-      workstation.${config.nixmsi.system or "x86_64-linux"} = addMeta nixosConfigurations.nixmsi.config.system.build.toplevel;
-      router.${config.router-emmc.system or "x86_64-linux"} = addMeta nixosConfigurations.router-emmc-cross.config.system.build.toplevel;
-      workstation-home.${config.nixmsi.system or "x86_64-linux"} = addMeta homeConfigurations."user@nixmsi".activation-script;
+      server.${config.nixserver.system} = addMeta nixosConfigurations.nixserver.config.system.build.toplevel;
+      workstation.${config.nixmsi.system} = addMeta nixosConfigurations.nixmsi.config.system.build.toplevel;
+      router.${config.router-emmc.system} = addMeta nixosConfigurations.router-emmc-cross.config.system.build.toplevel;
+      workstation-home.${config.nixmsi.system} = addMeta homeConfigurations."user@nixmsi".activation-script;
     };
   };
 }
