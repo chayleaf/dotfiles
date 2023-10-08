@@ -70,7 +70,7 @@
     steam-run steam
     # faf-client
     (osu-lazer-bin.override {
-      command_prefix = "${obs-studio-plugins.obs-vkcapture}/bin/obs-gamecapture";
+      command_prefix = "env SDL_VIDEODRIVER=wayland ${obs-studio-plugins.obs-vkcapture}/bin/obs-gamecapture";
     })
     taisei
     techmino
