@@ -63,6 +63,7 @@ in gimp.overrideAttrs (old: rec {
       url = "https://raw.githubusercontent.com/NixOS/nixpkgs/86947c8f83a3bd593eefb8e5f433f0d045c3d9a7/pkgs/applications/graphics/gimp/fix-isocodes-paths.patch";
       hash = "sha256-8jqQmfbOARMPNIsBfNKpMIeK4dXoAme7rUJeQZwh4PM=";
     })
+    ./floating-paste.patch
   ];
   nativeBuildInputs = [
     meson

@@ -1,0 +1,21 @@
+diff --git a/app/actions/edit-actions.c b/app/actions/edit-actions.c
+index 32559ae..98e32fe 100644
+--- a/app/actions/edit-actions.c
++++ b/app/actions/edit-actions.c
+@@ -156,14 +156,14 @@ static const GimpEnumActionEntry edit_paste_actions[] =
+   { "edit-paste", GIMP_ICON_EDIT_PASTE,
+     NC_("edit-action", "_Paste"), NULL, { "<primary>V", "Paste", NULL },
+     NC_("edit-action", "Paste the content of the clipboard"),
+-    GIMP_PASTE_TYPE_NEW_LAYER_OR_FLOATING, FALSE,
++    GIMP_PASTE_TYPE_FLOATING, FALSE,
+     GIMP_HELP_EDIT_PASTE },
+ 
+   { "edit-paste-in-place", GIMP_ICON_EDIT_PASTE,
+     NC_("edit-action", "Paste In P_lace"), NULL, { "<primary><alt>V", "<alt>Paste", NULL },
+     NC_("edit-action",
+         "Paste the content of the clipboard at its original position"),
+-    GIMP_PASTE_TYPE_NEW_LAYER_OR_FLOATING_IN_PLACE, FALSE,
++    GIMP_PASTE_TYPE_FLOATING_IN_PLACE, FALSE,
+     GIMP_HELP_EDIT_PASTE_IN_PLACE },
+ 
+   { "edit-paste-merged", GIMP_ICON_EDIT_PASTE,
