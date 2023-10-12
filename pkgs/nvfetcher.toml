@@ -2,12 +2,6 @@
 src.github = "GloriousEggroll/proton-ge-custom"
 fetch.url = "https://github.com/GloriousEggroll/proton-ge-custom/releases/download/$ver/$ver.tar.gz"
 
-[fastforward]
-# allow prereleases
-src.github_tag = "FastForwardTeam/FastForward"
-src.use_commit = true
-fetch.url = "https://github.com/FastForwardTeam/FastForward/releases/download/$ver/fastforwardteam-$ver.xpi"
-
 # nix-prefetch doesnt work with git right now for some reason, whatever
 [atf-bpir3]
 src.git = "https://github.com/frank-w/u-boot.git"

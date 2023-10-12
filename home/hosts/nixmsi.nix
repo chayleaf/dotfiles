@@ -54,6 +54,10 @@
     enable = true;
   };
   services.kdeconnect.enable = true;
+  systemd.user.services.kdeconnect.Service = {
+    Restart = lib.mkForce "always";
+    RestartSec = "30";
+  };
   home.sessionVariables = {
     STEAM_EXTRA_COMPAT_TOOLS_PATHS = "${pkgs.proton-ge}";
     CARGO_PROFILE_DEV_INCREMENTAL = "true";

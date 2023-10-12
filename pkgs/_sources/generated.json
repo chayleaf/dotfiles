@@ -13,21 +13,6 @@
         },
         "version": "c30a1caf8274af67bf31f3fb5abc45df5737df36"
     },
-    "fastforward": {
-        "cargoLocks": null,
-        "date": null,
-        "extract": null,
-        "name": "fastforward",
-        "passthru": null,
-        "pinned": false,
-        "src": {
-            "name": null,
-            "sha256": "sha256-mrWvbjqUphMKi8ItRFSmRAzMyzsqB9rJbZFm+I7ocSc=",
-            "type": "url",
-            "url": "https://github.com/FastForwardTeam/FastForward/releases/download/0.2237/fastforwardteam-0.2237.xpi"
-        },
-        "version": "0.2237"
-    },
     "proton-ge": {
         "cargoLocks": null,
         "date": null,

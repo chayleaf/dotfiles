@@ -10,14 +10,6 @@
     };
     date = "2022-12-13";
   };
-  fastforward = {
-    pname = "fastforward";
-    version = "0.2237";
-    src = fetchurl {
-      url = "https://github.com/FastForwardTeam/FastForward/releases/download/0.2237/fastforwardteam-0.2237.xpi";
-      sha256 = "sha256-mrWvbjqUphMKi8ItRFSmRAzMyzsqB9rJbZFm+I7ocSc=";
-    };
-  };
   proton-ge = {
     pname = "proton-ge";
     version = "GE-Proton8-16";

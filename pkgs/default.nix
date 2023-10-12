@@ -121,6 +121,6 @@ in
     qemu = pkgs'.qemu_7;
     stdenv = pkgs'.ccacheStdenv;
   };
-  gimp = callPackage ./gimp.nix { inherit (pkgs) gimp; };
+  gimp = callPackage ./gimp { inherit (pkgs) gimp; };
 }
 // (import ../system/hardware/bpi-r3/pkgs.nix { inherit pkgs pkgs' lib sources; })

@@ -56,9 +56,9 @@
           vimium-c
           youtube-shorts-block
         ] ++ (with pkgs.firefox-addons; [
-          fastforward
+          fastforwardteam
           middle-mouse-button-scroll
-          yomichan
+          rikaitan
           youtube-nonstop
         ]);
       };
