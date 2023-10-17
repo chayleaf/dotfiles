@@ -4,19 +4,22 @@
     # then decompress it back in a derivation (shouldn't there be a better way...)
     copyToStore = pkgs: name: path:
       let
-        archive = exec [
-          "/bin/sh" "-c"
-          "echo '\"' && (cd /etc/nixos/private && tar -I ${pkgs.zstd}/bin/zstd -c -- ${pkgs.lib.escapeShellArg path} 2>/dev/null | base64 -w0) && echo '\"'"
-        ];
-      in "${pkgs.stdenvNoCC.mkDerivation {
+        archive = exec [ "${pkgs.bash}/bin/bash" "-c" ''
+          cd /etc/nixos/private
+          echo '"'"$(
+            ${pkgs.gnutar}/bin/tar -I ${pkgs.zstd}/bin/zstd --exclude-vcs \
+              --transform='s#'${pkgs.lib.escapeShellArg path}'#!#' \
+              -c -- ${pkgs.lib.escapeShellArg path} | base64 -w0
+          )"'"'
+        '' ];
+      in derivation {
         inherit name;
-        unpackPhase = "true";
-        buildPhase = "true";
-        installPhase = ''
-          mkdir -p $out
-          cd $out
-          echo "${archive}" | base64 -d | tar -I ${pkgs.zstd}/bin/zstd -x
-        '';
-      }}/${toString path}";
+        inherit (pkgs) system;
+        builder = "${pkgs.bash}/bin/bash";
+        args = [ "-c" ''
+          echo '${archive}' | ${pkgs.coreutils}/bin/base64 -d |
+            ${pkgs.gnutar}/bin/tar -P --transform="s#!#$out#" -I ${pkgs.zstd}/bin/zstd -x
+        '' ];
+      };
     };
 }

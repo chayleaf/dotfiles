@@ -59,17 +59,32 @@ in
     };
   };
 
-  fileSystems = {
-    "/" =    { device = "none"; fsType = "tmpfs"; neededForBoot = true;
+  fileSystems = let
+    device = rootPart;
+    fsType = "btrfs";
+    neededForBoot = true;
+    compress = "compress=zstd";
+    discard = "discard=async";
+  in {
+    "/" =    { device = "none"; fsType = "tmpfs"; inherit neededForBoot;
                options = [ "defaults" "size=2G" "mode=755" ]; };
     # TODO: switch to bcachefs?
     # I wanna do it some day, but maybe starting with the next disk I get for this server
     "/persist" =
-             { device = rootPart; fsType = "btrfs"; neededForBoot = true;
-               options = [ "subvol=@" "compress=zstd" ]; };
-    "/boot" =
-             { device = bootPart; fsType = "vfat"; neededForBoot = true; };
+              { inherit device fsType neededForBoot;
+                options = [ discard compress "subvol=@" ]; };
+    "/swap" = { inherit device fsType neededForBoot;
+                options = [ discard "subvol=@swap" "noatime" ]; };
+    "/boot" = { device = bootPart; fsType = "vfat"; inherit neededForBoot; };
   };
+
+  swapDevices = [ { device = "/swap/swapfile"; } ];
+
+  boot.kernelParams = [
+    "resume=/@swap/swapfile"
+    # resume_offset = $(btrfs inspect-internal map-swapfile -r path/to/swapfile)
+    "resume_offset=26001976"
+  ];
 
   impermanence = {
     enable = true;
