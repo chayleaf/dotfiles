@@ -84,22 +84,17 @@ in {
   };
   users.users.nginx.extraGroups = [ "grafana" ];
 
-  /*services.nix-serve = {
-    enable = true;
-    package = pkgs.nix-serve-ng;
-    bindAddress = "127.0.0.1";
-    secretKeyFile = "/secrets/cache-priv-key.pem";
-  };*/
   services.harmonia = {
     enable = true;
     signKeyPath = "/secrets/cache-priv-key.pem";
     settings.bind = "[::1]:5000";
   };
   nix.settings.allowed-users = [ "nix-serve" "harmonia" "hydra" "hydra-www" ];
-  # only hydra has access to this file anyway
-  nix.settings.extra-builtins-file = "/etc/nixos/private/extra-builtins.nix";
+  # make sure only hydra has access to this file
+  # so normal nix evals don't have access to builtins
+  nix.settings.extra-builtins-file = "/etc/nixos/extra-builtins.nix";
   impermanence.directories = [
-    { directory = /etc/nixos/private; user = "hydra"; group = "hydra"; mode = "0700"; }
+    { directory = /etc/nixos; user = "hydra"; group = "hydra"; mode = "0700"; }
   ];
   nix.settings.allowed-uris = [
     # required for home-manager
@@ -114,12 +109,6 @@ in {
     enableACME = true;
     forceSSL = true;
     basicAuthFile = "/secrets/home_password";
-    /*locations."/".proxyPass = "http://${config.services.nix-serve.bindAddress}:${toString config.services.nix-serve.port}";
-    extraConfig = ''
-      proxy_read_timeout 300;
-      proxy_connect_timeout 300;
-      proxy_send_timeout 300;
-    '';*/
     locations."/".proxyPass = "http://${config.services.harmonia.settings.bind or "[::1]:5000"}";
     locations."/".extraConfig = ''
       proxy_set_header Host $host;
@@ -144,10 +133,7 @@ in {
     # smtpHost = "mail.${cfg.domainName}";
     useSubstitutes = true;
   };
-  boot.binfmt.emulatedSystems = {
-    "x86_64-linux" = [ "aarch64-linux" ];
-    "aarch64-linux" = [ "x86_64-linux" ];
-  }.${pkgs.system};
+  boot.binfmt.emulatedSystems = builtins.filter (x: x != pkgs.system) [ "aarch64-linux" "x86_64-linux" ];
   nix.buildMachines = [
     {
       # there were some bugs related to not specifying the machine

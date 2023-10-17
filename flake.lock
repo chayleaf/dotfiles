@@ -35,11 +35,11 @@
     "flake-compat_2": {
       "flake": false,
       "locked": {
-        "lastModified": 1673956053,
-        "narHash": "sha256-4gtG9iQuiKITOjNQQeQIpoIB6b16fm+504Ch3sNKLd8=",
+        "lastModified": 1696426674,
+        "narHash": "sha256-kvjfFW7WAETZlt09AgDn1MrtKzP7t90Vf7vypd3OL1U=",
         "owner": "edolstra",
         "repo": "flake-compat",
-        "rev": "35bb57c0c8d8b62bbfd284272c928ceb64ddbde9",
+        "rev": "0f9255e01c2351cc7d116c072cb317785dd33b33",
         "type": "github"
       },
       "original": {
@@ -143,16 +143,33 @@
         ]
       },
       "locked": {
-        "lastModified": 1695274149,
-        "narHash": "sha256-TXMD7TkBA6BYR77465ej5jZcHYTdDC67H1C/Zpp0aiQ=",
+        "lastModified": 1697331506,
+        "narHash": "sha256-N6RD9EudU+i7SJO3z3S309XQRhp81iqaN9G9sxRtVts=",
         "owner": "chayleaf",
         "repo": "maubot.nix",
-        "rev": "1b5d44af45a3fb7b2fa29a4b7590b5cb37d1fdf1",
+        "rev": "cf32a2873523c80cebdd1ee409c45593040944b8",
         "type": "github"
       },
       "original": {
         "owner": "chayleaf",
         "repo": "maubot.nix",
+        "type": "github"
+      }
+    },
+    "mobile-nixos": {
+      "flake": false,
+      "locked": {
+        "lastModified": 1697544701,
+        "narHash": "sha256-u/59b13bwEqxR1x2l9SeSya2ZXABmjpUCdTrXVMLrsA=",
+        "owner": "chayleaf",
+        "repo": "mobile-nixos",
+        "rev": "b3ec466c5abbda7de279dccb010ab10e74dd07ee",
+        "type": "github"
+      },
+      "original": {
+        "owner": "chayleaf",
+        "ref": "cleanup",
+        "repo": "mobile-nixos",
         "type": "github"
       }
     },
@@ -352,6 +369,7 @@
         "home-manager": "home-manager",
         "impermanence": "impermanence",
         "maubot": "maubot",
+        "mobile-nixos": "mobile-nixos",
         "nix-gaming": "nix-gaming",
         "nixos-hardware": "nixos-hardware",
         "nixos-mailserver": "nixos-mailserver",

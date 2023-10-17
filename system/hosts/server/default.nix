@@ -152,40 +152,34 @@ in {
   services.nginx.package = pkgs.nginxQuic;
   /* DNS over TLS
   services.nginx.streamConfig =
-    let
-      inherit (config.security.acme.certs."${cfg.domainName}") directory;
-    in ''
-      upstream dns {
-        zone dns 64k;
-        server 127.0.0.1:53;
-      }
-      server {
-        listen 853 ssl;
-        ssl_certificate ${directory}/fullchain.pem;
-        ssl_certificate_key ${directory}/key.pem;
-        ssl_trusted_certificate ${directory}/chain.pem;
-        proxy_pass dns;
-      }
-    '';*/
-    services.nginx.commonHttpConfig =
-    let
-      realIpsFromList = lib.strings.concatMapStringsSep "\n" (x: "set_real_ip_from  ${x};");
-      fileToList = x: lib.strings.splitString "\n" (builtins.readFile x);
-      cfipv4 = fileToList (pkgs.fetchurl {
+  let
+    inherit (config.security.acme.certs."${cfg.domainName}") directory;
+  in ''
+    upstream dns {
+      zone dns 64k;
+      server 127.0.0.1:53;
+    }
+    server {
+      listen 853 ssl;
+      ssl_certificate ${directory}/fullchain.pem;
+      ssl_certificate_key ${directory}/key.pem;
+      ssl_trusted_certificate ${directory}/chain.pem;
+      proxy_pass dns;
+    }
+  '';*/
+  services.nginx.commonHttpConfig = ''
+    log_format postdata '{\"ip\":\"$remote_addr\",\"time\":\"$time_iso8601\",\"referer\":\"$http_referer\",\"body\":\"$request_body\",\"ua\":\"$http_user_agent\"}';
+
+    ${lib.concatMapStringsSep "\n" (x: "set_real_ip_from ${x};") (lib.splitString "\n" ''
+      ${builtins.readFile (builtins.fetchurl {
         url = "https://www.cloudflare.com/ips-v4";
         sha256 = "0ywy9sg7spafi3gm9q5wb59lbiq0swvf0q3iazl0maq1pj1nsb7h";
-      });
-      cfipv6 = fileToList (pkgs.fetchurl {
+      })}
+      ${builtins.readFile (builtins.fetchurl {
         url = "https://www.cloudflare.com/ips-v6";
         sha256 = "1ad09hijignj6zlqvdjxv7rjj8567z357zfavv201b9vx3ikk7cy";
-      });
-    in
-    ''
-      log_format postdata '{\"ip\":\"$remote_addr\",\"time\":\"$time_iso8601\",\"referer\":\"$http_referer\",\"body\":\"$request_body\",\"ua\":\"$http_user_agent\"}';
-
-      ${realIpsFromList cfipv4}
-      ${realIpsFromList cfipv6}
-      real_ip_header CF-Connecting-IP;
+      })}'')}
+    real_ip_header CF-Connecting-IP;
   '';
   # brotli and zstd requires recompilation so I don't enable it
   # services.nginx.recommendedBrotliSettings = true;

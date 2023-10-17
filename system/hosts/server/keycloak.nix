@@ -29,12 +29,15 @@ in {
     ENABLE_OPENID_SIGNIN = true;
     ENABLE_OPENID_SIGNUP = true;
   };
+  systemd.services.gitea.after = [ "keycloak.service" ];
 
   services.nextcloud.extraOptions.allow_local_remote_servers = true;
+  systemd.services.nextcloud.after = [ "keycloak.service" ];
 
   # a crude way to make some python packages available for synapse
   services.matrix-synapse.plugins = with pkgs.python3.pkgs; [ authlib ];
   services.matrix-synapse.settings.password_config.enabled = false;
+  systemd.services.matrix-synapse.after = [ "keycloak.service" ];
 
   # See also https://meta.akkoma.dev/t/390
   # https://<pleroma>/oauth/keycloak?scope=openid+profile
@@ -100,6 +103,7 @@ in {
     OAUTH_CONSUMER_STRATEGIES = "keycloak:ueberauth_keycloak_strategy";
   });
   systemd.services.akkoma = {
+    after = [ "keycloak.service" ];
     environment.OAUTH_CONSUMER_STRATEGIES = "keycloak:ueberauth_keycloak_strategy";
     serviceConfig.EnvironmentFile = "/secrets/akkoma/envrc";
   };*/

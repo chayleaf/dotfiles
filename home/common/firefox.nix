@@ -32,7 +32,7 @@
         inherit (pkgs.librewolf-unwrapped) extraPrefsFiles extraPoliciesFiles;
         wmClass = "LibreWolf";
         libName = "librewolf";
-        # TODO: keepass in extraNativeMessagingHosts?
+        enableKeePassXC = true;
       };
     profiles = {
       chayleaf = {

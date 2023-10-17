@@ -16,7 +16,7 @@ in
 {
   imports = [
     ../hardware/radxa-rock5a
-    ../hosts/nixserver
+    ../hosts/server
     hardware.common-pc-ssd
   ];
 

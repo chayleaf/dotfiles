@@ -1,6 +1,6 @@
 # copy a path to store (needed because I don't copy the secrets to store by default)
 # arg must be a string because of how nix handles relative paths as absolute
-{ copyToStore ? (pkgs: x: ./. + x)
+{ copyToStore ? (pkgs: name: x: ./. + x)
 , ... }: {
   nixmsi = {
     system = { pkgs, ... }: {
@@ -13,7 +13,7 @@
       # insert private user config for username here
     };
   };
-  nixserver.system = { ... }: {
+  server.system = { ... }: {
     server.localIpV4 = ...;
     server.lanCidrV4 = ...;
     server.localIpV6 = ...;

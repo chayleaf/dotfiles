@@ -7,6 +7,11 @@
     nixpkgs2.url = "github:nixos/nixpkgs/master";
     # nixpkgs.url = "github:chayleaf/nixpkgs/ccache2";
     nixos-hardware.url = "github:NixOS/nixos-hardware";
+    mobile-nixos = {
+      # url = "github:NixOS/mobile-nixos";
+      url = "github:chayleaf/mobile-nixos/cleanup";
+      flake = false;
+    };
     impermanence.url = "github:nix-community/impermanence";
     nur.url = "github:nix-community/NUR";
     rust-overlay = {
@@ -51,7 +56,22 @@
     };
   };
 
-  outputs = inputs@{ self, nixpkgs, nixpkgs2, nixos-hardware, impermanence, home-manager, nur, nix-gaming, notlua, notnft, nixos-mailserver, nixos-router, maubot, ... }:
+  outputs = inputs@
+    { self
+    , nixpkgs
+    , nixpkgs2
+    , nixos-hardware
+    , mobile-nixos
+    , impermanence
+    , home-manager
+    , nur
+    , nix-gaming
+    , notlua
+    , notnft
+    , nixos-mailserver
+    , nixos-router
+    , maubot
+    , ... }:
   let
     # --impure required for developing
     # it takes the paths for modules from filesystem as opposed to flake inputs
@@ -104,7 +124,7 @@
         system = "aarch64-linux";
         modules = [
           {
-            _module.args.server-config = nixosConfigurations.nixserver.config;
+            _module.args.server-config = nixosConfigurations.server.config;
             _module.args.notnft = if devNft then (import /${devPath}/notnft { inherit (nixpkgs) lib; }).config.notnft else notnft.lib.${system};
           }
           (if devNixRt then import /${devPath}/nixos-router else nixos-router.nixosModules.default)
@@ -128,7 +148,7 @@
       router-sd = mkBpiR3 "sd" routerConfig;
       router-emmc-cross = crossConfig router-emmc;
       router-sd-cross = crossConfig router-emmc;
-      nixserver = {
+      server = {
         system = "aarch64-linux";
         modules = [
           { _module.args.router-config = nixosConfigurations.router-emmc.config; }
@@ -138,7 +158,7 @@
           ./system/modules/scanservjs.nix
         ];
       };
-      nixserver-cross = crossConfig nixserver;
+      server-cross = crossConfig server;
       nixmsi = rec {
         system = "x86_64-linux";
         modules = [
@@ -156,6 +176,16 @@
         ];
       };
       nixmsi-cross = crossConfig nixmsi;
+      phone = {
+        system = "aarch64-linux";
+        modules = [
+          (import "${mobile-nixos}/lib/configuration.nix" {
+            device = "oneplus-enchilada";
+          })
+          ./system/hosts/phone/default.nix
+        ];
+      };
+      phone-cross = crossConfig phone;
     };
 
     # this is the system config processing part
@@ -274,7 +304,7 @@
       "x86_64-linux"
       "aarch64-linux"
     ] (system: let self = overlay ((mkPkgs { inherit system; }) // self) (import nixpkgs { inherit system; }); in self);
-    nixosImages.router = let pkgs = mkPkgs { system = "aarch64-linux"; }; in {
+    nixosImages.router = let pkgs = mkPkgs { inherit (config.router-emmc) system; }; in {
       emmcImage = pkgs.callPackage ./system/hardware/bpi-r3/image.nix {
         inherit (nixosConfigurations.router-emmc) config;
         rootfsImage = nixosConfigurations.router-emmc.config.system.build.rootfsImage;
@@ -286,6 +316,8 @@
         bpiR3Stuff = pkgs.bpiR3StuffSd;
       };
     };
+    nixosImages.phone = nixosConfigurations.phone.config.mobile.outputs.disk-image;
+    nixosImages.phone-fastboot = nixosConfigurations.phone.config.mobile.outputs.android.android-fastboot-image;
 
     hydraJobs = let
       addMeta = x: x // {
@@ -295,7 +327,7 @@
         };
       };
     in {
-      server.${config.nixserver.system} = addMeta nixosConfigurations.nixserver.config.system.build.toplevel;
+      server.${config.server.system} = addMeta nixosConfigurations.server.config.system.build.toplevel;
       workstation.${config.nixmsi.system} = addMeta nixosConfigurations.nixmsi.config.system.build.toplevel;
       router.${config.router-emmc.system} = addMeta nixosConfigurations.router-emmc-cross.config.system.build.toplevel;
       workstation-home.${config.nixmsi.system} = addMeta homeConfigurations."user@nixmsi".activation-script;
