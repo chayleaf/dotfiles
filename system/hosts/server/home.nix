@@ -150,9 +150,11 @@ in {
     {
       hostName = cfg.laptopHostname;
       maxJobs = 2;
-      protocol = "ssh-ng";
+      # TODO: switch to ssh-ng https://github.com/NixOS/hydra/issues/688
+      protocol = "ssh";
       systems = [ "x86_64-linux" ];
       supportedFeatures = [ "benchmark" "big-parallel" "ca-derivations" "kvm" "nixos-test" ];
+      # hydra-queue-runner must have read access to this
       sshKey = "/secrets/hydra-builder-key";
       sshUser = "hydra-builder";
       publicHostKey = cfg.laptopPublicKey;
