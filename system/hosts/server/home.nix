@@ -150,6 +150,8 @@ in {
   nix.daemonCPUSchedPolicy = "idle";
   nix.daemonIOSchedClass = "idle";
   systemd.services.hydra-evaluator = lib.mkIf config.services.hydra.enable {
+    # https://github.com/NixOS/hydra/issues/1186
+    environment.GC_DONT_GC = "1";
     serviceConfig.CPUQuota = "100%";
     serviceConfig.CPUSchedulingPolicy = "idle";
     serviceConfig.IOSchedulingClass = "idle";

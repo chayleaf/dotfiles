@@ -13,11 +13,18 @@
           )"'"'
         '' ];
       in derivation {
-        inherit name;
+        __contentAddressed = true;
+        outputHashAlgo = "sha256";
+        outputHashMode = "recursive";
+        preferLocalBuild = true;
+        allowSubstitutes = false;
+        allowedReferences = [];
+        passAsFile = [ "archive" ];
+        inherit name archive;
         inherit (pkgs) system;
         builder = "${pkgs.bash}/bin/bash";
         args = [ "-c" ''
-          echo '${archive}' | ${pkgs.coreutils}/bin/base64 -d |
+          ${pkgs.coreutils}/bin/base64 -d "$archivePath" |
             ${pkgs.gnutar}/bin/tar -P --transform="s#!#$out#" -I ${pkgs.zstd}/bin/zstd -x
         '' ];
       };
