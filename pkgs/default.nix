@@ -10,6 +10,24 @@ let
     inherit (pkgs) fetchgit fetchurl fetchFromGitHub dockerTools;
   };
   nixForNixPlugins = pkgs.nixVersions.nix_2_17;
+  buildCachedFirefox = useSccache: unwrapped:
+    (unwrapped.override {
+      buildMozillaMach = x: pkgs'.buildMozillaMach (x // {
+        extraConfigureFlags = (x.extraConfigureFlags or [])
+          ++ lib.toList (if useSccache then "--with-ccache=sccache" else "--with-ccache");
+      });
+    }).overrideAttrs (prev: if useSccache then {
+      nativeBuildInputs = (prev.nativeBuildInputs or []) ++ [ pkgs'.sccache ];
+      SCCACHE_DIR = "/var/cache/sccache";
+      SCCACHE_MAX_FRAME_LENGTH = "104857600";
+      RUSTC_WRAPPER = "${pkgs'.sccache}/bin/sccache";
+    } else {
+      nativeBuildInputs = (prev.nativeBuildInputs or []) ++ [ pkgs'.ccache ];
+      CCACHE_CPP2 = "yes";
+      CCACHE_COMPRESS = "1";
+      CCACHE_UMASK = "007";
+      CCACHE_DIR = "/var/cache/ccache";
+    });
 in
 
 {
@@ -62,6 +80,8 @@ in
 
   clang-tools_latest = pkgs.clang-tools_16;
   clang_latest = pkgs.clang_16;
+  buildFirefoxWithCcache = buildCachedFirefox false;
+  buildFirefoxWithSccache = buildCachedFirefox true;
   /*ghidra = pkgs.ghidra.overrideAttrs (old: {
     patches = old.patches ++ [ ./ghidra-stdcall.patch ];
   });*/

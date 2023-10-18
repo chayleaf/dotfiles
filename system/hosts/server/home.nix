@@ -103,6 +103,8 @@ in {
     "https://github.com/searxng/searxng/"
     # required for home config (nvfetcher again)
     "https://api.github.com/repos/FAForever/"
+    # for nginx CF-Connecting-IP config generation
+    "https://www.cloudflare.com/ips-"
   ];
   services.nginx.virtualHosts."binarycache.${cfg.domainName}" = {
     quic = true;
