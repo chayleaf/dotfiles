@@ -322,7 +322,7 @@
     hydraJobs = {
       server.${config.server.system} = nixosConfigurations.server.config.system.build.toplevel;
       workstation.${config.nixmsi.system} = nixosConfigurations.nixmsi.config.system.build.toplevel;
-      router.${config.router-emmc.system} = nixosConfigurations.router-emmc-cross.config.system.build.toplevel;
+      router.${config.router-emmc.system} = nixosConfigurations.router-emmc.config.system.build.toplevel;
       workstation-home.${config.nixmsi.system} = homeConfigurations."user@nixmsi".activation-script;
     };
   };
