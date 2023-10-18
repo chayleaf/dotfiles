@@ -10,24 +10,6 @@ let
     inherit (pkgs) fetchgit fetchurl fetchFromGitHub dockerTools;
   };
   nixForNixPlugins = pkgs.nixVersions.nix_2_17;
-  buildCachedFirefox = useSccache: unwrapped:
-    (unwrapped.override {
-      buildMozillaMach = x: pkgs'.buildMozillaMach (x // {
-        extraConfigureFlags = (x.extraConfigureFlags or [])
-          ++ lib.toList (if useSccache then "--with-ccache=sccache" else "--with-ccache");
-      });
-    }).overrideAttrs (prev: if useSccache then {
-      nativeBuildInputs = (prev.nativeBuildInputs or []) ++ [ pkgs'.sccache ];
-      SCCACHE_DIR = "/var/cache/sccache";
-      SCCACHE_MAX_FRAME_LENGTH = "104857600";
-      RUSTC_WRAPPER = "${pkgs'.sccache}/bin/sccache";
-    } else {
-      nativeBuildInputs = (prev.nativeBuildInputs or []) ++ [ pkgs'.ccache ];
-      CCACHE_CPP2 = "yes";
-      CCACHE_COMPRESS = "1";
-      CCACHE_UMASK = "007";
-      CCACHE_DIR = "/var/cache/ccache";
-    });
 in
 
 {
@@ -80,11 +62,10 @@ in
 
   clang-tools_latest = pkgs.clang-tools_16;
   clang_latest = pkgs.clang_16;
-  buildFirefoxWithCcache = buildCachedFirefox false;
-  buildFirefoxWithSccache = buildCachedFirefox true;
   /*ghidra = pkgs.ghidra.overrideAttrs (old: {
     patches = old.patches ++ [ ./ghidra-stdcall.patch ];
   });*/
+  gimp = callPackage ./gimp { inherit (pkgs) gimp; };
   home-daemon = callPackage ./home-daemon { };
   # pin version
   looking-glass-client = pkgs.looking-glass-client.overrideAttrs (old: {
@@ -121,7 +102,7 @@ in
   techmino = callPackage ./techmino { };
 
   firefox-addons = lib.recurseIntoAttrs (callPackage ./firefox-addons { inherit nur sources; });
-  mpvScripts = pkgs.mpvScripts // (callPackage ./mpv-scripts { });
+  mpvScripts = pkgs.mpvScripts // callPackage ./mpv-scripts { };
 
   qemu_7 = callPackage ./qemu_7.nix {
     stdenv = pkgs'.ccacheStdenv;
@@ -139,8 +120,15 @@ in
   # TODO: when https://gitlab.com/virtio-fs/virtiofsd/-/issues/96 is fixed remove this
   virtiofsd = callPackage ./qemu_virtiofsd.nix {
     qemu = pkgs'.qemu_7;
+  };
+
+  qemu_7_ccache = pkgs'.qemu_7.override {
     stdenv = pkgs'.ccacheStdenv;
   };
-  gimp = callPackage ./gimp { inherit (pkgs) gimp; };
+  virtiofsd_ccache = pkgs'.virtiofsd.override {
+    qemu = pkgs'.qemu_7_ccache;
+    stdenv = pkgs'.ccacheStdenv;
+  };
 }
-// (import ../system/hardware/bpi-r3/pkgs.nix { inherit pkgs pkgs' lib sources; })
+// import ./ccache.nix { inherit pkgs pkgs' lib sources; }
+// import ../system/hardware/bpi-r3/pkgs.nix { inherit pkgs pkgs' lib sources; }

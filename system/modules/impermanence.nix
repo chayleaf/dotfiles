@@ -127,6 +127,9 @@ in {
         { directory = /var/lib/openldap; inherit (config.services.openldap) user group; mode = "0755"; }
       ] ++ lib.optionals (config.services.scanservjs.enable or false) [
         { directory = /var/lib/scanservjs; user = "scanservjs"; group = "scanservjs"; mode = "0750"; }
+      ] ++ lib.optionals config.programs.ccache.enable [
+        { directory = config.programs.ccache.cacheDir; user = "root"; group = "nixbld"; mode = "0770"; }
+        { directory = /var/cache/sccache; user = "root"; group = "nixbld"; mode = "0770"; }
       ] ++ cfg.directories);
       files = map (x:
         if builtins.isPath x then toString x

@@ -1,16 +1,15 @@
-{ config, lib, ... }:
+{ config
+, lib
+, ... }:
+
 {
   nix.settings.extra-sandbox-paths = lib.mkIf config.programs.ccache.enable [
-    config.programs.ccache.cacheDir
-    "/var/cache/sccache"
-  ];
-  impermanence.directories = lib.mkIf config.programs.ccache.enable [
-    config.programs.ccache.cacheDir
+    (assert config.programs.ccache.cacheDir == "/var/cache/ccache"; config.programs.ccache.cacheDir)
     "/var/cache/sccache"
   ];
   nixpkgs.overlays = lib.mkIf (config.programs.ccache.enable && config.programs.ccache.packageNames == []) [
     (self: super: {
-      ccacheWrapper = super.ccacheWrapper.override {
+      ccacheWrapper = if self?__dontIncludeCcacheOverlay then super.ccacheWrapper else super.ccacheWrapper.override {
         extraConfig = ''
           export CCACHE_COMPRESS=1
           export CCACHE_DIR="${config.programs.ccache.cacheDir}"

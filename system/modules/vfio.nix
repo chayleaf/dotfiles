@@ -192,6 +192,6 @@ in {
     };
     virtualisation.spiceUSBRedirection.enable = true;
     users.groups.libvirtd.members = [ "root" ] ++ cfg.libvirtdGroup;
-    environment.systemPackages = with pkgs; [ virtiofsd ];
+    environment.systemPackages = [ (pkgs.virtiofsd_ccache or pkgs.virtiofsd) ];
   };
 }
