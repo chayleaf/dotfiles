@@ -104,7 +104,8 @@ in {
     # required for home config (nvfetcher again)
     "https://api.github.com/repos/FAForever/"
     # for nginx CF-Connecting-IP config generation
-    "https://www.cloudflare.com/ips-"
+    "https://www.cloudflare.com/ips-v4"
+    "https://www.cloudflare.com/ips-v6"
   ];
   services.nginx.virtualHosts."binarycache.${cfg.domainName}" = {
     quic = true;
