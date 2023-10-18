@@ -136,7 +136,7 @@ in {
     # smtpHost = "mail.${cfg.domainName}";
     useSubstitutes = true;
   };
-  boot.binfmt.emulatedSystems = builtins.filter (x: x != pkgs.system) [ "aarch64-linux" "x86_64-linux" ];
+  # boot.binfmt.emulatedSystems = builtins.filter (x: x != pkgs.system) [ "aarch64-linux" "x86_64-linux" ];
   nix.buildMachines = [
     {
       # there were some bugs related to not specifying the machine
@@ -144,21 +144,21 @@ in {
       hostName = "localhost";
       protocol = null;
       maxJobs = 8;
-      supportedFeatures = [ "kvm" "local" "nixos-test" "benchmark" "big-parallel" ];
-      systems = [ "builtin" "x86_64-linux" "aarch64-linux" ];
+      supportedFeatures = [ "benchmark" "big-parallel" "ca-derivations" "local" "kvm" "nixos-test" ];
+      systems = [ "builtin" pkgs.system ];
     }
     {
       hostName = cfg.laptopHostname;
-      maxJobs = 1;
-      speedFactor = 2;
+      maxJobs = 2;
       protocol = "ssh-ng";
       systems = [ "x86_64-linux" ];
-      supportedFeatures = [ "kvm" "nixos-test" "benchmark" "big-parallel" ];
+      supportedFeatures = [ "benchmark" "big-parallel" "ca-derivations" "kvm" "nixos-test" ];
       sshKey = "/secrets/hydra-builder-key";
       sshUser = "hydra-builder";
       publicHostKey = cfg.laptopPublicKey;
     }
   ];
+  nix.distributedBuilds = true;
   # limit CI CPU usage since I'm running everything else off this server too
   systemd.services.nix-daemon.serviceConfig.CPUQuota = "100%";
   nix.daemonCPUSchedPolicy = "idle";
