@@ -156,6 +156,7 @@ in {
       supportedFeatures = [ "kvm" "nixos-test" "benchmark" "big-parallel" ];
       sshKey = "/secrets/hydra-builder-key";
       sshUser = "hydra-builder";
+      publicHostKey = cfg.laptopPublicKey;
     }
   ];
   # limit CI CPU usage since I'm running everything else off this server too

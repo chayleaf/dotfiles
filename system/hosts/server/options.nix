@@ -14,6 +14,11 @@
           default = null;
           description = "laptop hostname";
         };
+        laptopPublicKey = mkOption {
+          type = with types; nullOr str;
+          default = null;
+          description = "laptop public ssh key";
+        };
         keycloakRealm = mkOption {
           type = types.str;
           default = "master";
