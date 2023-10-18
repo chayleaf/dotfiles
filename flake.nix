@@ -319,14 +319,7 @@
     nixosImages.phone = nixosConfigurations.phone.config.mobile.outputs.disk-image;
     nixosImages.phone-fastboot = nixosConfigurations.phone.config.mobile.outputs.android.android-fastboot-image;
 
-    hydraJobs = let
-      addMeta = x: x // {
-        meta = (x.meta or {}) // {
-          timeout = 60 * 60 * 10;
-          maxSilent = 60 * 60 * 10;
-        };
-      };
-    in builtins.mapAttrs (_: addMeta) {
+    hydraJobs = {
       server.${config.server.system} = nixosConfigurations.server.config.system.build.toplevel;
       workstation.${config.nixmsi.system} = nixosConfigurations.nixmsi.config.system.build.toplevel;
       router.${config.router-emmc.system} = nixosConfigurations.router-emmc-cross.config.system.build.toplevel;

@@ -9,6 +9,11 @@
           default = "pavluk.org";
           description = "domain name";
         };
+        laptopHostname = mkOption {
+          type = with types; nullOr str;
+          default = null;
+          description = "laptop hostname";
+        };
         keycloakRealm = mkOption {
           type = types.str;
           default = "master";

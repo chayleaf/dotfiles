@@ -151,8 +151,13 @@
   programs.ccache.enable = true;
   services.sshd.enable = true;
   boot.binfmt.emulatedSystems = [ "aarch64-linux" ];
+  users.users.hydra-builder = {
+    uid = 1001;
+    isNormalUser = true;
+  };
   nix.settings = {
     netrc-file = "/secrets/netrc";
+    trusted-users = [ "hydra-builder" ];
     substituters = [
       "https://binarycache.pavluk.org"
       "https://cache.nixos.org/"

@@ -146,6 +146,16 @@ in {
       supportedFeatures = [ "kvm" "local" "nixos-test" "benchmark" "big-parallel" ];
       systems = [ "builtin" "x86_64-linux" "aarch64-linux" ];
     }
+    {
+      hostName = cfg.laptopHostname;
+      maxJobs = 1;
+      speedFactor = 2;
+      protocol = "ssh-ng";
+      systems = [ "x86_64-linux" ];
+      supportedFeatures = [ "kvm" "nixos-test" "benchmark" "big-parallel" ];
+      sshKey = "/secrets/hydra-builder-key";
+      sshUser = "hydra-builder";
+    }
   ];
   # limit CI CPU usage since I'm running everything else off this server too
   systemd.services.nix-daemon.serviceConfig.CPUQuota = "100%";
