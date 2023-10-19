@@ -161,14 +161,14 @@ in {
     }
   ];
   nix.distributedBuilds = true;
-  # limit CI CPU usage since I'm running everything else off this server too
-  systemd.services.nix-daemon.serviceConfig.CPUQuota = "100%";
+  # limit CI CPU usage to 30% since I'm running everything else off this server too
+  systemd.services.nix-daemon.serviceConfig.CPUQuota = "240%";
   nix.daemonCPUSchedPolicy = "idle";
   nix.daemonIOSchedClass = "idle";
   systemd.services.hydra-evaluator = lib.mkIf config.services.hydra.enable {
     # https://github.com/NixOS/hydra/issues/1186
     environment.GC_DONT_GC = "1";
-    serviceConfig.CPUQuota = "100%";
+    serviceConfig.CPUQuota = "240%";
     serviceConfig.CPUSchedulingPolicy = "idle";
     serviceConfig.IOSchedulingClass = "idle";
   };

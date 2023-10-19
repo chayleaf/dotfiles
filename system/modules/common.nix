@@ -100,7 +100,16 @@ in {
       kitty.terminfo
       # rxvt-unicode-unwrapped.terminfo
     ]);
-    # TODO: minimal fish config
+    programs.fish.interactiveShellInit = lib.mkIf cfg.minimal ''
+      set -gx SHELL ${pkgs.zsh}/bin/zsh
+      set -g fish_color_autosuggestion 777 brblack
+      set -g fish_color_command green
+      set -g fish_color_operator white
+      set -g fish_color_param white
+      set -g fish_key_bindings fish_vi_key_bindings
+      set -g fish_cursor_insert line
+      set -g fish_cursor_replace underscore
+    '';
     programs.vim = lib.mkIf cfg.minimal {
       defaultEditor = lib.mkDefault true;
       package = pkgs.vim-full.customize {

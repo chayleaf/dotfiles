@@ -88,7 +88,7 @@
 
       set -gx NOMCOMPAT ${nom-compat}
       # for posix compatibility
-      set -gx SHELL zsh
+      set -gx SHELL ${pkgs.zsh}/bin/zsh
 
       set -g fish_color_autosuggestion 777 brblack
       set -g fish_color_command green
