@@ -1,4 +1,5 @@
 { hardware
+, pkgs
 , ... }:
 
 {
@@ -12,6 +13,7 @@
   common.resolution = "1920x1080";
   vfio.pciIDs = [ "1002:73df" "1002:ab28" ];
   boot = {
+    kernelPackages = pkgs.linuxPackagesFor pkgs.linux_latest;
     initrd.availableKernelModules = [ "nvme" "xhci_pci" ];
     kernelParams = [
       # disable PSR to *hopefully* avoid random hangs
@@ -51,4 +53,19 @@
       };
     })
   ];
+  specialisation.no_patches.configuration = {
+    nixpkgs.overlays = [
+      (final: prev: {
+        amd-ucode = prev.amd-ucode.override { inherit (final) linux-firmware; };
+        linux-firmware = prev.stdenvNoCC.mkDerivation {
+          inherit (prev.linux-firmware) pname version meta src;
+          dontFixup = true;
+          passthru = { inherit (prev.linux-firmware) version; };
+          installFlags = [ "DESTDIR=$(out)" ];
+          patches = [ ];
+          postPatch = "";
+        };
+      })
+    ];
+  };
 }
