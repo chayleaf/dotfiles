@@ -282,6 +282,7 @@ in {
   ];
   router-settings.dhcp6Reservations = [
     { ipAddress = serverAddress6;
+      duid = cfg.serverDuid;
       macAddress = cfg.serverMac; }
     { ipAddress = vacuumAddress6;
       macAddress = cfg.vacuumMac; }
@@ -434,11 +435,11 @@ in {
       gateways = [ netAddresses.lan6 ];
       radvdSettings.AdvAutonomous = true;
       coreradSettings.autonomous = true;
-      # don't autoallocate addresses, keep autonomous ones
+      # don't allocate addresses for most devices
       keaSettings.pools = [ ];
       # just assign the reservations
-      keaSettings.reservations = map (res: {
-        hw-address = res.macAddress;
+      keaSettings.reservations = map (res:
+      (if res.duid != null then { duid = res.duid; } else { hw-address = res.macAddress; }) // {
         ip-addresses = [ res.ipAddress ];
       }) cfg.dhcp6Reservations;
     });

@@ -13,6 +13,11 @@
       description = "server's mac address";
       type = lib.types.str;
     };
+    serverDuid = lib.mkOption {
+      description = "server's duid";
+      type = with lib.types; nullOr str;
+      default = null;
+    };
     serverInitrdMac = lib.mkOption {
       description = "server's mac address in initrd";
       type = lib.types.str;
@@ -92,8 +97,14 @@
           description = "device's ip address";
         };
         options.macAddress = lib.mkOption {
-          type = lib.types.str;
+          type = with lib.types; nullOr str;
+          default = null;
           description = "device's mac address";
+        };
+        options.duid = lib.mkOption {
+          type = with lib.types; nullOr str;
+          default = null;
+          description = "device's duid";
         };
       });
     };
