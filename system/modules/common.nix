@@ -93,6 +93,7 @@ in {
     # ISO-8601
     i18n.extraLocaleSettings.LC_TIME = "en_DK.UTF-8";
     environment.systemPackages = with pkgs; ([
+      bottom
       wget
       git
       tmux

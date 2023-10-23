@@ -82,6 +82,7 @@ in {
 
   services.postgresql.enable = true;
   services.postgresql.package = pkgs.postgresql_13;
+  services.postgresql.extraPlugins = with pkgs.postgresql13Packages; [ tsja ];
 
   # SSH
   services.openssh.enable = true;
@@ -277,12 +278,27 @@ in {
     https = true;
   };
 
+  # AKKOMA
+  # TODO: remove this in 2024
+  services.nginx.virtualHosts."pleroma.${cfg.domainName}" = {
+    quic = true;
+    enableACME = true;
+    addSSL = true;
+    serverAliases = [ "akkoma.${cfg.domainName}" ];
+    locations."/".return = "301 https://fedi.${cfg.domainName}$request_uri";
+  };
+
   services.akkoma = {
     enable = true;
+    dist.extraFlags = [
+      "+sbwt" "none"
+      "+sbwtdcpu" "none"
+      "+sbwtdio" "none"
+    ];
     config.":pleroma"."Pleroma.Web.Endpoint" = {
       url = {
         scheme = "https";
-        host = "pleroma.${cfg.domainName}";
+        host = "fedi.${cfg.domainName}";
         port = 443;
       };
       secret_key_base._secret = "/secrets/akkoma/secret_key_base";
@@ -294,7 +310,7 @@ in {
     '';
     initDb = {
       enable = false;
-      username = "pleroma";
+      username = "akkoma";
       password._secret = "/secrets/akkoma/postgres_password";
     };
     config.":pleroma".":instance" = {
@@ -307,9 +323,9 @@ in {
     };
     config.":pleroma"."Pleroma.Repo" = {
       adapter = (pkgs.formats.elixirConf { }).lib.mkRaw "Ecto.Adapters.Postgres";
-      username = "pleroma";
+      username = "akkoma";
       password._secret = "/secrets/akkoma/postgres_password";
-      database = "pleroma";
+      database = "akkoma";
       hostname = "localhost";
     };
     config.":web_push_encryption".":vapid_details" = {
@@ -319,19 +335,18 @@ in {
     };
     config.":joken".":default_signer"._secret = "/secrets/akkoma/joken_signer";
     nginx = {
-      serverAliases = [ "akkoma.${cfg.domainName}" ];
       quic = true;
       enableACME = true;
       forceSSL = true;
     };
   };
-  systemd.services.akkoma.path = [ pkgs.exiftool pkgs.gawk ];
-  systemd.services.akkoma.serviceConfig = {
-    Restart = "on-failure";
-  };
-  systemd.services.akkoma.unitConfig = {
-    StartLimitIntervalSec = 60;
-    StartLimitBurst = 3;
+  systemd.services.akkoma = {
+    path = [ pkgs.exiftool pkgs.gawk ];
+    serviceConfig.Restart = "on-failure";
+    unitConfig = {
+      StartLimitIntervalSec = 60;
+      StartLimitBurst = 3;
+    };
   };
 
   /*locations."/dns-query".extraConfig = ''

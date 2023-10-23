@@ -3,9 +3,9 @@
 
   inputs = {
     #nixpkgs.url = "github:nixos/nixpkgs/3dc2b4f8166f744c3b3e9ff8224e7c5d74a5424f";
-    nixpkgs.url = "github:nixos/nixpkgs/nixos-unstable";
+    # nixpkgs.url = "github:nixos/nixpkgs/nixos-unstable";
+    nixpkgs.url = "github:chayleaf/nixpkgs/akkoma";
     nixpkgs2.url = "github:nixos/nixpkgs/master";
-    # nixpkgs.url = "github:chayleaf/nixpkgs/ccache2";
     nixos-hardware.url = "github:NixOS/nixos-hardware";
     mobile-nixos = {
       # url = "github:NixOS/mobile-nixos";

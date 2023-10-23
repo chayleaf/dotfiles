@@ -90,21 +90,17 @@ in
     '';
   };
   rofi-steam-game-list = callPackage ./rofi-steam-game-list { };
-  scanservjs = callPackage ./scanservjs.nix { };
+  scanservjs = callPackage ./scanservjs { };
   searxng = pkgs'.python3.pkgs.toPythonModule (pkgs.searxng.overrideAttrs (old: {
     inherit (sources.searxng) src;
     version = "unstable-" + sources.searxng.date;
-    propagatedBuildInputs = old.propagatedBuildInputs ++ [
-      (pkgs'.python3.pkgs.callPackage ./chompjs.nix { })
-    ];
   }));
-  # system76-scheduler = callPackage ./system76-scheduler.nix { };
   techmino = callPackage ./techmino { };
 
   firefox-addons = lib.recurseIntoAttrs (callPackage ./firefox-addons { inherit nur sources; });
   mpvScripts = pkgs.mpvScripts // callPackage ./mpv-scripts { };
 
-  qemu_7 = callPackage ./qemu_7.nix {
+  qemu_7 = callPackage ./qemu/7.nix {
     stdenv = pkgs'.ccacheStdenv;
     inherit (pkgs.darwin.apple_sdk.frameworks) CoreServices Cocoa Hypervisor vmnet;
     inherit (pkgs.darwin.stubs) rez setfile;
@@ -118,7 +114,7 @@ in
   qemu_7_xen_4_15-light = lib.lowPrio (pkgs'.qemu_7.override { hostCpuOnly = true; xenSupport = true; xen = pkgs.xen_4_15-light; });
   qemu_7_test = lib.lowPrio (pkgs'.qemu_7.override { hostCpuOnly = true; nixosTestRunner = true; });
   # TODO: when https://gitlab.com/virtio-fs/virtiofsd/-/issues/96 is fixed remove this
-  virtiofsd = callPackage ./qemu_virtiofsd.nix {
+  virtiofsd = callPackage ./qemu/virtiofsd.nix {
     qemu = pkgs'.qemu_7;
   };
 
@@ -130,5 +126,6 @@ in
     stdenv = pkgs'.ccacheStdenv;
   };
 }
+// import ./postgresql-packages { inherit pkgs pkgs' lib sources; }
 // import ./ccache.nix { inherit pkgs pkgs' lib sources; }
 // import ../system/hardware/bpi-r3/pkgs.nix { inherit pkgs pkgs' lib sources; }
