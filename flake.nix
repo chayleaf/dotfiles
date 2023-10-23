@@ -156,6 +156,7 @@
           ./system/devices/radxa-rock5a-server.nix
           (if devMaubot then import /${devPath}/maubot.nix/module else maubot.nixosModules.default)
           ./system/modules/scanservjs.nix
+          ./system/modules/certspotter.nix
         ];
       };
       server-cross = crossConfig server;

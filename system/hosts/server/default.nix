@@ -349,6 +349,25 @@ in {
     };
   };
 
+  users.users.certspotter.extraGroups = [ "acme" ];
+  services.certspotter = {
+    enable = true;
+    watchlist = [ ".pavluk.org" ];
+    hooks = let
+      openssl = "${pkgs.openssl.bin}/bin/openssl";
+    in lib.toList (pkgs.writeShellScript "certspotter-hook" ''
+      if [[ "$EVENT" == discovered_cert ]]; then
+        mkdir -p /var/lib/certspotter/allowed_tbs
+        for cert in $(find /var/lib/acme -regex ".*/fullchain.pem"); do
+          hash="$(${openssl} x509 -in "$cert" -pubkey -noout | ${openssl} pkey -pubin -outform DER | ${openssl} sha256 | cut -d" " -f2)"
+          touch "/var/lib/certspotter/allowed_tbs/$hash"
+        done
+        [[ -f "/var/lib/certspotter/allowed_tbs/$TBS_SHA256" ]] && exit 0
+      fi
+      (echo "Subject: $SUMMARY" && echo && cat "$TEXT_FILENAME") | /run/wrappers/bin/sendmail -i webmaster-certspotter@${cfg.domainName}
+    '');
+  };
+
   /*locations."/dns-query".extraConfig = ''
     grpc_pass grpc://127.0.0.1:53453;
   '';*/

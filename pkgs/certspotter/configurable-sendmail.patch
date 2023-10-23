@@ -1,0 +1,71 @@
+diff --git a/cmd/certspotter/main.go b/cmd/certspotter/main.go
+index 9730789..f2eb081 100644
+--- a/cmd/certspotter/main.go
++++ b/cmd/certspotter/main.go
+@@ -163,6 +163,7 @@ func main() {
+ 		logs        string
+ 		noSave      bool
+ 		script      string
++		sendmail    string
+ 		startAtEnd  bool
+ 		stateDir    string
+ 		stdout      bool
+@@ -176,6 +177,7 @@ func main() {
+ 	flag.StringVar(&flags.logs, "logs", defaultLogList, "File path or URL of JSON list of logs to monitor")
+ 	flag.BoolVar(&flags.noSave, "no_save", false, "Do not save a copy of matching certificates in state directory")
+ 	flag.StringVar(&flags.script, "script", "", "Program to execute when a matching certificate is discovered")
++	flag.StringVar(&flags.sendmail, "sendmail", "/usr/sbin/sendmail", "Path to the sendmail-compatible program to use")
+ 	flag.BoolVar(&flags.startAtEnd, "start_at_end", false, "Start monitoring logs from the end rather than the beginning (saves considerable bandwidth)")
+ 	flag.StringVar(&flags.stateDir, "state_dir", defaultStateDir(), "Directory for storing log position and discovered certificates")
+ 	flag.BoolVar(&flags.stdout, "stdout", false, "Write matching certificates to stdout")
+@@ -201,6 +203,7 @@ func main() {
+ 		Verbose:             flags.verbose,
+ 		Script:              flags.script,
+ 		ScriptDir:           defaultScriptDir(),
++		SendmailPath:        flags.sendmail,
+ 		Email:               flags.email,
+ 		Stdout:              flags.stdout,
+ 		HealthCheckInterval: flags.healthcheck,
+diff --git a/monitor/config.go b/monitor/config.go
+index 1e0d60c..d1bc430 100644
+--- a/monitor/config.go
++++ b/monitor/config.go
+@@ -20,6 +20,7 @@ type Config struct {
+ 	WatchList           WatchList
+ 	Verbose             bool
+ 	SaveCerts           bool
++	SendmailPath        string
+ 	Script              string
+ 	ScriptDir           string
+ 	Email               []string
+diff --git a/monitor/notify.go b/monitor/notify.go
+index 8fc6d09..86cabca 100644
+--- a/monitor/notify.go
++++ b/monitor/notify.go
+@@ -36,7 +36,7 @@ func notify(ctx context.Context, config *Config, notif notification) error {
+ 	}
+ 
+ 	if len(config.Email) > 0 {
+-		if err := sendEmail(ctx, config.Email, notif); err != nil {
++		if err := sendEmail(ctx, config.SendmailPath, config.Email, notif); err != nil {
+ 			return err
+ 		}
+ 	}
+@@ -62,7 +62,7 @@ func writeToStdout(notif notification) {
+ 	os.Stdout.WriteString(notif.Text() + "\n")
+ }
+ 
+-func sendEmail(ctx context.Context, to []string, notif notification) error {
++func sendEmail(ctx context.Context, sendmailPath string, to []string, notif notification) error {
+ 	stdin := new(bytes.Buffer)
+ 	stderr := new(bytes.Buffer)
+ 
+@@ -77,7 +77,7 @@ func sendEmail(ctx context.Context, to []string, notif notification) error {
+ 	args := []string{"-i", "--"}
+ 	args = append(args, to...)
+ 
+-	sendmail := exec.CommandContext(ctx, "/usr/sbin/sendmail", args...)
++	sendmail := exec.CommandContext(ctx, sendmailPath, args...)
+ 	sendmail.Stdin = stdin
+ 	sendmail.Stderr = stderr
+ 

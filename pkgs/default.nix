@@ -60,6 +60,7 @@ in
     meta = builtins.removeAttrs old.meta [ "broken" ];
   });
 
+  certspotter = callPackage ./certspotter { };
   clang-tools_latest = pkgs.clang-tools_16;
   clang_latest = pkgs.clang_16;
   /*ghidra = pkgs.ghidra.overrideAttrs (old: {
