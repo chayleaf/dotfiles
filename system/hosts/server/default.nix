@@ -228,14 +228,22 @@ in {
       type = "postgres";
     };
     settings = {
+      federation.ENABLED = true;
+      git.timeout = {
+        DEFAULT = 6000;
+        MIGRATE = 6000;
+        MIRROR = 6000;
+        GC = 120;
+      };
       mailer = {
         ENABLED = true;
         FROM = "Forgejo <noreply@${cfg.domainName}>";
-        MAILER_TYPE = "smtp";
-        HOST = "mail.${cfg.domainName}:587";
+        PROTOCOL = "smtp";
+        SMTP_ADDR = "mail.${cfg.domainName}";
+        SMTP_PORT = 587;
         USER = "noreply@${cfg.domainName}";
         PASSWD = cfg.unhashedNoreplyPassword;
-        SKIP_VERIFY = true;
+        FORCE_TRUST_SERVER_CERT = true;
       };
       session = {
         COOKIE_SECURE = true;
