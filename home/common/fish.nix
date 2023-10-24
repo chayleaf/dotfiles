@@ -60,8 +60,7 @@
           set argv[1] fish
           ${pkgs.any-nix-shell}/bin/.any-nix-wrapper $argv
         else if test $argv[1] = develop
-          set argv[1] fish
-          command nix develop --command $argv
+          command nix $argv --command fish
         else
           command nix $argv
         end
@@ -77,8 +76,7 @@
           set argv[1] fish
           PATH="${nom-compat}/bin:$PATH" ${pkgs.any-nix-shell}/bin/.any-nix-wrapper $argv
         else if test $argv[1] = develop
-          set argv[1] fish
-          command nom develop --command $argv
+          command nom $argv --command fish
         else if test $argv[1] = build
           command nom $argv
         else
