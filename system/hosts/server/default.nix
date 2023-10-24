@@ -231,8 +231,8 @@ in {
       federation.ENABLED = true;
       "git.timeout" = {
         DEFAULT = 6000;
-        MIGRATE = 6000;
-        MIRROR = 6000;
+        MIGRATE = 60000;
+        MIRROR = 60000;
         GC = 120;
       };
       mailer = {
