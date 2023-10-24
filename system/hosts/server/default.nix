@@ -349,20 +349,23 @@ in {
     };
   };
 
-  users.users.certspotter.extraGroups = [ "acme" ];
+  # TODO: create a separate group for nginx and certspotter
+  # TODO: calc tbs instead of pubkey hash?
+  users.users.certspotter.extraGroups = [ "nginx" ];
   services.certspotter = {
     enable = true;
+    extraFlags = [ ];
     watchlist = [ ".pavluk.org" ];
     hooks = let
       openssl = "${pkgs.openssl.bin}/bin/openssl";
     in lib.toList (pkgs.writeShellScript "certspotter-hook" ''
       if [[ "$EVENT" == discovered_cert ]]; then
-        mkdir -p /var/lib/certspotter/allowed_tbs
+        mkdir -p /var/lib/certspotter/allowed_keys
         for cert in $(find /var/lib/acme -regex ".*/fullchain.pem"); do
           hash="$(${openssl} x509 -in "$cert" -pubkey -noout | ${openssl} pkey -pubin -outform DER | ${openssl} sha256 | cut -d" " -f2)"
-          touch "/var/lib/certspotter/allowed_tbs/$hash"
+          touch "/var/lib/certspotter/allowed_keys/$hash"
         done
-        [[ -f "/var/lib/certspotter/allowed_tbs/$TBS_SHA256" ]] && exit 0
+        [[ -f "/var/lib/certspotter/allowed_keys/$PUBKEY_SHA256" ]] && exit 0
       fi
       (echo "Subject: $SUMMARY" && echo && cat "$TEXT_FILENAME") | /run/wrappers/bin/sendmail -i webmaster-certspotter@${cfg.domainName}
     '');
