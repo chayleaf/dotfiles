@@ -229,7 +229,7 @@ in {
     };
     settings = {
       federation.ENABLED = true;
-      git.timeout = {
+      "git.timeout" = {
         DEFAULT = 6000;
         MIGRATE = 6000;
         MIRROR = 6000;

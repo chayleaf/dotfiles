@@ -100,13 +100,16 @@ in {
             name = "hook${toString i}";
           }) cfg.hooks);
         });
-      environment.CERTSPOTTER_STATE_DIR = "/var/lib/certspotter";
       serviceConfig = {
         User = "certspotter";
         Group = "certspotter";
-        WorkingDirectory = "/var/lib/certspotter";
-        ExecStart = "${pkgs.certspotter}/bin/certspotter -sendmail ${cfg.sendmailPath} ${lib.escapeShellArgs cfg.extraFlags}";
+        StateDirectory = "certspotter";
       };
+      script = ''
+        export CERTSPOTTER_STATE_DIR="$STATE_DIR"
+        cd "$CERTSPOTTER_STATE_DIR"
+        ${pkgs.certspotter}/bin/certspotter -sendmail ${cfg.sendmailPath} ${lib.escapeShellArgs cfg.extraFlags}
+      '';
     };
   };
 }
