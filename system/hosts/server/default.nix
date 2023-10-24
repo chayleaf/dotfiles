@@ -221,6 +221,7 @@ in {
   };
   services.gitea = {
     enable = true;
+    package = pkgs.forgejo;
     database = {
       createDatabase = false;
       passwordFile = "/var/lib/gitea/db_password";
@@ -229,7 +230,7 @@ in {
     settings = {
       mailer = {
         ENABLED = true;
-        FROM = "Gitea <noreply@${cfg.domainName}>";
+        FROM = "Forgejo <noreply@${cfg.domainName}>";
         MAILER_TYPE = "smtp";
         HOST = "mail.${cfg.domainName}:587";
         USER = "noreply@${cfg.domainName}";
