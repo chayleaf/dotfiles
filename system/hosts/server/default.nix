@@ -6,7 +6,7 @@
 let
   cfg = config.server;
 
-  hosted-domains =
+  hostedDomains =
     builtins.concatLists
       (builtins.attrValues
         (builtins.mapAttrs
@@ -15,12 +15,16 @@ let
 in {
   imports = [
     ./options.nix
-    ./matrix.nix
+    ./akkoma.nix
+    ./certspotter.nix
     ./fdroid.nix
-    ./mumble.nix
-    ./mailserver.nix
+    ./files.nix
     ./home.nix
     ./keycloak.nix
+    ./mailserver.nix
+    ./matrix.nix
+    ./mumble.nix
+    ./searxng.nix
   ];
 
   system.stateVersion = "22.11";
@@ -77,12 +81,11 @@ in {
     };
   };
   # just in case
-  networking.hosts."127.0.0.1" = hosted-domains;
-  networking.hosts."::1" = hosted-domains;
+  networking.hosts."127.0.0.1" = hostedDomains;
+  networking.hosts."::1" = hostedDomains;
 
   services.postgresql.enable = true;
   services.postgresql.package = pkgs.postgresql_13;
-  services.postgresql.extraPlugins = with pkgs.postgresql13Packages; [ tsja ];
 
   # SSH
   services.openssh.enable = true;
@@ -94,56 +97,6 @@ in {
     jails.dovecot = ''
       enabled = true
       filter = dovecot
-    '';
-  };
-
-  # SEARXNG
-  services.searx.enable = true;
-  services.searx.package = pkgs.searxng;
-  services.searx.runInUwsgi = true;
-  services.searx.uwsgiConfig = let inherit (config.services.searx) settings; in {
-    socket = "${lib.quoteListenAddr settings.server.bind_address}:${toString settings.server.port}";
-  };
-  services.searx.environmentFile = /var/lib/searx/searx.env;
-  services.searx.settings = {
-    use_default_settings = true;
-    search = {
-        safe_search = 0;
-        autocomplete = "duckduckgo"; # dbpedia, duckduckgo, google, startpage, swisscows, qwant, wikipedia - leave blank to turn off
-        default_lang = ""; # leave blank to detect from browser info or use codes from languages.py
-    };
-
-    server = {
-      port = 8888;
-      bind_address = "::1";
-      secret_key = "@SEARX_SECRET_KEY@";
-      base_url = "https://search.${cfg.domainName}/";
-      image_proxy = true;
-      default_http_headers = {
-        X-Content-Type-Options = "nosniff";
-        X-XSS-Protection = "1; mode=block";
-        X-Download-Options = "noopen";
-        X-Robots-Tag = "noindex, nofollow";
-        Referrer-Policy = "no-referrer";
-      };
-    };
-    outgoing = {
-      request_timeout = 5.0;       # default timeout in seconds, can be override by engine
-      max_request_timeout = 15.0;  # the maximum timeout in seconds
-      pool_connections = 100;      # Maximum number of allowable connections, or null
-      pool_maxsize = 10;           # Number of allowable keep-alive connections, or null
-      enable_http2 = true;         # See https://www.python-httpx.org/http2/
-    };
-  };
-
-  services.nginx.virtualHosts."search.${cfg.domainName}" = let inherit (config.services.searx) settings; in {
-    quic = true;
-    enableACME = true;
-    forceSSL = true;
-    # locations."/".proxyPass = "http://${lib.quoteListenAddr settings.server.bind_address}:${toString settings.server.port}";
-    locations."/".extraConfig = ''
-      uwsgi_pass "${lib.quoteListenAddr settings.server.bind_address}:${toString settings.server.port}";
-      include ${config.services.nginx.package}/conf/uwsgi_params;
     '';
   };
 
@@ -210,188 +163,6 @@ in {
         return 200 '<!doctype html><html><head><base href="/"/><link rel="preload" href="style.css" as="style"><title>Success!</title><meta charset="utf-8" /><meta name="viewport" content="width=device-width, initial-scale=1" /><link rel="icon" type="image/jpeg" href="pfp.jpg"><link rel="alternate" type="application/rss+xml" title="RSS" href="https://${cfg.domainName}/blog/index.xml"><link href="style.css" rel="stylesheet" /><script src="main.js"></script><meta http-equiv="refresh" content="10; url=$http_referer" /></head><body onload="documentLoaded()"><hr/><div class="main-body"><p>Success! It may take a while for your comment to get moderated.</p><p>Please wait for 10 seconds until you get redirected back...</p><p>Or just go there <a href="$http_referer">manually</a>.</p></div><hr/></body></html>';
       '';
     };
-  };
-
-  # GITEA
-  services.nginx.virtualHosts."git.${cfg.domainName}" = let inherit (config.services.gitea) settings; in {
-    quic = true;
-    enableACME = true;
-    forceSSL = true;
-    locations."/".proxyPass = "http://${lib.quoteListenAddr settings.server.HTTP_ADDR}:${toString settings.server.HTTP_PORT}";
-  };
-  services.gitea = {
-    enable = true;
-    package = pkgs.forgejo;
-    database = {
-      createDatabase = false;
-      passwordFile = "/var/lib/gitea/db_password";
-      type = "postgres";
-    };
-    settings = {
-      federation.ENABLED = true;
-      "git.timeout" = {
-        DEFAULT = 6000;
-        MIGRATE = 60000;
-        MIRROR = 60000;
-        GC = 120;
-      };
-      mailer = {
-        ENABLED = true;
-        FROM = "Forgejo <noreply@${cfg.domainName}>";
-        PROTOCOL = "smtp";
-        SMTP_ADDR = "mail.${cfg.domainName}";
-        SMTP_PORT = 587;
-        USER = "noreply@${cfg.domainName}";
-        PASSWD = cfg.unhashedNoreplyPassword;
-        FORCE_TRUST_SERVER_CERT = true;
-      };
-      session = {
-        COOKIE_SECURE = true;
-      };
-      server = {
-        ROOT_URL = "https://git.${cfg.domainName}";
-        HTTP_ADDR = "::1";
-        HTTP_PORT = 3310;
-        DOMAIN = "git.${cfg.domainName}";
-        # START_SSH_SERVER = true;
-        # SSH_PORT = 2222;
-      };
-      service = {
-        DISABLE_REGISTRATION = true;
-        REGISTER_EMAIL_CONFIRM = true;
-      };
-    };
-  };
-
-  # NEXTCLOUD
-  services.nginx.virtualHosts."cloud.${cfg.domainName}" = {
-    quic = true;
-    enableACME = true;
-    forceSSL = true;
-  };
-  services.nextcloud = {
-    enable = true;
-    enableBrokenCiphersForSSE = false;
-    package = pkgs.nextcloud27;
-    autoUpdateApps.enable = true;
-    # TODO: use socket auth and remove the next line
-    database.createLocally = false;
-    config = {
-      adminpassFile = "/var/lib/nextcloud/admin_password";
-      dbpassFile = "/var/lib/nextcloud/db_password";
-      dbtype = "pgsql";
-      dbhost = "/run/postgresql";
-      overwriteProtocol = "https";
-    };
-    hostName = "cloud.${cfg.domainName}";
-    https = true;
-  };
-
-  # AKKOMA
-  # TODO: remove this in 2024
-  services.nginx.virtualHosts."pleroma.${cfg.domainName}" = {
-    quic = true;
-    enableACME = true;
-    addSSL = true;
-    serverAliases = [ "akkoma.${cfg.domainName}" ];
-    locations."/".return = "301 https://fedi.${cfg.domainName}$request_uri";
-  };
-
-  services.akkoma = {
-    enable = true;
-    dist.extraFlags = [
-      "+sbwt" "none"
-      "+sbwtdcpu" "none"
-      "+sbwtdio" "none"
-    ];
-    config.":pleroma"."Pleroma.Web.Endpoint" = {
-      url = {
-        scheme = "https";
-        host = "fedi.${cfg.domainName}";
-        port = 443;
-      };
-      secret_key_base._secret = "/secrets/akkoma/secret_key_base";
-      signing_salt._secret = "/secrets/akkoma/signing_salt";
-      live_view.signing_salt._secret = "/secrets/akkoma/live_view_signing_salt";
-    };
-    initDb = {
-      enable = false;
-      username = "akkoma";
-      password._secret = "/secrets/akkoma/postgres_password";
-    };
-    config.":pleroma".":instance" = {
-      name = cfg.domainName;
-      description = "Insert instance description here";
-      email = "webmaster-akkoma@${cfg.domainName}";
-      notify_email = "noreply@${cfg.domainName}";
-      limit = 5000;
-      registrations_open = true;
-      account_activation_required = true;
-      account_approval_required = true;
-    };
-    config.":pleroma"."Pleroma.Repo" = {
-      adapter = (pkgs.formats.elixirConf { }).lib.mkRaw "Ecto.Adapters.Postgres";
-      username = "akkoma";
-      password._secret = "/secrets/akkoma/postgres_password";
-      database = "akkoma";
-      hostname = "localhost";
-    };
-    config.":web_push_encryption".":vapid_details" = {
-      subject = "mailto:webmaster-akkoma@${cfg.domainName}";
-      public_key._secret = "/secrets/akkoma/push_public_key";
-      private_key._secret = "/secrets/akkoma/push_private_key";
-    };
-    config.":joken".":default_signer"._secret = "/secrets/akkoma/joken_signer";
-    nginx = {
-      quic = true;
-      enableACME = true;
-      forceSSL = true;
-    };
-  };
-  systemd.services.akkoma = {
-    path = [ pkgs.exiftool pkgs.gawk ];
-    serviceConfig.Restart = "on-failure";
-    unitConfig = {
-      StartLimitIntervalSec = 60;
-      StartLimitBurst = 3;
-    };
-  };
-
-  # TODO: calc tbs instead of pubkey hash?
-  security.acme.certs = lib.flip builtins.mapAttrs (lib.filterAttrs (k: v: v.enableACME) config.services.nginx.virtualHosts) (k: v: {
-    postRun = let
-      python = pkgs.python3.withPackages (p: with p; [ cryptography pyasn1 pyasn1-modules ]);
-      tbs-hash = pkgs.writeScript "tbs-hash.py" ''
-        #!${python}/bin/python3
-        import hashlib
-        from pyasn1.codec.der.decoder import decode
-        from pyasn1.codec.der.encoder import encode
-        from pyasn1_modules import rfc5280
-        from cryptography import x509
-
-        with open('full.pem', 'rb') as f: 
-          cert = x509.load_pem_x509_certificate(f.read())
-        tbs, _leftover = decode(cert.tbs_certificate_bytes, asn1Spec=rfc5280.TBSCertificate())
-        precert_exts = [v.dotted_string for k, v in x509.ExtensionOID.__dict__.items() if k.startswith('PRECERT_')]
-        exts = [ext for ext in tbs["extensions"] if str(ext["extnID"]) not in precert_exts]
-        tbs["extensions"].clear()
-        tbs["extensions"].extend(exts)
-        print(hashlib.sha256(encode(tbs)).hexdigest())
-      '';
-    in ''
-      ${tbs-hash} > "/var/lib/certspotter/tbs-hashes/${k}"
-    '';
-  });
-  services.certspotter = {
-    enable = true;
-    extraFlags = [ ];
-    watchlist = [ ".pavluk.org" ];
-    hooks = lib.toList (pkgs.writeShellScript "certspotter-hook" ''
-      if [[ "$EVENT" == discovered_cert ]]; then
-        ${pkgs.gnugrep}/bin/grep -r "$TBS_SHA256" /var/lib/certspotter/tbs-hashes/ && exit
-      fi
-      (echo "Subject: $SUMMARY" && echo && cat "$TEXT_FILENAME") | /run/wrappers/bin/sendmail -i webmaster-certspotter@${cfg.domainName}
-    '');
   };
 
   /*locations."/dns-query".extraConfig = ''

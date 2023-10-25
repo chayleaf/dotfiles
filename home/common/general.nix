@@ -102,6 +102,7 @@
       package = pkgs.gitAndTools.gitFull;
       delta.enable = true;
       extraConfig = {
+        commit.gpgsign = true;
         # disable the atrocious gui password prompt
         core.askPass = "";
         # ...and prefer getting passwords from libsecret (and storing them there)

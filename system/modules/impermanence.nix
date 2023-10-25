@@ -75,6 +75,8 @@ in {
         { directory = /var/db/dhcpcd; user = "root"; group = "root"; mode = "0755"; }
       ] ++ lib.optionals config.services.gitea.enable [
         { directory = /var/lib/gitea; user = "gitea"; group = "gitea"; mode = "0755"; }
+      ] ++ lib.optionals config.services.forgejo.enable [
+        { directory = /var/lib/forgejo; user = "forgejo"; group = "forgejo"; mode = "0755"; }
       ] ++ lib.optionals config.services.matrix-synapse.enable [
         { directory = /var/lib/matrix-synapse; user = "matrix-synapse"; group = "matrix-synapse"; mode = "0700"; }
       ] ++ lib.optionals config.services.heisenbridge.enable [
