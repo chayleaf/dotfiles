@@ -106,7 +106,7 @@ in {
         StateDirectory = "certspotter";
       };
       script = ''
-        export CERTSPOTTER_STATE_DIR="$STATE_DIR"
+        export CERTSPOTTER_STATE_DIR="$STATE_DIRECTORY"
         cd "$CERTSPOTTER_STATE_DIR"
         ${pkgs.certspotter}/bin/certspotter -sendmail ${cfg.sendmailPath} ${lib.escapeShellArgs cfg.extraFlags}
       '';
