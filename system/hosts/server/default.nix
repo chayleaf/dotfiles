@@ -314,9 +314,6 @@ in {
       signing_salt._secret = "/secrets/akkoma/signing_salt";
       live_view.signing_salt._secret = "/secrets/akkoma/live_view_signing_salt";
     };
-    extraStatic."static/terms-of-service.html" = pkgs.writeText "terms-of-service.html" ''
-      no bigotry kthx
-    '';
     initDb = {
       enable = false;
       username = "akkoma";
@@ -329,6 +326,8 @@ in {
       notify_email = "noreply@${cfg.domainName}";
       limit = 5000;
       registrations_open = true;
+      account_activation_required = true;
+      account_approval_required = true;
     };
     config.":pleroma"."Pleroma.Repo" = {
       adapter = (pkgs.formats.elixirConf { }).lib.mkRaw "Ecto.Adapters.Postgres";
@@ -358,23 +357,38 @@ in {
     };
   };
 
-  # TODO: create a separate group for nginx and certspotter
   # TODO: calc tbs instead of pubkey hash?
-  users.users.certspotter.extraGroups = [ "nginx" ];
+  security.acme.certs = lib.flip builtins.mapAttrs (lib.filterAttrs (k: v: v.enableACME) config.services.nginx.virtualHosts) (k: v: {
+    postRun = let
+      python = pkgs.python3.withPackages (p: with p; [ cryptography pyasn1 pyasn1-modules ]);
+      tbs-hash = pkgs.writeScript "tbs-hash.py" ''
+        #!${python}/bin/python3
+        import hashlib
+        from pyasn1.codec.der.decoder import decode
+        from pyasn1.codec.der.encoder import encode
+        from pyasn1_modules import rfc5280
+        from cryptography import x509
+
+        with open('full.pem', 'rb') as f: 
+          cert = x509.load_pem_x509_certificate(f.read())
+        tbs, _leftover = decode(cert.tbs_certificate_bytes, asn1Spec=rfc5280.TBSCertificate())
+        precert_exts = [v.dotted_string for k, v in x509.ExtensionOID.__dict__.items() if k.startswith('PRECERT_')]
+        exts = [ext for ext in tbs["extensions"] if str(ext["extnID"]) not in precert_exts]
+        tbs["extensions"].clear()
+        tbs["extensions"].extend(exts)
+        print(hashlib.sha256(encode(tbs)).hexdigest())
+      '';
+    in ''
+      ${tbs-hash} > "/var/lib/certspotter/tbs-hashes/${k}"
+    '';
+  });
   services.certspotter = {
     enable = true;
     extraFlags = [ ];
     watchlist = [ ".pavluk.org" ];
-    hooks = let
-      openssl = "${pkgs.openssl.bin}/bin/openssl";
-    in lib.toList (pkgs.writeShellScript "certspotter-hook" ''
+    hooks = lib.toList (pkgs.writeShellScript "certspotter-hook" ''
       if [[ "$EVENT" == discovered_cert ]]; then
-        mkdir -p /var/lib/certspotter/allowed_keys
-        for cert in $(find /var/lib/acme -regex ".*/fullchain.pem"); do
-          hash="$(${openssl} x509 -in "$cert" -pubkey -noout | ${openssl} pkey -pubin -outform DER | ${openssl} sha256 | cut -d" " -f2)"
-          touch "/var/lib/certspotter/allowed_keys/$hash"
-        done
-        [[ -f "/var/lib/certspotter/allowed_keys/$PUBKEY_SHA256" ]] && exit 0
+        ${pkgs.gnugrep}/bin/grep -r "$TBS_SHA256" /var/lib/certspotter/tbs-hashes/ && exit
       fi
       (echo "Subject: $SUMMARY" && echo && cat "$TEXT_FILENAME") | /run/wrappers/bin/sendmail -i webmaster-certspotter@${cfg.domainName}
     '');

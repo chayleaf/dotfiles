@@ -23,7 +23,7 @@ in {
   # Allow murmur to read the certificate
   security.acme.certs."mumble.${cfg.domainName}" = {
     group = "nginxandmurmur";
-    postRun = "systemctl try-reload-or-restart murmur";
+    reloadServices = [ "murmur" ];
   };
   users.groups.nginxandmurmur.members = [ "murmur" "nginx" ];
 

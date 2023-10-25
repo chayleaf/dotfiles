@@ -1,6 +1,6 @@
 # copy a path to store (needed because I don't copy the secrets to store by default)
 # arg must be a string because of how nix handles relative paths as absolute
-{ copyToStore ? (pkgs: name: x: ./. + x)
+{ copyToStore ? (pkgs: name: x: ./${x})
 , ... }: {
   nixmsi = {
     system = { pkgs, ... }: {
