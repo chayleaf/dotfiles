@@ -269,7 +269,6 @@
       },
       "original": {
         "owner": "chayleaf",
-        "ref": "akkoma",
         "repo": "nixpkgs",
         "type": "github"
       }

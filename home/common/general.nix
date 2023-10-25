@@ -107,6 +107,10 @@
         # ...and prefer getting passwords from libsecret (and storing them there)
         credential.helper = "${pkgs.gitAndTools.gitFull}/bin/git-credential-libsecret";
         init.defaultBranch = "master";
+        # no need for git pust -u origin <branch>
+        push.autoSetupRemote = true;
+        # allow different upstream branch name
+        push.default = "upstream";
       };
       lfs.enable = true;
     };
