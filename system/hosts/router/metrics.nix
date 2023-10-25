@@ -52,7 +52,7 @@ in {
   in {
     ipv4.kea.settings = {
       control-socket = {
-        socket-name = "/run/kea/kea-dhcp4-ctrl.sock";
+        socket-name = "/run/kea4-br0/kea.sock";
         socket-type = "unix";
       };
       loggers = lib.toList {
@@ -67,7 +67,7 @@ in {
     };
     ipv6.kea.settings = {
       control-socket = {
-        socket-name = "/run/kea/kea-dhcp6-ctrl.sock";
+        socket-name = "/run/kea6-br0/kea.sock";
         socket-type = "unix";
       };
       loggers = lib.toList {
