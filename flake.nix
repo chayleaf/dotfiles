@@ -100,7 +100,7 @@
         if nixpkgs.lib.hasInfix ":" addr then "[${addr}]" else addr;
     };
     # can't use callPackage ./pkgs here, idk why; use import instead
-    overlay = self: super: import ./pkgs {
+    overlay' = args: self: super: import ./pkgs ({
       pkgs = super;
       pkgs' = self;
       lib = super.lib;
@@ -109,16 +109,17 @@
         nurpkgs = super;
       };
       nix-gaming = nix-gaming.packages.${super.system};
-    };
+    } // args);
+    overlay = overlay' { };
     # I override some settings down the line, but overlays always stay the same
     mkPkgs = config: import nixpkgs (config // {
-      overlays = (config.overlays or [ ]) ++ [ overlay ];
+      overlays = config.overlays or [ ] ++ [ overlay ];
     });
     # this is actual config, it gets processed below
     config = let
       mkBpiR3 = args: config: config // {
         system = "aarch64-linux";
-        modules = (config.modules or [ ]) ++ [ (import ./system/devices/bpi-r3-router.nix args) ];
+        modules = config.modules or [ ] ++ [ (import ./system/devices/bpi-r3-router.nix args) ];
       };
       routerConfig = rec {
         system = "aarch64-linux";
@@ -304,7 +305,7 @@
     packages = lib.genAttrs [
       "x86_64-linux"
       "aarch64-linux"
-    ] (system: let self = overlay ((mkPkgs { inherit system; }) // self) (import nixpkgs { inherit system; }); in self);
+    ] (system: let self = overlay' { isOverlay = false; } (mkPkgs { inherit system; } // self) (import nixpkgs { inherit system; }); in self);
     nixosImages.router = let pkgs = mkPkgs { inherit (config.router-emmc) system; }; in {
       emmcImage = pkgs.callPackage ./system/hardware/bpi-r3/image.nix {
         inherit (nixosConfigurations.router-emmc) config;

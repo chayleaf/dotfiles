@@ -13,7 +13,7 @@
       cfg.enableKeePassXC = true;
     };
     profiles.chayleaf = {
-      extensions = with config.nur.repos.rycee.firefox-addons; [
+      extensions = (with config.nur.repos.rycee.firefox-addons; [
         cookies-txt
         don-t-fuck-with-paste
         greasemonkey
@@ -32,7 +32,7 @@
         unpaywall
         vimium-c
         youtube-shorts-block
-      ] ++ (with pkgs.firefox-addons; [
+      ]) ++ (with pkgs.firefoxAddons; [
         fastforwardteam
         middle-mouse-button-scroll
         rikaitan

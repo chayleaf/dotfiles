@@ -3,6 +3,7 @@
 , nur
 , nix-gaming
 , pkgs' ? pkgs
+, isOverlay ? true
 , ... }:
 let
   inherit (pkgs') callPackage;
@@ -98,8 +99,8 @@ in
   }));
   techmino = callPackage ./techmino { };
 
-  firefox-addons = lib.recurseIntoAttrs (callPackage ./firefox-addons { inherit nur sources; });
-  mpvScripts = pkgs.mpvScripts // callPackage ./mpv-scripts { };
+  firefoxAddons = lib.recurseIntoAttrs (callPackage ./firefox-addons { inherit nur sources; });
+  mpvScripts = lib.optionalAttrs isOverlay pkgs.mpvScripts // callPackage ./mpv-scripts { };
 
   qemu_7 = callPackage ./qemu/7.nix {
     stdenv = pkgs'.ccacheStdenv;
@@ -127,6 +128,6 @@ in
     stdenv = pkgs'.ccacheStdenv;
   };
 }
-// import ./postgresql-packages { inherit pkgs pkgs' lib sources; }
+// import ./postgresql-packages { inherit pkgs pkgs' lib sources isOverlay; }
 // import ./ccache.nix { inherit pkgs pkgs' lib sources; }
 // import ../system/hardware/bpi-r3/pkgs.nix { inherit pkgs pkgs' lib sources; }
