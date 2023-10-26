@@ -45,7 +45,6 @@ in {
       notify_email = "noreply@${cfg.domainName}";
       limit = 5000;
       registrations_open = true;
-      account_activation_required = true;
       account_approval_required = true;
     };
     config.":pleroma"."Pleroma.Repo" = {
