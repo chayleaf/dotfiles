@@ -25,27 +25,6 @@
     inherit (notlua-nvim.keywords) REQ REQ';
   in let
     vimg = name: PROP vim.g name;
-    # _ is basically semicolon
-    _ = { __IS_SEPARATOR = true; };
-    splitList = sep: list:
-      let
-        ivPairs = lib.imap0 (i: x: { inherit i x; }) list;
-        is' = map ({ i, ... }: i) (builtins.filter ({ x, ... }: sep == x) ivPairs);
-        is = [ 0 ] ++ (map (x: x + 1) is');
-        ie = is' ++ [ (builtins.length list) ];
-        se = lib.zipLists is ie;
-      in
-        map ({ fst, snd }: lib.sublist fst (snd - fst) list) se;
-    # this transforms [ a b _ c _ d _ e f g ] into [ (a b) c d (RETURN (e f g)) ]
-    L = args:
-      let
-        spl = splitList _ args;
-        body = lib.init spl;
-        ret = lib.last spl;
-      in
-      (map
-        (list: builtins.foldl' lib.id (builtins.head list) (builtins.tail list))
-        body) ++ (if ret == [] then [] else [(APPLY RETURN ret)]);
     keymapSetSingle = opts@{
       mode,
       lhs,
@@ -84,7 +63,6 @@
 
     which-key = REQ "which-key";
     luasnip = REQ "luasnip";
-    compile' = name: stmts: compile name (L stmts);
   in {
     enable = true;
     defaultEditor = true;
@@ -114,40 +92,40 @@
     vimAlias = true;
     vimdiffAlias = true;
 
-    extraLuaConfig = (compile' "main" [
-      kmSetNs {
+    extraLuaConfig = compile "main" [
+      (kmSetNs {
         "<C-X>" = {
           rhs = DEFUN (vim.fn.system [ "chmod" "+x" (vim.fn.expand "%") ]);
           desc = "chmod +x %";
         };
-      } _
-      SET (vimg "vimsyn_embed") "l" _
-      LET (vim.api.nvim_create_augroup "nvimrc" { clear = true; }) (group:
+      })
+      (SET (vimg "vimsyn_embed") "l")
+      (LET (vim.api.nvim_create_augroup "nvimrc" { clear = true; }) (group:
         lib.mapAttrsToList (k: v: vim.api.nvim_create_autocmd k { inherit group; callback = v; }) {
           BufReadPre = DEFUN (SET vim.o.foldmethod "syntax");
           BufEnter = { buf, ... }:
-            LET (vim.filetype.match { inherit buf; }) (filetype: L [
-              IF (APPLY OR (map (EQ filetype) [ "gitcommit" "markdown" ])) (
-                LET vim.o.colorcolumn (old_colorcolumn: L [
-                  SET vim.o.colorcolumn "73" _
-                  vim.api.nvim_create_autocmd "BufLeave" {
+            LET (vim.filetype.match { inherit buf; }) (filetype: [
+              (IF (APPLY OR (map (EQ filetype) [ "gitcommit" "markdown" ])) (
+                LET vim.o.colorcolumn (old_colorcolumn: [
+                  (SET vim.o.colorcolumn "73")
+                  (vim.api.nvim_create_autocmd "BufLeave" {
                     buffer = buf;
-                    callback = DEFUN (L [
-                      SET vim.o.colorcolumn old_colorcolumn _
+                    callback = DEFUN [
+                      (SET vim.o.colorcolumn old_colorcolumn)
                       # return true = delete autocommand
-                      true
-                    ]);
-                  } _
+                      (RETURN true)
+                    ];
+                  })
                 ])
-              ) _
-              IF (EQ filetype "markdown") (
+              ))
+              (IF (EQ filetype "markdown") (
                 (SET (IDX vim.bo buf).textwidth 72)
-              ) _
+              ))
             ]);
           BufWinEnter = { buf, ... }:
-            LET (vim.filetype.match { inherit buf; }) (filetype: L [
-              CALL (PROP vim.cmd "folddoc") "foldopen!" _
-              IF (EQ filetype "gitcommit") (
+            LET (vim.filetype.match { inherit buf; }) (filetype: [
+              (CALL (PROP vim.cmd "folddoc") "foldopen!")
+              (IF (EQ filetype "gitcommit") (
                 vim.cmd {
                   cmd = "normal"; bang = true;
                   args = [ "gg" ];
@@ -171,11 +149,11 @@
                     cmd = "normal"; bang = true;
                     args = [ "gg" ];
                   })
-              )) _
+              )))
             ]);
         }
-      ) _
-    ]);
+      ))
+    ];
     plugins = let ps = pkgs.vimPlugins; in map (x: if x?config && x?plugin then { type = "lua"; } // x else x) [
       ps.vim-svelte
       # vim-nix isn't necessary for syntax highlighting, but it improves overall editing experience
@@ -190,8 +168,8 @@
             sha256 = "sha256-X2IgIjO5NNq7vJdl09hBY1TFqHlsfF1xfllKr4osILI=";
           };
         };
-        config = compile' "vscode_nvim" [
-          (REQ "vscode").setup {
+        config = compile "vscode_nvim" [
+          ((REQ "vscode").setup {
             transparent = true;
             color_overrides = {
               vscGray = "#745b5f";
@@ -208,25 +186,25 @@
               vscYellow = "#${config.colors.yellow}";
               vscPink = "#cf83c4";
             };
-          } _
-          vim.api.nvim_set_hl 0 "NormalFloat" {
+          })
+          (vim.api.nvim_set_hl 0 "NormalFloat" {
             bg = "NONE";
-          } _
+          })
         ]; }
       { plugin = ps.nvim-web-devicons;
         config = compile "nvim_web_devicons" ((REQ "nvim-web-devicons").setup { }); }
       { plugin = ps.nvim-tree-lua;
-        config = compile "nvim_tree_lua" (LET (REQ "nvim-tree") (REQ "nvim-tree.api") (nvim-tree: nvim-tree-api: L [
-          SET (vimg "loaded_netrw") 1 _
-          SET (vimg "loaded_netrwPlugin") 1 _
-          SET vim.o.termguicolors true _
-          nvim-tree.setup { } _ # :help nvim-tree-setup
-          kmSetNs {
+        config = compile "nvim_tree_lua" (LET (REQ "nvim-tree") (REQ "nvim-tree.api") (nvim-tree: nvim-tree-api: [
+          (SET (vimg "loaded_netrw") 1)
+          (SET (vimg "loaded_netrwPlugin") 1)
+          (SET vim.o.termguicolors true)
+          (nvim-tree.setup { }) # :help nvim-tree-setup
+          (kmSetNs {
             "<C-N>" = {
               rhs = nvim-tree-api.tree.toggle;
               desc = "Toggle NvimTree";
             };
-          } _
+          })
         ])); }
       ps.vim-sleuth
       ps.luasnip
@@ -259,9 +237,9 @@
               };
             };
             formatting = {
-              format = entry: vim_item: let kind = PROP vim_item "kind"; in L [
-                SET kind (string.format "%s %s" (IDX lspkind kind) kind) _
-                vim_item
+              format = entry: vim_item: let kind = PROP vim_item "kind"; in [
+                (SET kind (string.format "%s %s" (IDX lspkind kind) kind))
+                (RETURN vim_item)
               ];
             };
             mapping = {
@@ -311,28 +289,28 @@
         config = compile "nvim_autopairs" (LET
           (REQ "cmp") (REQ "nvim-autopairs.completion.cmp") (REQ "nvim-autopairs")
           (cmp: cmp-autopairs: nvim-autopairs:
-        L [
-          nvim-autopairs.setup {
+        [
+          (nvim-autopairs.setup {
             disable_filetype = [ "TelescopePrompt" "vim" ];
-          } _
-          cmp.event.on cmp.event "confirm_done" (cmp-autopairs.on_confirm_done { }) _
+          })
+          (cmp.event.on cmp.event "confirm_done" (cmp-autopairs.on_confirm_done { }))
         ])); }
       { plugin = ps.comment-nvim;
-        config = compile' "comment_nvim" [
-          (REQ "Comment").setup { } _
-          kmSetNs {
+        config = compile "comment_nvim" [
+          ((REQ "Comment").setup { })
+          (kmSetNs {
             "<space>/" = {
               # metatables......
               rhs = REQ' (PROP (require "Comment.api") "toggle.linewise.current");
               desc = "Comment current line";
             };
-          } _
-          kmSetVs {
+          })
+          (kmSetVs {
             "<space>/" = {
               rhs = "<esc><cmd>lua require('Comment.api').toggle.linewise(vim.fn.visualmode())<cr>";
               desc = "Comment selection";
             };
-          } _
+          })
         ]; }
       { plugin = ps.nvim-lspconfig;
         config = compile "nvim_lspconfig" (
@@ -341,9 +319,9 @@
             (REQ "lspconfig.server_configurations.${name}")
             # metatables, son! they harden in response to physical trauma
             (REQ' (PROP (require "lspconfig") name));
-          in L [
+          in [
           # See `:help vim.diagnostic.*` for documentation on any of the below functions
-          kmSetNs {
+          (kmSetNs {
             "<space>e" = {
               rhs = vim.diagnostic.open_float;
               desc = "Show diagnostics in a floating window.";
@@ -360,19 +338,17 @@
               rhs = vim.diagnostic.setloclist;
               desc = "Add buffer diagnostics to the location list.";
             };
-          } _
-          LET
+          })
+          (LET
             # LET on_attach
-            (client: bufnr: L [
-              SET (IDX vim.bo bufnr).omnifunc "v:lua.vim.lsp.omnifunc" _
+            (client: bufnr: [
+              (SET (IDX vim.bo bufnr).omnifunc "v:lua.vim.lsp.omnifunc")
               # Mappings.
               # See `:help vim.lsp.*` for documentation on any of the below functions
-              keymapSetNs {
+              (keymapSetNs {
                 buffer = bufnr;
                 keys = {
-                  "gD" = {
-                    rhs = vim.lsp.buf.declaration;
-                    desc = "Jumps to the declaration of the symbol under the cursor."; };
+                  "gD" = { rhs = vim.lsp.buf.declaration; desc = "Jumps to the declaration of the symbol under the cursor."; };
                   "gd" = {
                     rhs = vim.lsp.buf.definition;
                     desc = "Jumps to the definition of the symbol under the cursor."; };
@@ -410,7 +386,7 @@
                     rhs = DEFUN (vim.lsp.buf.format { async = true; });
                     desc = "Formats a buffer."; };
                 };
-              } _
+              })
             ])
             # LET rust_settings
             { rust-analyzer = {
@@ -428,29 +404,29 @@
           (on_attach: rust_settings: capabilities:
             LETREC
             # LETREC on_attach_rust
-            (on_attach_rust: client: bufnr: L [
-              vim.api.nvim_buf_create_user_command bufnr "RustAndroid" (opts: L [
-                vim.lsp.set_log_level "debug" _
-                (lsp "rust_analyzer").setup {
+            (on_attach_rust: client: bufnr: [
+              (vim.api.nvim_buf_create_user_command bufnr "RustAndroid" (opts: [
+                (vim.lsp.set_log_level "debug")
+                ((lsp "rust_analyzer").setup {
                   on_attach = on_attach_rust;
                   inherit capabilities;
                   settings = vim.tbl_deep_extend
                     "keep"
                     config.rustAnalyzerAndroidSettings
                     rust_settings;
-                } _
-              ]) {} _
-              on_attach client bufnr _
+                })
+              ]) {})
+              (on_attach client bufnr)
             ])
             # BEGIN
             (let setupLsp = name: args: (lsp name).setup ({
               inherit on_attach capabilities;
               settings = { };
             } // args);
-            in on_attach_rust: L [
-              # vim.lsp.set_log_level "debug" _
+            in on_attach_rust: [
+              # (vim.lsp.set_log_level "debug")
               # see https://github.com/neovim/nvim-lspconfig/blob/master/doc/server_configurations.md
-              lib.mapAttrsToList setupLsp {
+              (lib.mapAttrsToList setupLsp {
                 bashls = { };
                 clangd = { };
                 # https://github.com/python-lsp/python-lsp-server/blob/develop/CONFIGURATION.md
@@ -471,15 +447,15 @@
                   on_attach = on_attach_rust;
                   settings = rust_settings;
                 };
-              } _
+              })
             ]) # END
-          ) _ # END
+          )) # END
         ]); }
       { plugin = ps.which-key-nvim;
-        config = compile' "which_key_nvim" [
-          SET vim.o.timeout true _
-          SET vim.o.timeoutlen 500 _
-          which-key.setup { } _
+        config = compile "which_key_nvim" [
+          (SET vim.o.timeout true)
+          (SET vim.o.timeoutlen 500)
+          (which-key.setup { })
         ]; }
     ];
   };
