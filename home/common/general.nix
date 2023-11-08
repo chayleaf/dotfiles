@@ -83,11 +83,6 @@
         };
       };
     };
-    neomutt = {
-      enable = true;
-      sidebar.enable = true;
-      vimKeys = true;
-    };
     home-manager.enable = true;
     # i only use this as a login shell
     bash = {
@@ -160,7 +155,33 @@
       # (because I use nix plugins and plugins are nix version-specific)
       package = pkgs.nix-index-unwrapped;
     };
+    #neomutt = {
+    #  enable = true;
+    #  sidebar.enable = true;
+    #  vimKeys = true;
+    #};
+    alot = {
+      enable = true;
+      settings = {
+        handle_mouse = true;
+        initial_command = "search tag:inbox AND NOT tag:killed";
+        prefer_plaintext = true;
+      };
+    };
+    msmtp.enable = true;
+    notmuch = {
+      enable = true;
+      hooks.preNew = ''
+        ${config.services.mbsync.package}/bin/mbsync --all || ${pkgs.coreutils}/bin/true
+      '';
+    };
+    mbsync.enable = true;
   };
+  #services.mbsync.enable = true;
+  # TODO: see https://github.com/pazz/alot/issues/1632
+  home.file.".mailcap".text = ''
+    text/html;  ${pkgs.w3m}/bin/w3m -dump -o document_charset=%{charset} -o display_link_number=1 '%s'; nametemplate=%s.html; copiousoutput
+  '';
 
   systemd.user.timers.nix-index = {
     Install.WantedBy = [ "timers.target" ];

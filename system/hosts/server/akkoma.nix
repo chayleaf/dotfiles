@@ -16,7 +16,9 @@ in {
 
   services.postgresql.extraPlugins = with config.services.postgresql.package.pkgs; [ tsja ];
 
-  services.akkoma = {
+  services.akkoma = let
+    inherit ((pkgs.formats.elixirConf { }).lib) mkRaw;
+  in {
     enable = true;
     dist.extraFlags = [
       "+sbwt" "none"
@@ -48,11 +50,15 @@ in {
       account_approval_required = true;
     };
     config.":pleroma"."Pleroma.Repo" = {
-      adapter = (pkgs.formats.elixirConf { }).lib.mkRaw "Ecto.Adapters.Postgres";
+      adapter = mkRaw "Ecto.Adapters.Postgres";
       username = "akkoma";
       password._secret = "/secrets/akkoma/postgres_password";
       database = "akkoma";
       hostname = "localhost";
+      prepare = mkRaw ":named";
+      parameters.plan_cache_mode = "force_custom_plan";
+      timeout = 30000;
+      connect_timeout = 10000;
     };
     config.":web_push_encryption".":vapid_details" = {
       subject = "mailto:webmaster-akkoma@${cfg.domainName}";
@@ -60,6 +66,7 @@ in {
       private_key._secret = "/secrets/akkoma/push_private_key";
     };
     config.":joken".":default_signer"._secret = "/secrets/akkoma/joken_signer";
+    # config.":logger".":ex_syslogger".level = ":debug";
     nginx = {
       quic = true;
       enableACME = true;

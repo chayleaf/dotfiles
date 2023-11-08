@@ -67,8 +67,33 @@ in
   /*ghidra = pkgs.ghidra.overrideAttrs (old: {
     patches = old.patches ++ [ ./ghidra-stdcall.patch ];
   });*/
+  ffmpeg-custom = (pkgs'.ffmpeg_6-full.override {
+    withCuda = false;
+    withCudaLLVM = false;
+    withNvdec = false;
+    withNvenc = false;
+  }).overrideAttrs (old: {
+    version = "unstable-20231031";
+    src = pkgs'.fetchgit {
+      url = "https://git.ffmpeg.org/ffmpeg.git";
+      rev = "4e5f3e6b8e1132354eed810dfdadf87f45c5de27";
+      hash = "sha256-fiWkU9fK8qPmxl2MOADKdlFf6XjHGKFhi8uaWltphCE=";
+    };
+    patches = [ ];
+    postPatch = ''
+      ${old.postPatch or ""}
+      substituteInPlace libavutil/hwcontext_vulkan.c \
+        --replace FF_VK_KHR_VIDEO_DECODE_QUEUE FF_VK_EXT_VIDEO_DECODE_QUEUE \
+        --replace FF_VK_KHR_VIDEO_DECODE_H264 FF_VK_EXT_VIDEO_DECODE_H264 \
+        --replace FF_VK_KHR_VIDEO_DECODE_H265 FF_VK_EXT_VIDEO_DECODE_H265 \
+        --replace FF_VK_KHR_VIDEO_DECODE_AV1 FF_VK_EXT_VIDEO_DECODE_AV1
+    '';
+    buildInputs = old.buildInputs ++ [ pkgs'.libaribcaption ];
+    configureFlags = old.configureFlags ++ [ "--enable-libaribcaption" ];
+  });
   gimp = callPackage ./gimp { inherit (pkgs) gimp; };
   home-daemon = callPackage ./home-daemon { };
+  libaribcaption = callPackage ./libaribcaption { };
   # pin version
   looking-glass-client = pkgs.looking-glass-client.overrideAttrs (old: {
     version = "B6";

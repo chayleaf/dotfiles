@@ -105,7 +105,7 @@
           BufReadPre = DEFUN (SET vim.o.foldmethod "syntax");
           BufEnter = { buf, ... }:
             LET (vim.filetype.match { inherit buf; }) (filetype: [
-              (IF (APPLY OR (map (EQ filetype) [ "gitcommit" "markdown" ])) (
+              (IF (APPLY OR (map (EQ filetype) [ "gitcommit" "markdown" "mail" ])) (
                 LET vim.o.colorcolumn (old_colorcolumn: [
                   (SET vim.o.colorcolumn "73")
                   (vim.api.nvim_create_autocmd "BufLeave" {
@@ -118,7 +118,7 @@
                   })
                 ])
               ))
-              (IF (EQ filetype "markdown") (
+              (IF (APPLY OR (map (EQ filetype) [ "markdown" "mail" ])) (
                 (SET (IDX vim.bo buf).textwidth 72)
               ))
             ]);

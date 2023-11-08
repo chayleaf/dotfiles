@@ -905,6 +905,9 @@ in {
     extraOptions = "-i ${netAddresses.lan4} -p 6969 -P 6969 -p 80";
   };
 
+  # I only have 2GB RAM, so Unbound is killed during peak system load without this option
+  zramSwap.enable = true;
+
   impermanence.directories = [
     # for wireguard key
     { directory = /secrets; mode = "0000"; }
