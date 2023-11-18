@@ -1,83 +1,38 @@
 { lib
 , fetchFromGitHub
 , buildNpmPackage
-, fetchNpmDeps
 , nodejs
 }:
 
-let
-  version = "2.27.0";
-  src = fetchFromGitHub {
-    owner = "sbs20";
-    repo = "scanservjs";
-    rev = "v${version}";
-    hash = "sha256-GFpfH7YSXFRNRmx8F2bUJsGdPW1ECT7AQquJRxiRJEU=";
-  };
-
-  depsHashes = {
-    server = "sha256-V4w4euMl67eS4WNIFM8j06/JAEudaq+4zY9pFVgTmlY=";
-    client = "sha256-r/uYaXpQnlI90Yn6mo2KViKDMHE8zaCAxNFnEZslnaY=";
-  };
-
-  serverDepsForClient = fetchNpmDeps {
-    inherit src nodejs;
-    sourceRoot = "${src.name}/packages/server";
-    name = "scanservjs-server";
-    hash = depsHashes.server or lib.fakeHash;
-  };
-
-  # static client files
-  client = buildNpmPackage ({
-    pname = "scanservjs-static";
-    inherit version src nodejs;
-
-    sourceRoot = "${src.name}/packages/client";
-    npmDepsHash = depsHashes.client or lib.fakeHash;
-
-    preBuild = ''
-      cd ../server
-      chmod +w package-lock.json . /build/source/
-      npmDeps=${serverDepsForClient} npmConfigHook
-      cd ../client
-    '';
-
-    env.NODE_OPTIONS = "--openssl-legacy-provider";
-
-    dontNpmInstall = true;
-    installPhase = ''
-      mv /build/source/dist/client $out
-    '';
-  });
-
-in buildNpmPackage {
+buildNpmPackage {
   pname = "scanservjs";
-  inherit version src nodejs;
+  version = "3.0.3";
 
-  sourceRoot = "${src.name}/packages/server";
-  npmDepsHash = depsHashes.server or lib.fakeHash;
+  src = fetchFromGitHub {
+    # owner = "sbs20";
+    owner = "chayleaf";
+    repo = "scanservjs";
+    # rev = "v${version}";
+    rev = "bf41a95c9cd6bd924d6e14a28da6d33ddc64ef2e";
+    hash = "sha256-ePg8spI1rlWYcpjtax7gaZp2wUX4beHzMd71b8XKNG8=";
+  };
+
+  inherit nodejs;
+
+  npmDepsHash = "sha256-bigIFAQ2RLk6yxbUcMnmXwgaEkzFFUYn+hE7RIiFm8Y=";
 
   preBuild = ''
-    chmod +w /build/source
-    substituteInPlace src/server.js --replace "express.static('client')" "express.static('${client}')"
-    substituteInPlace src/api.js --replace \
-      '`''${config.previewDirectory}/default.jpg`' \
-      "'$out/lib/node_modules/scanservjs-api/data/preview/default.jpg'"
-    substituteInPlace src/application.js --replace \
-      "'../../config/config.local.js'" \
-      "process.env.NIX_SCANSERVJS_CONFIG_PATH"
-    substituteInPlace src/classes/user-options.js --replace \
-      "const localPath = path.join(__dirname, localConfigPath);" \
-      "const localPath = localConfigPath;"
-    substituteInPlace src/configure.js --replace \
-      "fs.mkdirSync(config.outputDirectory, { recursive: true });" \
-      "fs.mkdirSync(config.outputDirectory, { recursive: true }); fs.mkdirSync(config.previewDirectory, { recursive: true });"
+    npm run build
   '';
 
   postInstall = ''
+    mv $out/lib/node_modules/scanservjs/node_modules dist/
+    rm -rf $out/lib/node_modules/scanservjs
+    mv dist $out/lib/node_modules/scanservjs
     mkdir -p $out/bin
     makeWrapper ${nodejs}/bin/node $out/bin/scanservjs \
       --set NODE_ENV production \
-      --add-flags "'$out/lib/node_modules/scanservjs-api/src/server.js'"
+      --add-flags "'$out/lib/node_modules/scanservjs/server/server.js'"
   '';
 
   meta = with lib; {

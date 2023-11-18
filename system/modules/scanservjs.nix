@@ -5,25 +5,19 @@
 
 let
   cfg = config.services.scanservjs;
-  /*
-    substituteInPlace src/classes/config.js \
-      --replace '/usr/bin/scanimage' '${sane-backends}/bin/scanimage' \
-      --replace '/usr/bin/convert' '${imagemagick}/bin/convert' \
-      --replace '/usr/bin/tesseract' '${tesseract}/bin/tesseract'
-  */
+
   settings = {
     scanimage = "${pkgs.sane-backends}/bin/scanimage";
     convert = "${pkgs.imagemagick}/bin/convert";
     tesseract = "${pkgs.tesseract}/bin/tesseract";
-    # it defaults to config/devices.json, but "config" dir doesn't exist and scanservjs doesn't create it
-    devicesPath = "devices.json";
   } // cfg.settings;
+
   settingsFormat = pkgs.formats.json { };
 
   leafs = attrs:
     builtins.concatLists
       (lib.mapAttrsToList
-        (k: v: if builtins.isAttrs v then leafs v else [v])
+        (k: v: if builtins.isAttrs v then leafs v else [ v ])
         attrs);
 
   package = pkgs.scanservjs;
@@ -58,7 +52,7 @@ let
       },
 
       actions: [
-        ${builtins.concatStringsSep ",\n" cfg.extraActions}
+        ${builtins.concatStringsSep ",\n" (map (x: "(${x})") cfg.extraActions)}
       ],
     };
   '';
@@ -74,7 +68,7 @@ in {
       '';
     };
     settings = lib.mkOption {
-      default = {};
+      default = { };
       description = lib.mdDoc ''
         Config to set in config.local.js's `afterConfig`
       '';
@@ -114,11 +108,12 @@ in {
       '';
     };
     extraActions = lib.mkOption {
-      default = [];
+      default = [ ];
       type = lib.types.listOf lib.types.lines;
       description = "Actions to add to config.local.js's `actions`";
     };
   };
+
   config = lib.mkIf cfg.enable {
     hardware.sane.enable = true;
     users.users.scanservjs = {
@@ -126,9 +121,9 @@ in {
       extraGroups = [ "scanner" "lp" ];
       home = cfg.stateDir;
       isSystemUser = true;
-      createHome = true;
+      createHome = lib.mkIf (cfg.stateDir != "/var/lib/scanservjs") true;
     };
-    users.groups.scanservjs = {};
+    users.groups.scanservjs = { };
 
     systemd.services.scanservjs = {
       description = "scanservjs";
@@ -136,14 +131,14 @@ in {
       wantedBy = [ "multi-user.target" ];
       # yes, those paths are configurable, but the config option isn't always used...
       path = with pkgs; [ coreutils sane-backends imagemagick tesseract ];
-      environment.NIX_SCANSERVJS_CONFIG_PATH = configFile;
       environment.SANE_CONFIG_DIR = "/etc/sane-config";
       environment.LD_LIBRARY_PATH = "/etc/sane-libs";
       serviceConfig = {
-        ExecStart = "${package}/bin/scanservjs";
+        ExecStart = "${package}/bin/scanservjs --config ${configFile}";
         Restart = "always";
         User = "scanservjs";
         Group = "scanservjs";
+        StateDirectory = lib.mkIf (cfg.stateDir == "/var/lib/scanservjs") "scanservjs";
         WorkingDirectory = cfg.stateDir;
       };
     };
