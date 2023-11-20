@@ -10,7 +10,7 @@
       inherit (pkgs.librewolf-unwrapped) extraPrefsFiles extraPoliciesFiles;
       wmClass = "LibreWolf";
       libName = "librewolf";
-      cfg.enableKeePassXC = true;
+      nativeMessagingHosts = with pkgs; [ keepassxc ];
     };
     profiles.chayleaf = {
       extensions = (with config.nur.repos.rycee.firefox-addons; [

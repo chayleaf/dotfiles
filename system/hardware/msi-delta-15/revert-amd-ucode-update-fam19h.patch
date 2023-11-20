@@ -6,7 +6,7 @@ index dbcdced..dd7b8d5 100644
  RawFile: amd-ucode/microcode_amd_fam17h.bin
  Version: 2023-07-19
  RawFile: amd-ucode/microcode_amd_fam19h.bin
--Version: 2023-08-08
+-Version: 2023-10-19
 +Version: 2023-07-18
  File: amd-ucode/README
  
@@ -19,13 +19,13 @@ index f47743c..6a9ff1e 100644
    Family=0x17 Model=0x01 Stepping=0x02: Patch=0x0800126e Length=3200 bytes
  
  Microcode patches in microcode_amd_fam19h.bin:
--  Family=0x19 Model=0x11 Stepping=0x01: Patch=0x0a10113e Length=5568 bytes
--  Family=0x19 Model=0x11 Stepping=0x02: Patch=0x0a10123e Length=5568 bytes
--  Family=0x19 Model=0xa0 Stepping=0x02: Patch=0x0aa00212 Length=5568 bytes
+-  Family=0x19 Model=0x11 Stepping=0x02: Patch=0x0a101244 Length=5568 bytes
    Family=0x19 Model=0x01 Stepping=0x01: Patch=0x0a0011d1 Length=5568 bytes
    Family=0x19 Model=0x01 Stepping=0x00: Patch=0x0a001079 Length=5568 bytes
+-  Family=0x19 Model=0xa0 Stepping=0x02: Patch=0x0aa00213 Length=5568 bytes
    Family=0x19 Model=0x01 Stepping=0x02: Patch=0x0a001234 Length=5568 bytes
 -  Family=0x19 Model=0xa0 Stepping=0x01: Patch=0x0aa00116 Length=5568 bytes
+-  Family=0x19 Model=0x11 Stepping=0x01: Patch=0x0a101144 Length=5568 bytes
 -
 -NOTE: For Genoa (Family=0x19 Model=0x11) and Bergamo (Family=0x19 Model=0xa0),
 -either AGESA version >= 1.0.0.8 OR a kernel with the following commit is
@@ -45,14 +45,14 @@ index 8cff901..a32b4d6 100644
 @@ -1,11 +1,11 @@
  -----BEGIN PGP SIGNATURE-----
  
--iQEzBAABCgAdFiEE/HxsUF2vzBRxg1fK5L5TOfMornMFAmTEYrcACgkQ5L5TOfMo
--rnN4IQf/QKbOezXZ4OYzaPANvsZQEAzLNfuylC/aQMwrPaO7daz5/zmCN4HU5XkH
--dDT8DYfPg+fQHIgxAw0/L24xPOm5Op/QuLVDyDqVr4qvL8+65eeI+JqxD/wXMXYN
--V34kkLM2p8iuyY1Nc8IDLXu4X75KGNPbKZlMRKMU3Pr7ai5O4ihmiAM+N6qv1KEJ
--YToNN6vrg0qt1cv0SLM8sa4e7L1+oblUrg/o0FViYE8pxsU3ZRRVSJMUg+lKjvl/
--1ZPGKOdD80fcNJ+ItYGHNNs3eCc3WgW7Kc/E668eH75Yu9Zt7ewWZX8Sg/mygleY
--OzMwhbPJg4bF4zm7C/Pku7i1T2Omcg==
--=km2X
+-iQEzBAABCgAdFiEE/HxsUF2vzBRxg1fK5L5TOfMornMFAmUoW6AACgkQ5L5TOfMo
+-rnMHAAf/SxaKEu5l7FGXR+QJYc2oSJDpf9ZsHTkVnxqF1I3ReItEGAR3iqSWrsRw
+-KA4niP9Ihr8EqwhOaOtqkRKKF9D5yg+DksnRWbh2VTUECO4KQxjHNrPp3JWEzBwb
+-Xn+vRVP02ZRi3u4MCYbnDC4AfUSnKnldY3TTlNi/6HUaGS2pcw8Vjli/C06zwfgh
+-WwUAoFMQl4SDJhbGfC9cb93MKjBl/0Hv4uhK5W8fJ1iUkMvY8Ijna/oDTZCNPqP0
+-0AgOwdAdzoyOYWjbUXcwofz2Umpz12xmJW8yXNwdv1pmaCvv9aCJz1L49lGwFH9E
+-lhhoFQ1SQL3hhPjTXO6DbeeT9+fjOg==
+-=9Xav
 +iQEzBAABCgAdFiEE/HxsUF2vzBRxg1fK5L5TOfMornMFAmS3F00ACgkQ5L5TOfMo
 +rnNEhQgAizSV8IFpvaYNytaJKLA4uevrZneGPV4czjCXnnj1yHpfQmCTyZQnoLnx
 +7gyzf7K5271zO51FBQ5z2Nm48a3XPUhMbQLNP4BZdekLiA3bRpMtSyHct6zD0ULm

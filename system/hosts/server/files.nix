@@ -65,7 +65,6 @@ in {
   };
   services.nextcloud = {
     enable = true;
-    enableBrokenCiphersForSSE = false;
     package = pkgs.nextcloud27;
     autoUpdateApps.enable = true;
     # TODO: use socket auth and remove the next line

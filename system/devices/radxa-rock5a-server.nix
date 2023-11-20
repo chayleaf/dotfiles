@@ -59,6 +59,8 @@ in
     };
   };
 
+  boot.supportedFilesystems = [ "bcachefs" ];
+
   fileSystems = let
     device = rootPart;
     fsType = "btrfs";

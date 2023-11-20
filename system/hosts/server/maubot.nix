@@ -61,9 +61,7 @@ in {
     translate
     rss
   ];
-  services.maubot.pythonPackages = [
-    (pkgs.pineapplebot.override { magic = cfg.pizzabotMagic; })
-  ] ++ (with pkgs.python3.pkgs; [
+  services.maubot.pythonPackages = with pkgs.python3.pkgs; [
     levenshtein
-  ]);
+  ];
 }

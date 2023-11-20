@@ -28,10 +28,8 @@
     (final: prev: {
       amd-ucode = prev.amd-ucode.override { inherit (final) linux-firmware; };
       linux-firmware = prev.stdenvNoCC.mkDerivation {
-        inherit (prev.linux-firmware) pname version meta src;
-        dontFixup = true;
+        inherit (prev.linux-firmware) pname version meta src dontFixup installFlags nativeBuildInputs;
         passthru = { inherit (prev.linux-firmware) version; };
-        installFlags = [ "DESTDIR=$(out)" ];
 
         # revert microcode updates which break boot for me
         patches = [
@@ -58,10 +56,8 @@
       (final: prev: {
         amd-ucode = prev.amd-ucode.override { inherit (final) linux-firmware; };
         linux-firmware = prev.stdenvNoCC.mkDerivation {
-          inherit (prev.linux-firmware) pname version meta src;
-          dontFixup = true;
+          inherit (prev.linux-firmware) pname version meta src dontFixup installFlags nativeBuildInputs;
           passthru = { inherit (prev.linux-firmware) version; };
-          installFlags = [ "DESTDIR=$(out)" ];
           patches = [ ];
           postPatch = "";
         };

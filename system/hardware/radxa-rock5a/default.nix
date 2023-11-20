@@ -5,20 +5,14 @@
 {
   boot.initrd.availableKernelModules = [ "ahci" "usbhid" "usb_storage" ];
 
-  # TODO: switch to upstream when PCIe support works
-  # boot.kernelPackages = pkgs.linuxPackages_testing;
-  boot.kernelPackages = pkgs.linuxPackagesFor (pkgs.buildLinux {
-    version = "6.6.0-rc1";
-    kernelPatches = [ ];
-    src = pkgs.fetchFromGitLab {
-      domain = "gitlab.collabora.com";
-      group = "hardware-enablement";
-      owner = "rockchip-3588";
-      repo = "linux";
-      rev = "f04271158aee35d270748301c5077231a75bc589";
-      hash = "sha256-B85162plbt92p51f/M82y2zOg3/TqrBWqgw80ksJVGc=";
-    };
-  });
+  # TODO: switch to mainline when PCIe support works
+  boot.kernelPackages = pkgs.linuxPackagesFor (pkgs.buildLinuxWithCcache pkgs.linux_testing);
+  boot.kernelPatches = [
+    {
+      name = "linux_6.7.patch";
+      patch = ./linux_6.7.patch;
+    }
+  ];
 
   boot.kernelParams = [ "dtb=/${config.hardware.deviceTree.name}" ];
   hardware.deviceTree.enable = true;

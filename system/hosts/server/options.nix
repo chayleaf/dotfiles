@@ -57,10 +57,6 @@
           description = "unhashed noreply password for internal access only. \
               This should be different from the password that is hashed for better security";
         };
-        pizzabotMagic = mkOption {
-          type = types.str;
-          default = "<PIZZABOT_MAGIC_SEP>";
-        };
       };
     };
     description = "server settings";

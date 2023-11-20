@@ -2,10 +2,9 @@
   description = "NixOS + Home Manager configuration of chayleaf";
 
   inputs = {
-    #nixpkgs.url = "github:nixos/nixpkgs/3dc2b4f8166f744c3b3e9ff8224e7c5d74a5424f";
-    # nixpkgs.url = "github:nixos/nixpkgs/nixos-unstable";
+    #nixpkgs.url = "github:NixOS/nixpkgs/3dc2b4f8166f744c3b3e9ff8224e7c5d74a5424f";
+    # nixpkgs.url = "github:NixOS/nixpkgs/nixos-unstable";
     nixpkgs.url = "github:chayleaf/nixpkgs";
-    nixpkgs2.url = "github:nixos/nixpkgs/master";
     nixos-hardware.url = "github:NixOS/nixos-hardware";
     mobile-nixos = {
       # url = "github:NixOS/mobile-nixos";
@@ -59,7 +58,6 @@
   outputs = inputs@
     { self
     , nixpkgs
-    , nixpkgs2
     , nixos-hardware
     , mobile-nixos
     , impermanence
@@ -157,7 +155,6 @@
           ./system/devices/radxa-rock5a-server.nix
           (if devMaubot then import /${devPath}/maubot.nix/module else maubot.nixosModules.default)
           ./system/modules/scanservjs.nix
-          ./system/modules/certspotter.nix
         ];
       };
       server-cross = crossConfig server;
@@ -172,7 +169,6 @@
           notlua = notlua.lib.${system};
         };
         home.user = [
-          { _module.args.pkgs2 = import nixpkgs2 { inherit system; overlays = [ overlay ]; }; }
           nur.nixosModules.nur
           ./home/hosts/nixmsi.nix
         ];

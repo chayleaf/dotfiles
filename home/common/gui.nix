@@ -1,4 +1,4 @@
-{ config, pkgs, pkgs2, lib, ... }:
+{ config, pkgs, lib, ... }:
 {
   imports = [ ./terminal.nix ];
   i18n.inputMethod = let fcitx5-qt = pkgs.libsForQt5.fcitx5-qt; in {
@@ -180,7 +180,7 @@
     # profiles = { };
     package = pkgs.wrapMpv ((pkgs.mpv-unwrapped.override {
       # webp support
-      ffmpeg_5 = pkgs.ffmpeg-custom;
+      ffmpeg = pkgs.ffmpeg-custom;
     }).overrideAttrs (old: {
       patches = old.patches or [] ++ [
         (pkgs.fetchpatch {
@@ -251,7 +251,7 @@
     keepassxc nheko qbittorrent mumble
     nextcloud-client gnome.zenity kdeconnect
     # cli tools
-    imagemagick ffmpeg_5-full xdg-utils
+    imagemagick ffmpeg-full xdg-utils
     # fonts
     noto-fonts noto-fonts-cjk-sans noto-fonts-cjk-serif
     noto-fonts-emoji noto-fonts-extra
@@ -261,7 +261,7 @@
 
     # for working with nix
     nix-init
-    pkgs2.nvfetcher
+    nvfetcher
     config.nur.repos.rycee.mozilla-addons-to-nix
 
     anki-bin

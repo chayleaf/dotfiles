@@ -63,10 +63,10 @@
       };
     "youtube-nonstop" = buildFirefoxXpiAddon {
       pname = "youtube-nonstop";
-      version = "0.9.1";
+      version = "0.9.2";
       addonId = "{0d7cafdd-501c-49ca-8ebb-e3341caaa55e}";
-      url = "https://addons.mozilla.org/firefox/downloads/file/3848483/youtube_nonstop-0.9.1.xpi";
-      sha256 = "8340d57622a663949ec1768eb37d47651c809fadf0ffaa5ff546c48fdd28e33d";
+      url = "https://addons.mozilla.org/firefox/downloads/file/4187690/youtube_nonstop-0.9.2.xpi";
+      sha256 = "7659d180f76ea908ea81b84ed9bdd188624eaaa62b88accbe6d8ad4e8caeff38";
       meta = with lib;
       {
         homepage = "https://github.com/lawfx/YoutubeNonStop";

@@ -12,6 +12,9 @@ let
       (x: "127.0.0.1:${toString x.port}")
       (builtins.attrValues
         (lib.filterAttrs (k: v: builtins.elem k names && v.enable) config.services.prometheus.exporters));
+  hplip = pkgs.hplipWithPlugin.override {
+    withQt5 = false;
+  };
 in {
   # a bunch of services for personal use not intended for the public
   # TODO: keycloakify this
@@ -89,11 +92,11 @@ in {
     signKeyPath = "/secrets/cache-priv-key.pem";
     settings.bind = "[::1]:5000";
   };
-  nix.settings.allowed-users = [ "nix-serve" "harmonia" "hydra" "hydra-www" ];
+  nix.settings.allowed-users = [ "nix-serve" "harmonia" ] ++ lib.optionals config.services.hydra.enable [ "hydra" "hydra-www" ];
   # make sure only hydra has access to this file
   # so normal nix evals don't have access to builtins
   nix.settings.extra-builtins-file = "/etc/nixos/extra-builtins.nix";
-  impermanence.directories = [
+  impermanence.directories = lib.mkIf config.services.hydra.enable [
     { directory = /etc/nixos; user = "hydra"; group = "hydra"; mode = "0700"; }
   ];
   nix.settings.allowed-uris = [
@@ -161,14 +164,16 @@ in {
     }
   ];
   nix.distributedBuilds = true;
-  # limit CI CPU usage to 30% since I'm running everything else off this server too
-  systemd.services.nix-daemon.serviceConfig.CPUQuota = "240%";
+  # limit CI CPU usage to 30%
+  # systemd.services.nix-daemon.serviceConfig.CPUQuota = "240%";
+  # TODO: check if LimitNICE should be used instead
+  systemd.services.nix-daemon.serviceConfig.Nice = "19";
   nix.daemonCPUSchedPolicy = "idle";
   nix.daemonIOSchedClass = "idle";
   systemd.services.hydra-evaluator = lib.mkIf config.services.hydra.enable {
     # https://github.com/NixOS/hydra/issues/1186
     environment.GC_DONT_GC = "1";
-    serviceConfig.CPUQuota = "240%";
+    # serviceConfig.CPUQuota = "240%";
     serviceConfig.CPUSchedulingPolicy = "idle";
     serviceConfig.IOSchedulingClass = "idle";
   };
@@ -386,7 +391,7 @@ in {
     '';
     listenAddresses = [ "*:631" ];
     defaultShared = true;
-    drivers = [ pkgs.hplip ];
+    drivers = [ hplip ];
     startWhenNeeded = false;
   };
   services.avahi = {
@@ -398,7 +403,7 @@ in {
   };
   hardware.sane = {
     enable = true;
-    extraBackends = with pkgs; [ hplipWithPlugin ];
+    extraBackends = [ hplip ];
   };
   nixpkgs.config.allowUnfreePredicate = pkg: lib.getName pkg == "hplip";
   services.scanservjs.enable = true;

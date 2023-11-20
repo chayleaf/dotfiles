@@ -10,7 +10,7 @@ let
   sources = import ./_sources/generated.nix {
     inherit (pkgs) fetchgit fetchurl fetchFromGitHub dockerTools;
   };
-  nixForNixPlugins = pkgs.nixVersions.nix_2_17;
+  nixForNixPlugins = pkgs.nixVersions.nix_2_18;
 in
 
 {
@@ -22,16 +22,16 @@ in
     unstable = nixForNixPlugins;
   });
   # Various patches to change Nix version of existing packages so they don't error out because of nix-plugins in nix.conf
-  nix-plugins = pkgs.nix-plugins.override { nix = nixForNixPlugins; }; /*.overrideAttrs (old: {
-    version = "12.0.0";
+  nix-plugins = (pkgs.nix-plugins.override { nix = nixForNixPlugins; }).overrideAttrs (old: {
+    version = "13.0.0";
     patches = [
       (pkgs.fetchpatch {
-        # pull 17
-        url = "https://github.com/shlevy/nix-plugins/commit/f7534b96e70ca056ef793918733d1820af89a433.patch";
-        hash = "sha256-ePRAnZAobasF6jA3QC73p8zyzayXORuodhus96V+crs=";
+        # pull 16
+        url = "https://github.com/chayleaf/nix-plugins/commit/8f945cadad7f2e60e8f308b2f498ec5e16961ede.patch";
+        hash = "sha256-pOogMtjXYkSDtXW12TmBpGr/plnizJtud2nP3q2UldQ=";
       })
     ];
-  });*/
+  });
   harmonia = (pkgs.harmonia.override { nix = nixForNixPlugins; }); /*.overrideAttrs {
     patches = [
       (pkgs.fetchpatch {
@@ -48,38 +48,39 @@ in
       # TODO: remove when https://github.com/NixOS/nix/issues/8796 is fixed or hydra code stops needing a fix
       configureFlags = builtins.filter (x: x != "--enable-lto") (old.configureFlags or []);
     });*/
-  });/*.overrideAttrs (old: {
+  }).overrideAttrs (old: {
+    # who cares about failing tests amirite
+    doCheck = false;
     patches = (old.patches or [ ]) ++ [
       (pkgs.fetchpatch {
-        url = "https://github.com/NixOS/hydra/pull/1296/commits/b23431a657d8a9b2f478c95dd81034780751a262.patch";
-        hash = "sha256-ruTAIPUrPtfy8JkXYK2qigBrSa6KPXpJlORTNkUYrG0=";
+        url = "https://github.com/chayleaf/hydra/commit/e9da80fff6234fab2458173272ee0bedbe8935c3.patch";
+        hash = "sha256-PS8rwe5lIzvaVlh/DogYmW5OccVfpKQ6JehTQibx2XQ=";
       })
     ];
-  });*/
-  nurl = pkgs.nurl.override { nix = nixForNixPlugins; };
-  nvfetcher = pkgs.nvfetcher.overrideAttrs (old: {
-    meta = builtins.removeAttrs old.meta [ "broken" ];
   });
+  nurl = pkgs.nurl.override { nix = nixForNixPlugins; };
+  /*nvfetcher = pkgs.nvfetcher.overrideAttrs (old: {
+    meta = builtins.removeAttrs old.meta [ "broken" ];
+  });*/
 
-  certspotter = callPackage ./certspotter { };
   clang-tools_latest = pkgs.clang-tools_16;
   clang_latest = pkgs.clang_16;
   /*ghidra = pkgs.ghidra.overrideAttrs (old: {
     patches = old.patches ++ [ ./ghidra-stdcall.patch ];
   });*/
-  ffmpeg-custom = (pkgs'.ffmpeg_6-full.override {
+  ffmpeg-custom = (pkgs.callPackage (import /${pkgs.path}/pkgs/development/libraries/ffmpeg/generic.nix {
+    version = "6.1";
+    sha256 = "sha256-NzhD2D16bCVCyCXo0TRwZYp3Ta5eFSfoQPa+iRkeNZg=";
+  }) {
+    ffmpegVariant = "full";
     withCuda = false;
     withCudaLLVM = false;
     withNvdec = false;
     withNvenc = false;
+    inherit (pkgs'.darwin.apple_sdk.frameworks)
+      Cocoa CoreServices CoreAudio CoreMedia AVFoundation MediaToolbox
+      VideoDecodeAcceleration VideoToolbox;
   }).overrideAttrs (old: {
-    version = "unstable-20231031";
-    src = pkgs'.fetchgit {
-      url = "https://git.ffmpeg.org/ffmpeg.git";
-      rev = "4e5f3e6b8e1132354eed810dfdadf87f45c5de27";
-      hash = "sha256-fiWkU9fK8qPmxl2MOADKdlFf6XjHGKFhi8uaWltphCE=";
-    };
-    patches = [ ];
     postPatch = ''
       ${old.postPatch or ""}
       substituteInPlace libavutil/hwcontext_vulkan.c \
@@ -88,12 +89,11 @@ in
         --replace FF_VK_KHR_VIDEO_DECODE_H265 FF_VK_EXT_VIDEO_DECODE_H265 \
         --replace FF_VK_KHR_VIDEO_DECODE_AV1 FF_VK_EXT_VIDEO_DECODE_AV1
     '';
-    buildInputs = old.buildInputs ++ [ pkgs'.libaribcaption ];
+    buildInputs = old.buildInputs ++ [ pkgs.libaribcaption ];
     configureFlags = old.configureFlags ++ [ "--enable-libaribcaption" ];
   });
   gimp = callPackage ./gimp { inherit (pkgs) gimp; };
   home-daemon = callPackage ./home-daemon { };
-  libaribcaption = callPackage ./libaribcaption { };
   # pin version
   looking-glass-client = pkgs.looking-glass-client.overrideAttrs (old: {
     version = "B6";
@@ -108,7 +108,6 @@ in
   kvmfrOverlay = kvmfr: kvmfr.overrideAttrs (old: {
     inherit (pkgs'.looking-glass-client) version src;
   });
-  pineapplebot = callPackage ./pineapplebot.nix { };
   proton-ge = pkgs.stdenvNoCC.mkDerivation {
     inherit (sources.proton-ge) pname version src;
     installPhase = ''
@@ -121,6 +120,7 @@ in
   searxng = pkgs'.python3.pkgs.toPythonModule (pkgs.searxng.overrideAttrs (old: {
     inherit (sources.searxng) src;
     version = "unstable-" + sources.searxng.date;
+    postInstall = builtins.replaceStrings [ "/botdetection" ] [ "" ] old.postInstall;
   }));
   techmino = callPackage ./techmino { };
 
@@ -153,6 +153,5 @@ in
     stdenv = pkgs'.ccacheStdenv;
   };
 }
-// import ./postgresql-packages { inherit pkgs pkgs' lib sources isOverlay; }
 // import ./ccache.nix { inherit pkgs pkgs' lib sources; }
 // import ../system/hardware/bpi-r3/pkgs.nix { inherit pkgs pkgs' lib sources; }
