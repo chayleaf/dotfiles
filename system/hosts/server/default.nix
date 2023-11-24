@@ -32,7 +32,6 @@ in {
     { directory = /var/www; }
     { directory = /secrets; mode = "0755"; }
   ];
-  networking.useDHCP = true;
   networking.firewall = {
     enable = true;
     allowedTCPPorts = lib.mkMerge [

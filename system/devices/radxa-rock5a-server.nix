@@ -5,12 +5,14 @@
 , ... }:
 
 let
-  encUuid = "15945050-df48-418b-b736-827749b9262a";
-  encPart = "/dev/disk/by-uuid/${encUuid}";
-  rootUuid = "de454394-8cc1-4267-b62b-1e25062f7cf4";
-  rootPart = "/dev/disk/by-uuid/${rootUuid}";
-  bootUuid = "0603-5955";
-  bootPart = "/dev/disk/by-uuid/${bootUuid}";
+  uuids.enc = "15945050-df48-418b-b736-827749b9262a";
+  uuids.oldroot = "de454394-8cc1-4267-b62b-1e25062f7cf4";
+  uuids.boot = "0603-5955";
+  uuids.bch0 = "9f10b9ac-3102-4816-8f2c-e0526c2aa65b";
+  uuids.bch1 = "4ffed814-057c-4f9f-9a12-9d8ac6331e62";
+  uuids.bch2 = "e761df86-35ce-4586-9349-2d646fcb1b2a";
+  uuids.bch = "088a3d70-b54c-4437-8e01-feda6bfb7236";
+  parts = builtins.mapAttrs (k: v: "/dev/disk/by-uuid/${v}") uuids;
 in
 
 {
@@ -28,8 +30,43 @@ in
   ];
 
   networking.useDHCP = true;
+  /*
+  # as expected, systemd initrd and networking didn't work well, and i really cba to debug it
+  networking.useDHCP = false;
+  networking.useNetworkd = true;
+  systemd.network = {
+    enable = true;
+    links."10-mac" = {
+      matchConfig.OriginalName = "e*";
+      linkConfig = {
+        MACAddressPolicy = "none";
+        MACAddress = router-config.router-settings.serverMac;
+      };
+    };
+    networks."10-dhcp" = {
+      DHCP = "yes";
+      name = "e*";
+    };
+  };*/
 
   boot.initrd = {
+    /*systemd = {
+      enable = true;
+      network = {
+        enable = true;
+        links."10-mac" = {
+          matchConfig.OriginalName = "e*";
+          linkConfig = {
+            MACAddressPolicy = "none";
+            MACAddress = router-config.router-settings.serverInitrdMac;
+          };
+        };
+        networks."10-dhcp" = {
+          DHCP = "yes";
+          name = "e*";
+        };
+      };
+    };*/
     preLVMCommands = lib.mkOrder 499 ''
       ip link set eth0 address ${router-config.router-settings.serverInitrdMac} || true
     '';
@@ -48,8 +85,8 @@ in
       ];
       # shell = "/bin/cryptsetup-askpass";
     };
-    luks.devices."cryptroot" = {
-      device = encPart;
+    luks.devices.cryptroot = {
+      device = parts.enc;
       # idk whether this is needed but it works
       preLVM = true;
       # see https://asalor.blogspot.de/2011/08/trim-dm-crypt-problems.html before enabling
@@ -57,27 +94,27 @@ in
       # improve SSD performance
       bypassWorkqueues = true;
     };
+    luks.devices.bch0 = { device = parts.bch0; preLVM = true; allowDiscards = true; bypassWorkqueues = true; };
+    luks.devices.bch1 = { device = parts.bch1; preLVM = true; allowDiscards = true; bypassWorkqueues = true; };
+    luks.devices.bch2 = { device = parts.bch2; preLVM = true; allowDiscards = true; bypassWorkqueues = true; };
   };
 
   boot.supportedFilesystems = [ "bcachefs" ];
 
   fileSystems = let
-    device = rootPart;
-    fsType = "btrfs";
     neededForBoot = true;
-    compress = "compress=zstd";
-    discard = "discard=async";
   in {
     "/" =    { device = "none"; fsType = "tmpfs"; inherit neededForBoot;
                options = [ "defaults" "size=2G" "mode=755" ]; };
-    # TODO: switch to bcachefs?
-    # I wanna do it some day, but maybe starting with the next disk I get for this server
     "/persist" =
-              { inherit device fsType neededForBoot;
-                options = [ discard compress "subvol=@" ]; };
-    "/swap" = { inherit device fsType neededForBoot;
-                options = [ discard "subvol=@swap" "noatime" ]; };
-    "/boot" = { device = bootPart; fsType = "vfat"; inherit neededForBoot; };
+              { device = "UUID=${uuids.bch}"; fsType = "bcachefs"; inherit neededForBoot;
+                options = [ "errors=ro" ]; };
+    #"/persist" =
+    #          { device = parts.oldroot; fsType = "btrfs"; inherit neededForBoot;
+    #            options = [ "discard=async" "compress=zstd" "subvol=@" ]; };
+    "/swap" = { device = parts.oldroot; fsType = "btrfs"; inherit neededForBoot;
+                options = [ "discard=async" "subvol=@swap" "noatime" ]; };
+    "/boot" = { device = parts.boot; fsType = "vfat"; inherit neededForBoot; };
   };
 
   swapDevices = [ { device = "/swap/swapfile"; } ];

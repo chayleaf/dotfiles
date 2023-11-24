@@ -166,7 +166,6 @@ in {
   nix.distributedBuilds = true;
   # limit CI CPU usage to 30%
   # systemd.services.nix-daemon.serviceConfig.CPUQuota = "240%";
-  # TODO: check if LimitNICE should be used instead
   systemd.services.nix-daemon.serviceConfig.Nice = "19";
   nix.daemonCPUSchedPolicy = "idle";
   nix.daemonIOSchedClass = "idle";
