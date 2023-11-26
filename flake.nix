@@ -17,6 +17,10 @@
       url = "github:oxalica/rust-overlay";
       inputs.nixpkgs.follows = "nixpkgs";
     };
+    coop-ofd = {
+      url = "github:chayleaf/coop-ofd";
+      inputs.nixpkgs.follows = "nixpkgs";
+    };
     home-manager = {
       url = "github:nix-community/home-manager";
       inputs.nixpkgs.follows = "nixpkgs";
@@ -57,6 +61,7 @@
 
   outputs = inputs@
     { self
+    , coop-ofd
     , nixpkgs
     , nixos-hardware
     , mobile-nixos
@@ -76,6 +81,7 @@
     devNft = false;
     devNixRt = false;
     devMaubot = false;
+    devCoopOfd = false;
     # IRL-related stuff I'd rather not put into git
     priv =
       if builtins.pathExists ./private.nix then (import ./private.nix { })
@@ -154,6 +160,7 @@
           nixos-mailserver.nixosModules.default
           ./system/devices/radxa-rock5a-server.nix
           (if devMaubot then import /${devPath}/maubot.nix/module else maubot.nixosModules.default)
+          (if devCoopOfd then import /${devPath}/coop-ofd else coop-ofd).nixosModules.default
           ./system/modules/scanservjs.nix
         ];
       };

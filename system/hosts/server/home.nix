@@ -42,6 +42,10 @@ in {
   # services.keycloak.plugins = [ pkgs.keycloak.plugins.keycloak-metrics-spi ];
   services.keycloak.settings.metrics-enabled = true;
 
+  services.coop-ofd = {
+    enable = true;
+    config.listener = "127.0.0.1:25783";
+  };
   services.nginx.virtualHosts."home.${cfg.domainName}" = {
     quic = true;
     enableACME = true;
@@ -64,6 +68,9 @@ in {
     locations."/printer/" = {
       proxyPass = "http://127.0.0.1:631/";
       proxyWebsockets = true;
+    };
+    locations."/money/" = {
+      proxyPass = "http://${config.services.coop-ofd.config.listener}/";
     };
   };
   services.nginx.virtualHosts."hydra.${cfg.domainName}" = {
