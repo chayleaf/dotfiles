@@ -362,6 +362,14 @@ in {
       vht_capab = "[RXLDPC][SHORT-GI-80][SHORT-GI-160][TX-STBC-2BY1][SU-BEAMFORMER][SU-BEAMFORMEE][MU-BEAMFORMER][MU-BEAMFORMEE][RX-ANTENNA-PATTERN][TX-ANTENNA-PATTERN][RX-STBC-1][SOUNDING-DIMENSION-4][BF-ANTENNA-4][VHT160][MAX-MPDU-11454][MAX-A-MPDU-LEN-EXP7]";
     } // hapdConfig;
   };
+  # Unfortunately, this router's networking hardware is highly prone to breakage
+  # Many people have reported their routers' TCP offloading being faulty, with an error
+  # like this being thrown at random (it can be shortly after boot, or in a few days):
+  # NETDEV WATCHDOG: eth0 (mtk_soc_eth): transmit queue 3 timed out 5388 ms
+  # My hardware broke after a few months of use as well, so here's a potential fix
+  router.interfaces.eth0.extraInitCommands = ''
+    ${pkgs.ethtool}/bin/ethtool --offload eth0 tso off
+  '';
   # ethernet lan0-3
   router.interfaces.lan0 = {
     bridge = "br0";
