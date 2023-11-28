@@ -6,9 +6,6 @@
 let
   cfg = config.server;
 in {
-  impermanence.directories = [
-    { directory = /var/lib/maubot; user = "maubot"; group = "maubot"; mode = "0755"; }
-  ];
   services.nginx.virtualHosts."matrix.${cfg.domainName}".locations = let
     inherit (config.services.maubot) settings;
   in {

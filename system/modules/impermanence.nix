@@ -93,6 +93,8 @@ in {
         { directory = /var/lib/hydra; user = "hydra"; group = "hydra"; mode = "0755"; }
       ] ++ lib.optionals config.services.matrix-synapse.enable [
         { directory = /var/lib/matrix-synapse; user = "matrix-synapse"; group = "matrix-synapse"; mode = "0700"; }
+      ] ++ lib.optionals config.services.maubot.enable [
+        { directory = /var/lib/maubot; user = "maubot"; group = "maubot"; mode = "0750"; }
       ] ++ lib.optionals config.services.monero.enable [
         { directory = config.services.monero.dataDir; user = "monero"; group = "monero"; mode = "0750"; }
       ] ++ lib.optionals config.services.mullvad-vpn.enable [
