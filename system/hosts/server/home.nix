@@ -46,6 +46,7 @@ in {
     enable = true;
     config.listener = "127.0.0.1:25783";
   };
+
   services.nginx.virtualHosts."home.${cfg.domainName}" = {
     quic = true;
     enableACME = true;

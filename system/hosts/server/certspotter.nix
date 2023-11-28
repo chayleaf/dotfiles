@@ -33,7 +33,7 @@ in {
   services.certspotter = {
     enable = true;
     extraFlags = [ ];
-    watchlist = [ ".pavluk.org" ];
+    watchlist = [ ".${cfg.domainName}" ];
     hooks = lib.toList (pkgs.writeShellScript "certspotter-hook" ''
       if [[ "$EVENT" == discovered_cert ]]; then
         ${pkgs.gnugrep}/bin/grep -r "$TBS_SHA256" /var/lib/certspotter/tbs-hashes/ && exit

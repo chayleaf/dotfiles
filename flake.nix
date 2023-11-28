@@ -162,6 +162,7 @@
           (if devMaubot then import /${devPath}/maubot.nix/module else maubot.nixosModules.default)
           (if devCoopOfd then import /${devPath}/coop-ofd else coop-ofd).nixosModules.default
           ./system/modules/scanservjs.nix
+          ./system/modules/qbittorrent.nix
         ];
       };
       server-cross = crossConfig server;

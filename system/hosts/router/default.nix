@@ -297,6 +297,8 @@ in {
     bannedPorts = [
       631 9100 # printing
       5353 # avahi
+      # pass it through to VPN rather than WAN
+      server-config.services.qbittorrent-nox.torrent.port
     ];
     inherit (server-config.networking.firewall) allowedTCPPorts allowedTCPPortRanges allowedUDPPorts allowedUDPPortRanges;
 
@@ -328,6 +330,9 @@ in {
   }) ++ lib.toList {
     port = 24; tcp = true; udp = true; target4.port = 22; target6.port = 22;
     target4.address = serverInitrdAddress4; target6.address = serverInitrdAddress6;
+  } ++ lib.toList {
+    inVpn = true; port = server-config.services.qbittorrent-nox.torrent.port; tcp = true; udp = true;
+    target4.address = serverAddress4; target6.address = serverAddress6;
   };
 
   router.enable = true;

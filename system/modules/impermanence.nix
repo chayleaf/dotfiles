@@ -61,78 +61,84 @@ in {
         { directory = /var/spool; user = "root"; group = "root"; mode = "0777"; }
       ] ++ lib.optionals cfg.persistTmp [
         { directory = /tmp; user = "root"; group = "root"; mode = "1777"; }
+      ] ++ lib.optionals config.networking.wireless.iwd.enable [
+        { directory = /var/lib/iwd; user = "root"; group = "root"; mode = "0700"; }
+      ] ++ lib.optionals (builtins.any (x: x.useDHCP != false) (builtins.attrValues config.networking.interfaces) || config.networking.useDHCP) [
+        { directory = /var/db/dhcpcd; user = "root"; group = "root"; mode = "0755"; }
+      ] ++ lib.optionals config.security.acme.acceptTerms [
+        { directory = /var/lib/acme; user = "acme"; group = "acme"; mode = "0755"; }
+      ] ++ lib.optionals config.services.akkoma.enable [
+        { directory = /var/lib/akkoma; user = "akkoma"; group = "akkoma"; mode = "0700"; }
+      ] ++ lib.optionals config.services.botamusique.enable [
+        { directory = /var/lib/private/botamusique; user = "root"; group = "root"; mode = "0750"; }
+      ] ++ lib.optionals config.programs.ccache.enable [
+        { directory = config.programs.ccache.cacheDir; user = "root"; group = "nixbld"; mode = "0770"; }
+        { directory = /var/cache/sccache; user = "root"; group = "nixbld"; mode = "0770"; }
+      ] ++ lib.optionals config.services.coop-ofd.enable [
+        { directory = /var/lib/coop-ofd; mode = "0750"; }
+      ] ++ lib.optionals config.services.dovecot2.enable [
+        { directory = /var/lib/dhparams; user = "root"; group = "root"; mode = "0755"; }
+        { directory = /var/lib/dovecot; user = "root"; group = "root"; mode = "0755"; }
+      ] ++ lib.optionals config.services.fail2ban.enable [
+        { directory = /var/lib/fail2ban; user = "root"; group = "root"; mode = "0700"; }
+      ] ++ lib.optionals config.services.forgejo.enable [
+        { directory = /var/lib/forgejo; user = "forgejo"; group = "forgejo"; mode = "0755"; }
+      ] ++ lib.optionals config.services.gitea.enable [
+        { directory = /var/lib/gitea; user = "gitea"; group = "gitea"; mode = "0755"; }
+      ] ++ lib.optionals config.services.grafana.enable [
+        { directory = /var/lib/grafana; user = "grafana"; group = "grafana"; mode = "0755"; }
+      ] ++ lib.optionals config.services.heisenbridge.enable [
+        { directory = /var/lib/heisenbridge; user = "heisenbridge"; group = "heisenbridge"; mode = "0755"; }
+      ] ++ lib.optionals config.services.hydra.enable [
+        { directory = /var/lib/hydra; user = "hydra"; group = "hydra"; mode = "0755"; }
+      ] ++ lib.optionals config.services.matrix-synapse.enable [
+        { directory = /var/lib/matrix-synapse; user = "matrix-synapse"; group = "matrix-synapse"; mode = "0700"; }
+      ] ++ lib.optionals config.services.monero.enable [
+        { directory = config.services.monero.dataDir; user = "monero"; group = "monero"; mode = "0750"; }
       ] ++ lib.optionals config.services.mullvad-vpn.enable [
         { directory = /etc/mullvad-vpn; user = "root"; group = "root"; mode = "0700"; }
         { directory = /var/cache/mullvad-vpn; user = "root"; group = "root"; mode = "0755"; }
+      ] ++ lib.optionals config.services.murmur.enable [
+        { directory = /var/lib/murmur; user = "murmur"; group = "murmur"; mode = "0700"; }
+      ] ++ lib.optionals config.services.nextcloud.enable [
+        { directory = /var/lib/nextcloud; user = "nextcloud"; group = "nextcloud"; mode = "0750"; }
+      ] ++ lib.optionals config.services.opendkim.enable [
+        { directory = /var/lib/opendkim; user = "opendkim"; group = "opendkim"; mode = "0700"; }
+      ] ++ lib.optionals config.services.openldap.enable [
+        { directory = /var/lib/openldap; inherit (config.services.openldap) user group; mode = "0755"; }
+      ] ++ lib.optionals config.services.pleroma.enable [
+        { directory = /var/lib/pleroma; user = "pleroma"; group = "pleroma"; mode = "0700"; }
+      ] ++ lib.optionals config.services.postfix.enable [
+        { directory = /var/lib/postfix; user = "root"; group = "root"; mode = "0755"; }
+      ] ++ lib.optionals config.services.postgresql.enable [
+        { directory = /var/lib/postgresql; user = "postgres"; group = "postgres"; mode = "0755"; }
+      ] ++ lib.optionals config.services.printing.enable [
+        { directory = /var/lib/cups; user = "root"; group = "root"; mode = "0755"; }
+        { directory = /var/cache/cups; user = "root"; group = "lp"; mode = "0770"; }
+      ] ++ lib.optionals config.services.prometheus.enable [
+        { directory = /var/lib/${config.services.prometheus.stateDir}; user = "prometheus"; group = "prometheus"; mode = "0755"; }
+      ] ++ lib.optionals config.services.qbittorrent-nox.enable [
+        { directory = /var/lib/qbittorrent-nox; mode = "0755"; }
+      ] ++ lib.optionals (config.services.redis.servers.rspamd.enable or false) [
+        { directory = /var/lib/redis-rspamd; user = "redis-rspamd"; group = "redis-rspamd"; mode = "0700"; }
+      ] ++ lib.optionals config.services.roundcube.enable [
+        { directory = /var/lib/roundcube; user = "roundcube"; group = "roundcube"; mode = "0700"; }
+      ] ++ lib.optionals config.services.rspamd.enable [
+        { directory = /var/lib/rspamd; user = "rspamd"; group = "rspamd"; mode = "0700"; }
+      ] ++ lib.optionals (config.services.scanservjs.enable or false) [
+        { directory = /var/lib/scanservjs; user = "scanservjs"; group = "scanservjs"; mode = "0750"; }
+      ] ++ lib.optionals config.services.searx.enable [
+        { directory = /var/lib/searx; user = "searx"; group = "searx"; mode = "0700"; }
+      ] ++ lib.optionals config.security.sudo.enable [
+        { directory = /var/db/sudo/lectured; user = "root"; group = "root"; mode = "0700"; }
+      ] ++ lib.optionals config.services.unbound.enable [
+        { directory = /var/lib/unbound; user = "unbound"; group = "unbound"; mode = "0755"; }
       ] ++ lib.optionals config.virtualisation.libvirtd.enable ([
         # { directory = /var/cache/libvirt; user = "root"; group = "root"; mode = "0755"; }
         { directory = /var/lib/libvirt; user = "root"; group = "root"; mode = "0755"; }
       ] ++ lib.optionals config.virtualisation.libvirtd.qemu.swtpm.enable [
         { directory = /var/lib/swtpm-localca; user = "root"; group = "root"; mode = "0750"; }
-      ]) ++ lib.optionals config.networking.wireless.iwd.enable [
-        { directory = /var/lib/iwd; user = "root"; group = "root"; mode = "0700"; }
-      ] ++ lib.optionals (builtins.any (x: x.useDHCP != false) (builtins.attrValues config.networking.interfaces) || config.networking.useDHCP) [
-        { directory = /var/db/dhcpcd; user = "root"; group = "root"; mode = "0755"; }
-      ] ++ lib.optionals config.services.gitea.enable [
-        { directory = /var/lib/gitea; user = "gitea"; group = "gitea"; mode = "0755"; }
-      ] ++ lib.optionals config.services.forgejo.enable [
-        { directory = /var/lib/forgejo; user = "forgejo"; group = "forgejo"; mode = "0755"; }
-      ] ++ lib.optionals config.services.matrix-synapse.enable [
-        { directory = /var/lib/matrix-synapse; user = "matrix-synapse"; group = "matrix-synapse"; mode = "0700"; }
-      ] ++ lib.optionals config.services.heisenbridge.enable [
-        { directory = /var/lib/heisenbridge; user = "heisenbridge"; group = "heisenbridge"; mode = "0755"; }
-      ] ++ lib.optionals config.services.murmur.enable [
-        { directory = /var/lib/murmur; user = "murmur"; group = "murmur"; mode = "0700"; }
-      ] ++ lib.optionals config.services.nextcloud.enable [
-        { directory = /var/lib/nextcloud; user = "nextcloud"; group = "nextcloud"; mode = "0750"; }
-      ] ++ lib.optionals config.services.botamusique.enable [
-        { directory = /var/lib/private/botamusique; user = "root"; group = "root"; mode = "0750"; }
-      ] ++ lib.optionals config.security.acme.acceptTerms [
-        { directory = /var/lib/acme; user = "acme"; group = "acme"; mode = "0755"; }
-      ] ++ lib.optionals config.services.printing.enable [
-        { directory = /var/lib/cups; user = "root"; group = "root"; mode = "0755"; }
-        { directory = /var/cache/cups; user = "root"; group = "lp"; mode = "0770"; }
-      ] ++ lib.optionals config.services.fail2ban.enable [
-        { directory = /var/lib/fail2ban; user = "root"; group = "root"; mode = "0700"; }
-      ] ++ lib.optionals config.services.opendkim.enable [
-        { directory = /var/lib/opendkim; user = "opendkim"; group = "opendkim"; mode = "0700"; }
-      ] ++ lib.optionals config.services.pleroma.enable [
-        { directory = /var/lib/pleroma; user = "pleroma"; group = "pleroma"; mode = "0700"; }
-      ] ++ lib.optionals config.services.akkoma.enable [
-        { directory = /var/lib/akkoma; user = "akkoma"; group = "akkoma"; mode = "0700"; }
-      ] ++ lib.optionals config.services.hydra.enable [
-        { directory = /var/lib/hydra; user = "hydra"; group = "hydra"; mode = "0755"; }
-      ] ++ lib.optionals config.services.grafana.enable [
-        { directory = /var/lib/grafana; user = "grafana"; group = "grafana"; mode = "0755"; }
-      ] ++ lib.optionals config.services.prometheus.enable [
-        { directory = /var/lib/${config.services.prometheus.stateDir}; user = "prometheus"; group = "prometheus"; mode = "0755"; }
-      ] ++ lib.optionals config.services.postfix.enable [
-        { directory = /var/lib/postfix; user = "root"; group = "root"; mode = "0755"; }
-      ] ++ lib.optionals config.services.postgresql.enable [
-        { directory = /var/lib/postgresql; user = "postgres"; group = "postgres"; mode = "0755"; }
-      ] ++ lib.optionals config.services.unbound.enable [
-        { directory = /var/lib/unbound; user = "unbound"; group = "unbound"; mode = "0755"; }
-      ] ++ lib.optionals config.services.searx.enable [
-        { directory = /var/lib/searx; user = "searx"; group = "searx"; mode = "0700"; }
-      ] ++ lib.optionals config.services.roundcube.enable [
-        { directory = /var/lib/roundcube; user = "roundcube"; group = "roundcube"; mode = "0700"; }
-      ] ++ lib.optionals config.services.rspamd.enable [
-        { directory = /var/lib/rspamd; user = "rspamd"; group = "rspamd"; mode = "0700"; }
-      ] ++ lib.optionals (config.services.redis.servers.rspamd.enable or false) [
-        { directory = /var/lib/redis-rspamd; user = "redis-rspamd"; group = "redis-rspamd"; mode = "0700"; }
-      ] ++ lib.optionals config.services.dovecot2.enable [
-        { directory = /var/lib/dhparams; user = "root"; group = "root"; mode = "0755"; }
-        { directory = /var/lib/dovecot; user = "root"; group = "root"; mode = "0755"; }
-      ] ++ lib.optionals config.security.sudo.enable [
-        { directory = /var/db/sudo/lectured; user = "root"; group = "root"; mode = "0700"; }
-      ] ++ lib.optionals config.services.openldap.enable [
-        { directory = /var/lib/openldap; inherit (config.services.openldap) user group; mode = "0755"; }
-      ] ++ lib.optionals (config.services.scanservjs.enable or false) [
-        { directory = /var/lib/scanservjs; user = "scanservjs"; group = "scanservjs"; mode = "0750"; }
-      ] ++ lib.optionals config.programs.ccache.enable [
-        { directory = config.programs.ccache.cacheDir; user = "root"; group = "nixbld"; mode = "0770"; }
-        { directory = /var/cache/sccache; user = "root"; group = "nixbld"; mode = "0770"; }
-      ] ++ cfg.directories);
+      ]) ++ cfg.directories);
       files = map (x:
         if builtins.isPath x then toString x
         else if builtins.isPath (x.file or null) then x // { file = toString x.file; }
