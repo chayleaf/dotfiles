@@ -102,7 +102,7 @@
       set -U _tide_left_items pwd git vi_mode
       set -U _tide_prompt_69105 \x1b\x28B\x1b\x5bm\x1b\x28B\x1b\x5bm\x1b\x5b34m\x1b\x5b44m\x20\x40PWD\x40\x20\x1b\x5b34m\x1b\x5b40m\ue0b0\x1b\x5b32m\x1b\x5b40m\x20\u276f\x20\x1b\x28B\x1b\x5bm\x1b\x28B\x1b\x5bm\x1b\x5b30m\ue0b0 \x1b\x28B\x1b\x5bm\x1b\x28B\x1b\x5bm\x1b\x5b30m\ue0b2\x1b\x5b32m\x1b\x5b40m\x20\uf00c\x20\x1b\x5b33m\x1b\x5b40m\ue0b2\x1b\x5b30m\x1b\x5b43m\x2021m\x2023s\x20\x1b\x28B\x1b\x5bm\x1b\x28B\x1b\x5bm\x1b\x5b33m
       set -U _tide_prompt_79899 \x1b\x28B\x1b\x5bm\x1b\x28B\x1b\x5bm\x1b\x5b34m\x1b\x5b44m\x20\x40PWD\x40\x20\x1b\x5b34m\x1b\x5b40m\ue0b0\x1b\x5b32m\x1b\x5b40m\x20\u276f\x20\x1b\x28B\x1b\x5bm\x1b\x28B\x1b\x5bm\x1b\x5b30m\ue0b0 \x1b\x28B\x1b\x5bm\x1b\x28B\x1b\x5bm\x1b\x5b30m\ue0b2\x1b\x5b32m\x1b\x5b40m\x20\uf00c\x20\x1b\x5b33m\x1b\x5b40m\ue0b2\x1b\x5b30m\x1b\x5b43m\x2015s\x20\x1b\x28B\x1b\x5bm\x1b\x28B\x1b\x5bm\x1b\x5b33m
-      set -U _tide_right_items status cmd_duration context jobs virtual_env rustc nix_shell
+      set -U _tide_right_items status cmd_duration context jobs rustc nix_shell
 
       # for the following values, -gx works too (-g doesn't)
       # but it pollutes children's env, so do -U
@@ -116,9 +116,6 @@
       set -U tide_character_vi_icon_default \u276e
       set -U tide_character_vi_icon_replace \u25b6
       set -U tide_character_vi_icon_visual V
-      set -U tide_chruby_bg_color red
-      set -U tide_chruby_color black
-      set -U tide_chruby_icon \ue23e
       set -U tide_cmd_duration_bg_color yellow
       set -U tide_cmd_duration_color black
       set -U tide_cmd_duration_decimals 0
@@ -198,7 +195,7 @@
       set -U tide_pwd_icon_unwritable \uf023
       set -U tide_pwd_markers \x2ebzr \x2ecitc \x2egit \x2ehg \x2enode\x2dversion \x2epython\x2dversion \x2eruby\x2dversion \x2eshorten_folder_marker \x2esvn \x2eterraform Cargo\x2etoml composer\x2ejson CVS go\x2emod package\x2ejson
       set -U tide_right_prompt_frame_enabled false
-      set -U tide_right_prompt_items status cmd_duration context jobs node virtual_env rustc java php chruby go kubectl toolbox terraform aws nix_shell crystal
+      set -U tide_right_prompt_items status cmd_duration context jobs node rustc java php go kubectl toolbox terraform aws nix_shell crystal
       set -U tide_right_prompt_prefix \ue0b2
       set -U tide_right_prompt_separator_diff_color \ue0b2
       set -U tide_right_prompt_separator_same_color \ue0b3
@@ -237,9 +234,6 @@
       set -U tide_vi_mode_icon_insert \u276f
       set -U tide_vi_mode_icon_replace R
       set -U tide_vi_mode_icon_visual V
-      set -U tide_virtual_env_bg_color brblack
-      set -U tide_virtual_env_color cyan
-      set -U tide_virtual_env_icon \ue73c
     '';
     plugins = with pkgs.fishPlugins; [
       { name = "tide"; src = tide.src; }
