@@ -91,6 +91,8 @@ in {
         { directory = /var/lib/heisenbridge; user = "heisenbridge"; group = "heisenbridge"; mode = "0755"; }
       ] ++ lib.optionals config.services.hydra.enable [
         { directory = /var/lib/hydra; user = "hydra"; group = "hydra"; mode = "0755"; }
+      ] ++ lib.optionals config.services.jellyfin.enable [
+        { directory = /var/lib/jellyfin; user = "jellyfin"; group = "jellyfin"; mode = "0750"; }
       ] ++ lib.optionals config.services.matrix-synapse.enable [
         { directory = /var/lib/matrix-synapse; user = "matrix-synapse"; group = "matrix-synapse"; mode = "0700"; }
       ] ++ lib.optionals config.services.maubot.enable [

@@ -84,18 +84,23 @@ in {
   services.qbittorrent-nox.ui.port = 19642;
   services.qbittorrent-nox.torrent.port = 45522;
 
-  services.nginx.virtualHosts."home.${cfg.domainName}".locations."/torrent/" = {
-    extraConfig = ''
-      proxy_pass         http://127.0.0.1:${toString config.services.qbittorrent-nox.ui.port}/;
-      proxy_http_version 1.1;
-
-      proxy_set_header   Host               127.0.0.1:30000;
-      proxy_set_header   X-Forwarded-Host   $http_host;
-      proxy_set_header   X-Forwarded-For    $remote_addr;
-      proxy_cookie_path  /                  "/; Secure";
-    '';
-  };
-
   services.jellyfin.enable = true;
-  services.jellyfin.openFirewall = true;
+
+  services.nginx.virtualHosts."home.${cfg.domainName}".locations = {
+    "/torrent/" = {
+      extraConfig = ''
+        proxy_pass         http://127.0.0.1:${toString config.services.qbittorrent-nox.ui.port}/;
+        proxy_http_version 1.1;
+
+        proxy_set_header   Host               127.0.0.1:30000;
+        proxy_set_header   X-Forwarded-Host   $http_host;
+        proxy_set_header   X-Forwarded-For    $remote_addr;
+        proxy_cookie_path  /                  "/; Secure";
+      '';
+    };
+    "/jelly/" = {
+      proxyPass = "http://127.0.0.1:8096";
+      proxyWebsockets = true;
+    };
+  };
 }
