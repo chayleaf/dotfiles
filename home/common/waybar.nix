@@ -49,7 +49,6 @@
         format = "{value}{icon}";
         format-icons = {
           default = "";
-          focused = "";
           urgent = " ";
           "2" = " 󰵅";
           "3" = " ";
@@ -57,7 +56,7 @@
           "5" = " ";
         };
         persistent-workspaces = {
-          "1" = []; "2" = []; "3" = []; "4" = []; "5" = [];
+          "1" = [ ]; "2" = [ ]; "3" = [ ];
         };
       };
       "sway/mode" = {
