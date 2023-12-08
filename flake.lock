@@ -25,11 +25,11 @@
         ]
       },
       "locked": {
-        "lastModified": 1701020120,
-        "narHash": "sha256-rXzIkoYnSHpX12MWzVyWzFdQDQ0puZXTrnyuqt8Xci4=",
+        "lastModified": 1702056258,
+        "narHash": "sha256-Fjhxm6GYq6Tos+Za5slrLRlc+UicOxgzGIxLNtoJpEA=",
         "owner": "chayleaf",
         "repo": "coop-ofd",
-        "rev": "4ac9b827b50f4131ccf7b9e2f3281e9d6fc991ac",
+        "rev": "a96a20b176da515ec090a783de39aa8d9e573be1",
         "type": "github"
       },
       "original": {
@@ -319,11 +319,11 @@
     },
     "nixpkgs": {
       "locked": {
-        "lastModified": 1700647334,
-        "narHash": "sha256-0F5B7oJAAJ4u4sq97nIhcH/pVFkFjYY5JFxXXHOBJQ4=",
+        "lastModified": 1701951621,
+        "narHash": "sha256-97wdVG/CHlHkWqd8Y+1PvLrNBp91tf0esBURFVT8KSA=",
         "owner": "chayleaf",
         "repo": "nixpkgs",
-        "rev": "e70edbbc30bca7d90c4a1e8c653ceb1607cc2858",
+        "rev": "b4ba55d440f4eb00379307b7c2f0279b5d24b68b",
         "type": "github"
       },
       "original": {

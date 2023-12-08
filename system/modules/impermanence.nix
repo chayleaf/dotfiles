@@ -74,7 +74,7 @@ in {
       ] ++ lib.optionals config.programs.ccache.enable [
         { directory = config.programs.ccache.cacheDir; user = "root"; group = "nixbld"; mode = "0770"; }
         { directory = /var/cache/sccache; user = "root"; group = "nixbld"; mode = "0770"; }
-      ] ++ lib.optionals config.services.coop-ofd.enable [
+      ] ++ lib.optionals (config.services.coop-ofd.enable or false) [
         { directory = /var/lib/coop-ofd; mode = "0750"; }
       ] ++ lib.optionals config.services.dovecot2.enable [
         { directory = /var/lib/dhparams; user = "root"; group = "root"; mode = "0755"; }
@@ -95,7 +95,7 @@ in {
         { directory = /var/lib/jellyfin; user = "jellyfin"; group = "jellyfin"; mode = "0750"; }
       ] ++ lib.optionals config.services.matrix-synapse.enable [
         { directory = /var/lib/matrix-synapse; user = "matrix-synapse"; group = "matrix-synapse"; mode = "0700"; }
-      ] ++ lib.optionals config.services.maubot.enable [
+      ] ++ lib.optionals (config.services.maubot.enable or false) [
         { directory = /var/lib/maubot; user = "maubot"; group = "maubot"; mode = "0750"; }
       ] ++ lib.optionals config.services.monero.enable [
         { directory = config.services.monero.dataDir; user = "monero"; group = "monero"; mode = "0750"; }
@@ -121,7 +121,7 @@ in {
         { directory = /var/cache/cups; user = "root"; group = "lp"; mode = "0770"; }
       ] ++ lib.optionals config.services.prometheus.enable [
         { directory = /var/lib/${config.services.prometheus.stateDir}; user = "prometheus"; group = "prometheus"; mode = "0755"; }
-      ] ++ lib.optionals config.services.qbittorrent-nox.enable [
+      ] ++ lib.optionals (config.services.qbittorrent-nox.enable or false) [
         { directory = /var/lib/qbittorrent-nox; mode = "0755"; }
       ] ++ lib.optionals (config.services.redis.servers.rspamd.enable or false) [
         { directory = /var/lib/redis-rspamd; user = "redis-rspamd"; group = "redis-rspamd"; mode = "0700"; }

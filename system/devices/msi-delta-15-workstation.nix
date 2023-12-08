@@ -1,91 +1,58 @@
 # device-specific non-portable config
+{ pkgs
+, ...
+}:
+
 let
-  efiPart = "/dev/disk/by-uuid/D77D-8CE0";
+  uuids.efi = "D97E-A4D5";
+  uuids.encroot = "a2c3c9ea-2c73-4786-bff7-5f0aa7097912";
+  uuids.root = "dc669123-d6d3-447f-9ce3-c22587e5fa6a";
+  uuids.encdata = "f1447692-fa7c-4bd6-9cb5-e44c13fddfe3";
+  uuids.data = "fa754b1e-ac83-4851-bf16-88efcd40b657";
+  uuids.swap = "01c21ed8-0f40-4892-825d-81f5ddb9a0a2";
+  parts = builtins.mapAttrs (k: v: "/dev/disk/by-uuid/${v}") uuids;
+in
 
-  encPart = "/dev/disk/by-uuid/ce6ccdf0-7b6a-43ae-bfdf-10009a55041a";
-  cryptrootUuid = "f4edc0df-b50b-42f6-94ed-1c8f88d6cdbb";
-  cryptroot = "/dev/disk/by-uuid/${cryptrootUuid}";
-
-  dataPart = "/dev/disk/by-uuid/f1447692-fa7c-4bd6-9cb5-e44c13fddfe3";
-  datarootUuid = "fa754b1e-ac83-4851-bf16-88efcd40b657";
-  dataroot = "/dev/disk/by-uuid/${datarootUuid}";
-in {
+{
   imports = [
     ../hardware/msi-delta-15
     ../hosts/nixmsi.nix
   ];
 
+  boot.initrd.systemd.enable = false;
   boot.initrd = {
-    # insert crypto_keyfile into initrd so that grub can tell the kernel the
-    # encryption key once I unlock the /boot partition
-    secrets."/crypto_keyfile.bin" = "/boot/initrd/crypto_keyfile.bin";
-    luks.devices."cryptroot" = {
-      device = encPart;
-      # idk whether this is needed but it works
-      preLVM = true;
+    luks.devices.cryptroot = {
+      device = parts.encroot;
       # see https://asalor.blogspot.de/2011/08/trim-dm-crypt-problems.html before enabling
       allowDiscards = true;
-      # improve SSD performance
-      bypassWorkqueues = true;
-      keyFile = "/crypto_keyfile.bin";
     };
-    luks.devices."dataroot" = {
-      device = dataPart;
-      preLVM = true;
+    luks.devices.dataroot = {
+      device = parts.encdata;
       allowDiscards = true;
-      bypassWorkqueues = true;
-      keyFile = "/crypto_keyfile.bin";
     };
   };
-  boot.loader = {
-    grub = {
-      enable = true;
-      enableCryptodisk = true;
-      efiSupport = true;
-      # nodev = disable bios support 
-      device = "nodev";
-    };
-    efi.canTouchEfiVariables = true;
-    efi.efiSysMountPoint = "/boot/efi";
-  };
-  boot.resumeDevice = cryptroot;
-  boot.kernelParams = [
-    "resume=/@swap/swapfile"
-    # resume_offset = $(btrfs inspect-internal map-swapfile -r path/to/swapfile)
-    "resume_offset=533760"
-  ];
-  fileSystems = let
-    device = cryptroot;
-    fsType = "btrfs";
-    # max compression! my cpu is pretty good anyway
-    compress = "compress=zstd:15";
-    discard = "discard=async";
-    neededForBoot = true;
-  in {
-    # mount root on tmpfs
-    "/" =     { device = "none"; fsType = "tmpfs"; inherit neededForBoot;
+
+  boot.loader.systemd-boot.enable = true;
+  boot.loader.efi.canTouchEfiVariables = true;
+
+  boot.kernelPackages = pkgs.linuxPackages_testing;
+  boot.kernelParams = [ "boot.shell_on_fail" ];
+
+  fileSystems = {
+    "/" =     { device = "none"; fsType = "tmpfs"; neededForBoot = true;
                 options = [ "defaults" "size=2G" "mode=755" ]; };
     "/persist" =
-              { inherit device fsType neededForBoot;
-                options = [ discard compress "subvol=@" ]; };
-    "/nix" =  { inherit device fsType neededForBoot;
-                options = [ discard compress "subvol=@nix" "noatime" ]; };
-    "/swap" = { inherit device fsType neededForBoot;
-                options = [ discard "subvol=@swap" "noatime" ]; };
-    "/home" = { inherit device fsType;
-                options = [ discard compress "subvol=@home" ]; };
-    # why am I even bothering with creating this subvolume every time if I don't use snapshots anyway?
-    "/.snapshots" =
-              { inherit device fsType;
-                options = [ discard compress "subvol=@snapshots" ]; };
-    "/boot" = { inherit device fsType neededForBoot;
-                options = [ discard compress "subvol=@boot" ]; };
-    "/boot/efi" =
-              { device = efiPart; fsType = "vfat"; inherit neededForBoot; };
-    "/data" =
-              { device = dataroot; fsType = "btrfs";
-                options = [ discard compress ]; };
+              { device = parts.root; fsType = "bcachefs"; neededForBoot = true;
+                options = [ "discard=1" ]; };
+    "/boot" = { device = parts.efi; fsType = "vfat"; neededForBoot = true; };
+    "/data" = { device = parts.data; fsType = "btrfs";
+                options = [ "discard=async" "compress=zstd:15" ]; };
   };
+  impermanence.directories = [
+    /root
+    /home
+    /nix
+  ];
 
   impermanence = {
     enable = true;
@@ -95,18 +62,13 @@ in {
   # fix for my realtek usb ethernet adapter
   services.tlp.settings.USB_DENYLIST = "0bda:8156";
 
-  swapDevices = [ { device = "/swap/swapfile"; } ];
+  swapDevices = [ { device = parts.swap; } ];
+  boot.resumeDevice = parts.swap;
 
   # dedupe
   services.beesd = {
-    # i have a lot of ram :tonystark:
-    filesystems.cryptroot = {
-      spec = "UUID=${cryptrootUuid}";
-      hashTableSizeMB = 128;
-      extraOptions = [ "--loadavg-target" "8.0" ];
-    };
     filesystems.dataroot = {
-      spec = "UUID=${datarootUuid}";
+      spec = "UUID=${uuids.data}";
       hashTableSizeMB = 256;
       extraOptions = [ "--loadavg-target" "8.0" ];
     };

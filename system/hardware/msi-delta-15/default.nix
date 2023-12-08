@@ -1,5 +1,6 @@
 { hardware
 , pkgs
+, lib
 , ... }:
 
 {
@@ -13,7 +14,7 @@
   common.resolution = "1920x1080";
   vfio.pciIDs = [ "1002:73df" "1002:ab28" ];
   boot = {
-    kernelPackages = pkgs.linuxPackagesFor pkgs.linux_latest;
+    kernelPackages = lib.mkDefault (pkgs.linuxPackagesFor pkgs.linux_latest);
     initrd.availableKernelModules = [ "nvme" "xhci_pci" ];
     kernelParams = [
       # disable PSR to *hopefully* avoid random hangs
