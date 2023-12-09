@@ -84,7 +84,7 @@ in {
   networking.hosts."::1" = hostedDomains;
 
   services.postgresql.enable = true;
-  services.postgresql.package = pkgs.postgresql_13;
+  services.postgresql.package = pkgs.postgresql_16;
 
   # SSH
   services.openssh.enable = true;
