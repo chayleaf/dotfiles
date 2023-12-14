@@ -134,13 +134,12 @@ in {
       })}'')}
     real_ip_header CF-Connecting-IP;
   '';
-  # brotli and zstd requires recompilation so I don't enable it
-  # services.nginx.recommendedBrotliSettings = true;
-  # services.nginx.recommendedZstdSettings = true;
+  services.nginx.recommendedBrotliSettings = true;
   services.nginx.recommendedGzipSettings = true;
   services.nginx.recommendedOptimisation = true;
   services.nginx.recommendedProxySettings = true;
   services.nginx.recommendedTlsSettings = true;
+  services.nginx.recommendedZstdSettings = true;
 
   # BLOG
   services.nginx.virtualHosts.${cfg.domainName} = {

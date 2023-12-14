@@ -29,6 +29,12 @@ in
     "dm_mod" "dm_crypt" "encrypted_keys"
   ];
 
+  systemd.enableEmergencyMode = false;
+  boot.kernel.sysctl = {
+    "net.core.default_qdisc" = "fq";
+    "net.ipv4.tcp_congestion_control" = "bbr";
+  };
+
   networking.useDHCP = true;
   /*
   # as expected, systemd initrd and networking didn't work well, and i really cba to debug it

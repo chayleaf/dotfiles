@@ -14,6 +14,12 @@ in
   ];
   networking.hostName = "nixos-router";
 
+  systemd.enableEmergencyMode = false;
+  boot.kernel.sysctl = {
+    "net.core.default_qdisc" = "fq";
+    "net.ipv4.tcp_congestion_control" = "bbr";
+  };
+
   fileSystems = {
     # mount root on tmpfs
     "/" =     { device = "none"; fsType = "tmpfs"; neededForBoot = true;

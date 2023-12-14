@@ -315,6 +315,7 @@ in {
             "retracker.local:9101"
             "retracker.local:9256"
             "retracker.local:9167"
+            "retracker.local:9380"
           ];
           labels.machine = "router";
         } ];

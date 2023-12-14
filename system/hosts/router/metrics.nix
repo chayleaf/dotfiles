@@ -31,6 +31,18 @@ in {
       ];
       listenAddress = netAddresses.lan4;
     };
+    ping = {
+      enable = true;
+      listenAddress = netAddresses.lan4;
+      port = 9380;
+      config = {
+        type = "raw";
+        targets = [
+          "8.8.8.8"
+          { target = "8.8.8.8"; netns = "wan"; }
+        ];
+      };
+    };
   };
   router.interfaces.br0 = let
     # all of this just to avoid logging commands...

@@ -147,6 +147,7 @@
     readline = {
       enable = true;
       variables.editing-mode = "vi";
+      variables.show-mode-in-prompt = true;
     };
     nix-index = {
       enable = true;

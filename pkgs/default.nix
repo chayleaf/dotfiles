@@ -14,7 +14,7 @@ let
 in
 
 {
-  inherit (nix-gaming) faf-client osu-lazer-bin;
+  inherit (nix-gaming.packages.${pkgs.system}) faf-client osu-lazer-bin;
   inherit nixForNixPlugins;
   nix = nixForNixPlugins;
   nixVersions = pkgs.nixVersions.extend (self: super: {
@@ -108,6 +108,7 @@ in
   kvmfrOverlay = kvmfr: kvmfr.overrideAttrs (old: {
     inherit (pkgs'.looking-glass-client) version src;
   });
+  ping-exporter = callPackage ./ping-exporter { };
   proton-ge = pkgs.stdenvNoCC.mkDerivation {
     inherit (sources.proton-ge) pname version src;
     installPhase = ''

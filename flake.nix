@@ -112,7 +112,7 @@
         pkgs = super;
         nurpkgs = super;
       };
-      nix-gaming = nix-gaming.packages.${super.system};
+      inherit nix-gaming;
     } // args);
     overlay = overlay' { };
     # I override some settings down the line, but overlays always stay the same
@@ -133,6 +133,7 @@
             _module.args.notnft = if devNft then (import /${devPath}/notnft { inherit (nixpkgs) lib; }).config.notnft else notnft.lib.${system};
           }
           (if devNixRt then import /${devPath}/nixos-router else nixos-router.nixosModules.default)
+          ./system/modules/ping-exporter.nix
         ];
       };
       crossConfig' = from: config: config // {
