@@ -1,4 +1,9 @@
-{ pkgs, lib, ... }:
+{ pkgs
+, lib
+, inputs,
+...
+}:
+
 {
   imports = [
     ../common/general.nix
@@ -7,6 +12,7 @@
     ../common/nvim.nix
     ../common/helix.nix
     ../common/kakoune.nix
+    inputs.nur.nixosModules.nur
   ];
 
   nix.settings = {

@@ -1,10 +1,13 @@
 { config
 , pkgs
+, inputs
 , ... }:
 
 let
   cfg = config.server;
 in {
+  imports = [ inputs.nixos-mailserver.nixosModules.default ];
+
   impermanence.directories = [
     { directory = config.mailserver.dkimKeyDirectory; user = "opendkim"; group = "opendkim"; mode = "0755"; }
     { directory = config.mailserver.mailDirectory; user = "virtualMail"; group = "virtualMail"; mode = "0700"; }

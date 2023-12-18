@@ -1,11 +1,14 @@
 { config
 , lib
 , pkgs
+, inputs
 , ... }:
 
 let
   cfg = config.server;
 in {
+  imports = [ inputs.maubot.nixosModules.default ];
+
   services.nginx.virtualHosts."matrix.${cfg.domainName}".locations = let
     inherit (config.services.maubot) settings;
   in {

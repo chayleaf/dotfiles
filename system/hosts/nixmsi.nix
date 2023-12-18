@@ -1,11 +1,12 @@
 { lib
 , pkgs
 , config
+, inputs
 , ... }:
 
 /*
   # for old kernel versions
-  zenKernels = pkgs.callPackage "${nixpkgs}/pkgs/os-specific/linux/kernel/zen-kernels.nix";
+  zenKernels = pkgs.callPackage "${pkgs.path}/pkgs/os-specific/linux/kernel/zen-kernels.nix";
   zenKernel = (version: sha256: (zenKernels {
     kernelPatches = [
       pkgs.linuxKernel.kernelPatches.bridge_stp_helper
@@ -26,6 +27,8 @@
 */
 
 {
+  imports = [ inputs.nix-gaming.nixosModules.pipewireLowLatency ];
+
   system.stateVersion = "22.11";
 
   ### SECTION 1: HARDWARE/BOOT PARAMETERS ###
@@ -122,26 +125,15 @@
   # users.groups.wireshark.members = [ config.common.mainUsername ];
   services.printing.enable = true;
   services.printing.drivers = [ pkgs.hplip ];
-  services.pipewire = {
-    enable = true;
-    alsa.enable = true;
-    alsa.support32Bit = true;
-    pulse.enable = true;
-    jack.enable = true;
-
-    # from nix-gaming
-    lowLatency = {
-      enable = true;
-      # 96 is mostly fine but has some xruns
-      # 128 has xruns every now and then too, but is overall fine
-      quantum = 128;
-      rate = 48000;
-    };
+  # from nix-gaming
+  services.pipewire.lowLatency = {
+    enable = false;
+    # 96 is mostly fine but has some xruns
+    # 128 has xruns every now and then too
+    quantum = 128;
+    rate = 48000;
   };
-  security.polkit.enable = true;
-  security.rtkit.enable = true;
 
-  services.dbus.enable = true;
   programs.sway.enable = true;
   xdg.portal = {
     enable = true;

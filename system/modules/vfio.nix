@@ -1,86 +1,79 @@
 { config
+, options
 , lib
 , pkgs
 , ... }:
 
 let
   cfg = config.vfio;
+  enableIvshmem = cfg.lookingGlass.enable && (builtins.length cfg.lookingGlass.ivshmem) > 0;
 in {
-  options.vfio = with lib; mkOption {
-    type = types.submodule {
-      options = {
-        enable = mkOption {
-          type = types.bool;
-          default = false;
-          description = "Enable GPU passthrough + VM config (probably no intel/nvidia support since I can't test it)";
-        };
-        libvirtdGroup = mkOption {
-          type = with types; listOf str;
-          default = [ ];
-          description = "Users to add to libvirtd group";
-        };
-        intelCpu = mkOption {
-          type = types.bool;
-          default = false;
-          description = "Whether the CPU is Intel (untested)";
-        };
-        nvidiaGpu = mkOption {
-          type = types.bool;
-          default = false;
-          description = "Whether the GPU is Nvidia (disables AMD-specific workarounds)";
-        };
-        passGpuAtBoot = mkOption {
-          type = types.bool;
-          default = false;
-          description = "Whether to pass the GPU at boot (can be more stable). If false, a bootloader entry to do it will still be available.";
-        };
-        pciIDs = mkOption {
-          type = with types; listOf str;
-          default = [ ];
-          description = "PCI passthrough IDs";
-        };
-        lookingGlass = mkOption {
-          default = { };
-          type = types.submodule {
-            options = {
-              enable = mkOption {
-                type = types.bool;
-                default = true;
-                description = "Enable Looking Glass integration";
-              };
-              ivshmem = mkOption {
-                type = with types; listOf (submodule {
-                  options = {
-                    size = mkOption {
-                      type = types.int;
-                      default = 32;
-                      description = "IVSHMEM size in MB: https://looking-glass.io/docs/B6/install/#determining-memory";
-                    };
-                    owner = mkOption {
-                      type = types.str;
-                      description = "IVSHMEM device owner";
-                    };
-                  };
-                });
-                default = if builtins.length cfg.libvirtdGroup == 1 then [
-                  { owner = builtins.head cfg.libvirtdGroup; }
-                ] else [ ];
-                example = [ { size = 32; owner = "user"; } ];
-                description = "IVSHMEM/kvmfr config (multiple devices can be created: /dev/kvmfr0, /dev/kvmfr1, and so on)";
-              };
-            };
+  options.vfio = with lib; {
+    enable = mkOption {
+      type = types.bool;
+      default = false;
+      description = "Enable GPU passthrough + VM config (probably no intel/nvidia support since I can't test it)";
+    };
+    libvirtdGroup = mkOption {
+      type = with types; listOf str;
+      default = [ ];
+      description = "Users to add to libvirtd group";
+    };
+    intelCpu = mkOption {
+      type = types.bool;
+      default = false;
+      description = "Whether the CPU is Intel (untested)";
+    };
+    nvidiaGpu = mkOption {
+      type = types.bool;
+      default = false;
+      description = "Whether the GPU is Nvidia (disables AMD-specific workarounds)";
+    };
+    passGpuAtBoot = mkOption {
+      type = types.bool;
+      default = false;
+      description = "Whether to pass the GPU at boot (can be more stable). If false, a bootloader entry to do it will still be available.";
+    };
+    pciIDs = mkOption {
+      type = with types; listOf str;
+      default = [ ];
+      description = "PCI passthrough IDs";
+    };
+    lookingGlass = mkOption {
+      default = { };
+      type = types.submodule {
+        options = {
+          enable = mkOption {
+            type = types.bool;
+            default = true;
+            description = "Enable Looking Glass integration";
           };
-          description = "Looking glass config";
+          ivshmem = mkOption {
+            type = with types; listOf (submodule {
+              options = {
+                size = mkOption {
+                  type = types.int;
+                  default = 32;
+                  description = "IVSHMEM size in MB: https://looking-glass.io/docs/B6/install/#determining-memory";
+                };
+                owner = mkOption {
+                  type = types.str;
+                  description = "IVSHMEM device owner";
+                };
+              };
+            });
+            default = if builtins.length cfg.libvirtdGroup == 1 then [
+              { owner = builtins.head cfg.libvirtdGroup; }
+            ] else [ ];
+            example = [ { size = 32; owner = "user"; } ];
+            description = "IVSHMEM/kvmfr config (multiple devices can be created: /dev/kvmfr0, /dev/kvmfr1, and so on)";
+          };
         };
       };
+      description = "Looking glass config";
     };
-    description = "VFIO settings";
-    default = { };
   };
-  # compatibility so this module loads on non-amd hardware
-  config = let
-    enableIvshmem = cfg.lookingGlass.enable && (builtins.length cfg.lookingGlass.ivshmem) > 0;
-  in lib.mkIf cfg.enable {
+  config = lib.mkIf cfg.enable {
     # add a custom kernel param for early loading vfio drivers
     # because if we change boot.initrd options in a specialization, two initrds will be built
     # and we don't want to build two initrds
@@ -120,11 +113,11 @@ in {
       '';
       initrd.kernelModules = [
         (if cfg.intelCpu then "kvm-intel" else "kvm-amd")
-      ] ++ (if cfg.passGpuAtBoot then [
+      ] ++ lib.optionals cfg.passGpuAtBoot [
         "vfio"
         "vfio_iommu_type1"
         "vfio_pci"
-      ] else []);
+      ];
       initrd.availableKernelModules = lib.mkIf (!cfg.passGpuAtBoot) [
         "vfio"
         "vfio_iommu_type1"
@@ -137,9 +130,9 @@ in {
       extraModprobeConfig = ''
           options vfio-pci ids=${builtins.concatStringsSep "," cfg.pciIDs} disable_idle_d3=1
           options kvm ignore_msrs=1
-          ${if enableIvshmem then ''
-          options kvmfr static_size_mb=${builtins.concatStringsSep "," (map (x: toString x.size) cfg.lookingGlass.ivshmem)}''
-          else ""}
+          ${lib.optionalString enableIvshmem ''
+          options kvmfr static_size_mb=${builtins.concatStringsSep "," (map (x: toString x.size) cfg.lookingGlass.ivshmem)}
+          ''}
         '';
       kernelParams = [
         (if cfg.intelCpu then "intel_iommu=on" else "amd_iommu=on")
@@ -147,7 +140,7 @@ in {
       ];
       kernelModules = [
         "vhost-net"
-      ] ++ (if enableIvshmem then [ "kvmfr" ] else []);
+      ] ++ lib.optional enableIvshmem "kvmfr";
     };
     services.udev.extraRules = lib.mkIf enableIvshmem
       (builtins.concatStringsSep
@@ -159,11 +152,11 @@ in {
           cfg.lookingGlass.ivshmem));
     hardware = {
       opengl.enable = true;
-    } // (lib.optionalAttrs (cfg.enable && !(cfg.nvidiaGpu)) {
+    } // lib.optionalAttrs (cfg.enable && !cfg.nvidiaGpu && options?hardware.amdgpu.loadInInitrd) {
       # disable early KMS so GPU can be properly unbound
       # can't use mkif because the option may not even exist
       amdgpu.loadInInitrd = false;
-    });
+    };
     # needed for virt-manager
     programs.dconf.enable = true;
     virtualisation.libvirtd = {

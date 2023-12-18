@@ -1,6 +1,7 @@
 { config
 , lib
 , pkgs
+, inputs
 , ... }:
 
 let
@@ -16,6 +17,8 @@ let
     withQt5 = false;
   };
 in {
+  imports = [ inputs.coop-ofd.nixosModules.default ];
+
   # a bunch of services for personal use not intended for the public
   # TODO: keycloakify this
   services.grafana = {

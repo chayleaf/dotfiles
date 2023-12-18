@@ -110,8 +110,8 @@ in
   fileSystems = let
     neededForBoot = true;
   in {
-    "/" =    { device = "none"; fsType = "tmpfs"; inherit neededForBoot;
-               options = [ "defaults" "size=2G" "mode=755" ]; };
+    "/" =     { device = "none"; fsType = "tmpfs"; inherit neededForBoot;
+                options = [ "defaults" "size=2G" "mode=755" ]; };
     "/persist" =
               { device = "UUID=${uuids.bch}"; fsType = "bcachefs"; inherit neededForBoot;
                 options = [ "errors=ro" ]; };

@@ -1,20 +1,25 @@
 { pkgs
 , lib
-, nur
-, nix-gaming
+, inputs
 , pkgs' ? pkgs
 , isOverlay ? true
-, ... }:
+, ...
+}:
+
 let
   inherit (pkgs') callPackage;
   sources = import ./_sources/generated.nix {
     inherit (pkgs) fetchgit fetchurl fetchFromGitHub dockerTools;
   };
   nixForNixPlugins = pkgs.nixVersions.nix_2_18;
+  nur = import inputs.nur {
+    inherit pkgs;
+    nurpkgs = pkgs;
+  };
 in
 
 {
-  inherit (nix-gaming.packages.${pkgs.system}) faf-client osu-lazer-bin;
+  inherit (inputs.nix-gaming.packages.${pkgs.system}) faf-client osu-lazer-bin;
   inherit nixForNixPlugins;
   nix = nixForNixPlugins;
   nixVersions = pkgs.nixVersions.extend (self: super: {

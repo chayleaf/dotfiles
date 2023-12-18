@@ -218,11 +218,11 @@
     "mobile-nixos": {
       "flake": false,
       "locked": {
-        "lastModified": 1697544701,
-        "narHash": "sha256-u/59b13bwEqxR1x2l9SeSya2ZXABmjpUCdTrXVMLrsA=",
+        "lastModified": 1702635187,
+        "narHash": "sha256-SrPY118ozIUfGWWbDfcwolgtMuQBDBvPZ/TCLaWqoSs=",
         "owner": "chayleaf",
         "repo": "mobile-nixos",
-        "rev": "b3ec466c5abbda7de279dccb010ab10e74dd07ee",
+        "rev": "d63c2a8d6488a15dffa0a1c1771239074b474f91",
         "type": "github"
       },
       "original": {
