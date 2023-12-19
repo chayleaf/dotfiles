@@ -218,16 +218,16 @@
     "mobile-nixos": {
       "flake": false,
       "locked": {
-        "lastModified": 1702635187,
-        "narHash": "sha256-SrPY118ozIUfGWWbDfcwolgtMuQBDBvPZ/TCLaWqoSs=",
+        "lastModified": 1702959560,
+        "narHash": "sha256-3EmjKFKBypRGluGEY1oUMkQRBRDO5rZdzUXwTlRbUiY=",
         "owner": "chayleaf",
         "repo": "mobile-nixos",
-        "rev": "d63c2a8d6488a15dffa0a1c1771239074b474f91",
+        "rev": "55ec06035e85fcbda5caa6a73d045a9910fb16a2",
         "type": "github"
       },
       "original": {
         "owner": "chayleaf",
-        "ref": "cleanup",
+        "ref": "fix-op6-modem",
         "repo": "mobile-nixos",
         "type": "github"
       }

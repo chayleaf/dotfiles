@@ -78,7 +78,7 @@ in {
     environment.etc = lib.mapAttrs'
       (name: value: {
         name = "nix/inputs/${name}";
-        value.source = value.outPath;
+        value.source = value.outPath or "${value}";
       })
       (lib.filterAttrs (_: v: builtins.pathExists "${v}/default.nix") inputs);
     nix.nixPath = [ "/etc/nix/inputs" ];
@@ -117,9 +117,13 @@ in {
     i18n.extraLocaleSettings.LC_TIME = "en_DK.UTF-8";
     environment.systemPackages = with pkgs; [
       bottom
-      wget
       git
+      rsync
       tmux
+      wget
+
+      kitty.terminfo
+      # rxvt-unicode-unwrapped.terminfo
     ];
     programs.fish.enable = true;
     users.users.${cfg.mainUsername} = {
@@ -147,10 +151,6 @@ in {
   }
 
   (lib.mkIf cfg.minimal {
-    environment.systemPackages = with pkgs; [
-      kitty.terminfo
-      # rxvt-unicode-unwrapped.terminfo
-    ];
     programs.fish.interactiveShellInit = ''
       set -gx SHELL ${pkgs.zsh}/bin/zsh
       set -g fish_color_autosuggestion 777 brblack

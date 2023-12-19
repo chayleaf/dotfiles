@@ -68,6 +68,7 @@ in
     meta = builtins.removeAttrs old.meta [ "broken" ];
   });*/
 
+  buffyboard = pkgs.callPackage ./buffyboard { };
   clang-tools_latest = pkgs.clang-tools_16;
   clang_latest = pkgs.clang_16;
   /*ghidra = pkgs.ghidra.overrideAttrs (old: {
@@ -161,3 +162,4 @@ in
 }
 // import ./ccache.nix { inherit pkgs pkgs' lib sources; }
 // import ../system/hardware/bpi-r3/pkgs.nix { inherit pkgs pkgs' lib sources; }
+// import ../system/hardware/oneplus-enchilada/pkgs.nix { inherit inputs pkgs pkgs' lib sources; }

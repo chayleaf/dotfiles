@@ -106,6 +106,10 @@ in {
         { directory = /var/lib/murmur; user = "murmur"; group = "murmur"; mode = "0700"; }
       ] ++ lib.optionals config.services.nextcloud.enable [
         { directory = /var/lib/nextcloud; user = "nextcloud"; group = "nextcloud"; mode = "0750"; }
+      ] ++ lib.optionals config.networking.networkmanager.enable [
+        { directory = /etc/NetworkManager/system-connections; mode = "0700"; }
+        { directory = /var/lib/NetworkManager; mode = "0755"; }
+        { directory = /var/lib/NetworkManager-fortisslvpn; mode = "0700"; }
       ] ++ lib.optionals config.services.opendkim.enable [
         { directory = /var/lib/opendkim; user = "opendkim"; group = "opendkim"; mode = "0700"; }
       ] ++ lib.optionals config.services.openldap.enable [

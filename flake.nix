@@ -8,7 +8,7 @@
     nixos-hardware.url = "github:NixOS/nixos-hardware";
     mobile-nixos = {
       # url = "github:NixOS/mobile-nixos";
-      url = "github:chayleaf/mobile-nixos/cleanup";
+      url = "github:chayleaf/mobile-nixos/fix-op6-modem";
       flake = false;
     };
     impermanence.url = "github:nix-community/impermanence";
@@ -64,10 +64,11 @@
     # --impure required for developing
     # it takes the paths for modules from filesystem as opposed to flake inputs
     dev = {
-      # notnft = true;
-      # nixos-router = true;
-      # maubot = true;
       # coop-ofd = true;
+      # maubot = true;
+      # mobile-nixos = true;
+      # nixos-router = true;
+      # notnft = true;
     };
     # IRL-related stuff I'd rather not put into git
     priv =
@@ -81,8 +82,8 @@
     inputs = builtins.mapAttrs
       (name: input:
         if dev.${name} or false then
-          (if input.flake or true
-          then import base-inputs.flake-compat { src = /${devPath}/${name}; }
+          (if input._type or null == "flake"
+          then (import base-inputs.flake-compat { src = /${devPath}/${name}; }).defaultNix
           else /${devPath}/${name})
           else input)
       base-inputs;
@@ -143,12 +144,7 @@
       };
       phone = {
         system = "aarch64-linux";
-        modules = [
-          (import "${inputs.mobile-nixos}/lib/configuration.nix" {
-            device = "oneplus-enchilada";
-          })
-          ./system/hosts/phone/default.nix
-        ];
+        modules = [ ./system/devices/oneplus-6-phone.nix ];
       };
     };
 
