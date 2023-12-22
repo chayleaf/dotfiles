@@ -74,6 +74,8 @@ in {
       ] ++ lib.optionals config.programs.ccache.enable [
         { directory = config.programs.ccache.cacheDir; user = "root"; group = "nixbld"; mode = "0770"; }
         { directory = /var/cache/sccache; user = "root"; group = "nixbld"; mode = "0770"; }
+      ] ++ lib.optionals config.services.certspotter.enable [
+        { directory = /var/lib/certspotter; user = "certspotter"; group = "certspotter"; mode = "0755"; }
       ] ++ lib.optionals (config.services.coop-ofd.enable or false) [
         { directory = /var/lib/private/coop-ofd; mode = "0750"; }
       ] ++ lib.optionals config.services.dovecot2.enable [
