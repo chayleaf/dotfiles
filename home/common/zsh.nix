@@ -125,16 +125,16 @@
     };
     plugins = with pkgs; [
       { name = "zsh-vi-mode";
-        src = zsh-vi-mode.src; }
+        inherit (zsh-vi-mode) src; }
       { name = "fzf-tab";
-        src = zsh-fzf-tab.src; }
+        inherit (zsh-fzf-tab) src; }
       { name = "nix-shell";
-        src = zsh-nix-shell.src; }
+        inherit (zsh-nix-shell) src; }
       { name = "powerlevel10k";
-        src = zsh-powerlevel10k.src;
+        inherit (zsh-powerlevel10k) src;
         file = "powerlevel10k.zsh-theme"; }
       { name = "you-should-use";
-        src = zsh-you-should-use.src; }
+        inherit (zsh-you-should-use) src; }
     ];
   };
 }

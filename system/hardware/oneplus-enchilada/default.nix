@@ -58,6 +58,9 @@ in
       boot.kernelPackages = lib.mkForce (pkgs.linuxPackagesFor pkgs.linux_enchilada_ccache);
       hardware.deviceTree.enable = true;
       hardware.deviceTree.name = "qcom/sdm845-oneplus-enchilada.dtb";
+      # loglevel=7 console=ttyMSM0,115200 is a way to delay boot
+      # see https://gitlab.freedesktop.org/drm/msm/-/issues/46
+      boot.consoleLogLevel = 7;
       boot.kernelParams = [
         "console=ttyMSM0,115200"
         "console=tty0"

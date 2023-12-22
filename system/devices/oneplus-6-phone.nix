@@ -1,5 +1,4 @@
 { config
-, lib
 , ...
 }:
 
@@ -18,7 +17,6 @@ in
 
   # https://gitlab.com/postmarketOS/pmaports/-/issues/2440
   # networking.wireless.iwd.enable = true;
-  networking.modemmanager.enable = lib.mkForce false;
   networking.networkmanager.enable = true;
 
   boot.loader = {

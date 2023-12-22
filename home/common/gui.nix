@@ -1,6 +1,13 @@
 { config, pkgs, lib, ... }:
 {
   imports = [ ./terminal.nix ];
+  systemd.user.services.fcitx5-daemon = {
+    Unit.After = "graphical-session-pre.target";
+    Service = {
+      Restart = "on-failure";
+      RestartSec = 3;
+    };
+  };
   i18n.inputMethod = let fcitx5-qt = pkgs.libsForQt5.fcitx5-qt; in {
     enabled = "fcitx5";
     fcitx5.addons = with pkgs; [ fcitx5-lua fcitx5-gtk fcitx5-mozc fcitx5-configtool fcitx5-qt ];
@@ -24,7 +31,7 @@
     # this is for steam games, I set the launch options to:
     # `SDL_DYNAMIC_API=$SDL2_DYNAMIC_API %command%`
     # Steam itself doesn't work with SDL2_DYNAMIC_API set, so it's
-    # a bad idea to set SDL2_DYNAMIC_API globally
+    # a bad idea to set SDL_DYNAMIC_API globally
     SDL2_DYNAMIC_API = "${pkgs.SDL2}/lib/libSDL2.so";
   };
   programs.nnn.extraPackages = with pkgs; [
@@ -216,15 +223,6 @@
     enable = true;
   };
 
-  systemd.user.services = {
-    fcitx5-daemon = {
-      Unit.After = "graphical-session-pre.target";
-      Service = {
-        Restart = "on-failure";
-        RestartSec = 3;
-      };
-    };
-  };
   # i run this manually instead
   #services.nextcloud-client = {
   #  enable = true;
@@ -249,7 +247,7 @@
     qt5ct qgnomeplatform
     # various programs i use
     keepassxc nheko qbittorrent mumble
-    nextcloud-client gnome.zenity kdeconnect
+    nextcloud-client kdeconnect
     # cli tools
     imagemagick ffmpeg-full xdg-utils
     # fonts
@@ -263,7 +261,5 @@
     nix-init
     nvfetcher
     config.nur.repos.rycee.mozilla-addons-to-nix
-
-    anki-bin
   ];
 }

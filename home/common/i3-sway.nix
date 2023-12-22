@@ -3,35 +3,35 @@ let
 modifier = "Mod4";
 rofiSway = config.programs.rofi.finalPackage;
 rofiI3 = pkgs.rofi.override { plugins = config.programs.rofi.plugins; };
-audioNext = with pkgs; writeShellScript "playerctl-next" ''
-  ${playerctl}/bin/playerctl next
-  PLAYER=$(${playerctl}/bin/playerctl -l | head -n 1)
+audioNext = pkgs.writeShellScript "playerctl-next" ''
+  ${pkgs.playerctl}/bin/playerctl next
+  PLAYER=$(${pkgs.playerctl}/bin/playerctl -l | head -n 1)
   # mpdris2 bug: audio wont play after a seek/skip, you have to pause-unpause
   if [[ "$PLAYER" == "mpd" ]]; then
-    ${playerctl}/bin/playerctl pause
-    ${playerctl}/bin/playerctl position 0
-    ${playerctl}/bin/playerctl play
+    ${pkgs.playerctl}/bin/playerctl pause
+    ${pkgs.playerctl}/bin/playerctl position 0
+    ${pkgs.playerctl}/bin/playerctl play
   fi
 '';
-audioPrev = with pkgs; writeShellScript "playerctl-prev" ''
+audioPrev = pkgs.writeShellScript "playerctl-prev" ''
   # just seek if over 5 seconds into the track
-  POS=$(${playerctl}/bin/playerctl position)
-  PLAYER=$(${playerctl}/bin/playerctl -l | head -n 1)
+  POS=$(${pkgs.playerctl}/bin/playerctl position)
+  PLAYER=$(${pkgs.playerctl}/bin/playerctl -l | head -n 1)
   if [ -n "$POS" ]; then
-    if (( $(echo "$POS > 5.01" | ${bc}/bin/bc -l) )); then
+    if (( $(echo "$POS > 5.01" | ${pkgs.bc}/bin/bc -l) )); then
       SEEK=1
     fi
   fi
   if [ -z "$SEEK" ]; then
-    ${playerctl}/bin/playerctl previous
+    ${pkgs.playerctl}/bin/playerctl previous
   else
-    ${playerctl}/bin/playerctl position 0
+    ${pkgs.playerctl}/bin/playerctl position 0
   fi
   # mpdris2 bug: audio wont play after a seek/skip, you have to pause-unpause
   if [[ "$PLAYER" == "mpd" ]]; then
-    ${playerctl}/bin/playerctl pause
-    ${playerctl}/bin/playerctl position 0
-    ${playerctl}/bin/playerctl play
+    ${pkgs.playerctl}/bin/playerctl pause
+    ${pkgs.playerctl}/bin/playerctl position 0
+    ${pkgs.playerctl}/bin/playerctl play
   fi
 '';
 barConfig = {
@@ -79,13 +79,13 @@ barConfig = {
 commonConfig = {
   inherit modifier;
   startup = [
-    { command = builtins.toString (with pkgs; writeShellScript "init-wm" ''
-      ${home-daemon}/bin/home-daemon system76-scheduler&
-      ${gnome.zenity}/bin/zenity --password | (${keepassxc}/bin/keepassxc --pw-stdin ~/Nextcloud/keepass.kdbx&)
+    { command = toString (pkgs.writeShellScript "init-wm" ''
+      ${pkgs.home-daemon}/bin/home-daemon system76-scheduler&
+      ${pkgs.gnome.zenity}/bin/zenity --password | (${pkgs.keepassxc}/bin/keepassxc --pw-stdin ~/Nextcloud/keepass.kdbx&)
       # nextcloud and nheko need secret service access
-      ${nextcloud-client}/bin/nextcloud --background&
-      ${nheko}/bin/nheko&
-      ${tdesktop}/bin/telegram-desktop -startintray&
+      ${pkgs.nextcloud-client}/bin/nextcloud --background&
+      ${pkgs.nheko}/bin/nheko&
+      ${pkgs.tdesktop}/bin/telegram-desktop -startintray&
     ''); }
   ];
   colors = {
@@ -149,13 +149,13 @@ genKeybindings = (default_options: kb:
     XF86MonBrightnessDown = "exec ${pkgs.brightnessctl}/bin/brightnessctl set 5%-";
     XF86MonBrightnessUp = "exec ${pkgs.brightnessctl}/bin/brightnessctl set 5%+";
   }
-  // (lib.attrsets.filterAttrs
+  // (lib.filterAttrs
     (k: v:
       !(builtins.elem
         k
-        ["${modifier}+space" "${modifier}+Shift+space"]))
-    (lib.lists.head
-      (lib.lists.head
+        [ "${modifier}+space" "${modifier}+Shift+space" ]))
+    (builtins.head
+      (builtins.head
         default_options.config.type.getSubModules)
       .imports)
     .options.keybindings.default)
@@ -342,9 +342,9 @@ in
       menu = "${rofiSway}/bin/rofi -show drun";
     }; in commonConfig // swayConfig;
     # export WLR_RENDERER=vulkan
-    extraSessionCommands = (lib.optionalString config.wayland.windowManager.sway.vulkan ''
+    extraSessionCommands = lib.optionalString config.wayland.windowManager.sway.vulkan ''
       export WLR_RENDERER=vulkan
-    '') + ''
+    '' + ''
       export SDL_VIDEODRIVER=wayland,x11,kmsdrm,windows,directx
       # SDL3
       export SDL_VIDEO_DRIVER=wayland,x11,kmsdrm,windows
@@ -358,9 +358,8 @@ in
       export XDG_SESSION_DESKTOP=sway
     '';
   };
-  services.swayidle = let swaylock-start = builtins.toString (with pkgs; writeScript "swaylock-start" ''
-    #! ${bash}/bin/bash
-    ${procps}/bin/pgrep -fx "${swaylock}/bin/swaylock -f" || ${swaylock}/bin/swaylock -f
+  services.swayidle = let swaylock-start = toString (pkgs.writeShellScript "swaylock-start" ''
+    ${pkgs.procps}/bin/pgrep -fx "${pkgs.swaylock}/bin/swaylock -f" || ${pkgs.swaylock}/bin/swaylock -f
   ''); in {
     enable = config.wayland.windowManager.sway.enable;
     events = [
@@ -415,12 +414,12 @@ in
     text-wrong-color = text-color;
     ring-wrong-color = "#e64e4e"; # deep-ish red
   };
-  home.packages = with pkgs; if config.wayland.windowManager.sway.enable then [
+  home.packages = lib.mkIf config.wayland.windowManager.sway.enable (with pkgs; [
     wl-clipboard
     xdg-desktop-portal
     xdg-desktop-portal-wlr
     xdg-desktop-portal-gtk
-  ] else [];
+  ]);
   programs.rofi = {
     enable = true;
     font = "Noto Sans Mono 16";

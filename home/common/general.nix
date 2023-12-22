@@ -20,9 +20,9 @@
     ll = "lsd -l";
     g = "git";
     gp = "git push";
-    gpuo = "git push -u origin";
     gr = "git rebase";
     gri = "git rebase -i";
+    grc = "git rebase --continue";
     gc = "git commit";
     gca = "git commit --amend";
     gm = "git merge";
@@ -38,22 +38,21 @@
     };
     nnn = let pluginSrc = "${pkgs.nnn.src}/plugins"; in {
       enable = true;
-      package = (pkgs.nnn.override ({ withNerdIcons = true; })).overrideAttrs (oldAttrs: {
+      package = (pkgs.nnn.override { withNerdIcons = true; }).overrideAttrs (oldAttrs: {
         # no need to add makeWrapper to nativeBuildInputs as home-manager does it already
         postInstall =
           let nnnArchiveRegex = "\\.(${lib.strings.concatStringsSep "|" [
             "7z" "a" "ace" "alz" "arc" "arj" "bz" "bz2" "cab" "cpio" "deb" "gz" "jar" "lha" "lz" "lzh" "lzma" "lzo" "rar" "rpm" "rz" "t7z" "tar" "tbz" "tbz2" "tgz" "tlz" "txz" "tZ" "tzo" "war" "xpi" "xz" "Z" "zip"
-          ]})$"; in with lib; with strings; ''
-          wrapProgram $out/bin/nnn \
-            --set GUI 1 \
-            --set NNN_OPENER ${escapeShellArg "${pluginSrc}/nuke"} \
-            --set NNN_ARCHIVE ${escapeShellArg nnnArchiveRegex} \
-            --add-flags ${
+          ]})$"; in ''
+            wrapProgram $out/bin/nnn ${lib.escapeShellArgs [
+              "--set" "GUI" "1"
+              "--set" "NNN_OPENER" "${pluginSrc}/nuke"
+              "--set" "NNN_ARCHIVE" nnnArchiveRegex
               # -a: auto create fifo file
               # -c: use NNN_OPENER
               # -x: x server features
-              escapeShellArg "-a -c -x"
-            }
+              "--add-flags" "-a -c -x"
+            ]}
         '';
       });
       extraPackages = with pkgs; [

@@ -28,50 +28,46 @@ with lib; {
     type = types.str;
     description = "Path to terminal binary for X server (output)";
   };
-  options.colors = mkOption {
-    type = types.submodule {
-      options = {
-        base = mkOption {
-          type = with types; listOf str;
-          description = "16 theme colors";
-        };
-        foreground = mkOption {
-          type = types.str;
-        };
-        background = mkOption {
-          type = types.str;
-        };
-        # 0-1
-        alpha = mkOption {
-          type = types.float;
-          description = "opacity (0.0-1.0)";
-        };
-        hexAlpha = mkOption {
-          type = types.str;
-          description = "hex opacity (read-only)";
-        };
-        percentAlpha = mkOption {
-          type = types.int;
-          description = "opacity percentage (read-only)";
-        };
-        black = mkOption { type = types.str; description = "read-only"; };
-        red = mkOption { type = types.str; description = "read-only"; };
-        green = mkOption { type = types.str; description = "read-only"; };
-        yellow = mkOption { type = types.str; description = "read-only"; };
-        blue = mkOption { type = types.str; description = "read-only"; };
-        magenta = mkOption { type = types.str; description = "read-only"; };
-        cyan = mkOption { type = types.str; description = "read-only"; };
-        white = mkOption { type = types.str; description = "read-only"; };
-        brBlack = mkOption { type = types.str; description = "read-only"; };
-        brRed = mkOption { type = types.str; description = "read-only"; };
-        brGreen = mkOption { type = types.str; description = "read-only"; };
-        brYellow = mkOption { type = types.str; description = "read-only"; };
-        brBlue = mkOption { type = types.str; description = "read-only"; };
-        brMagenta = mkOption { type = types.str; description = "read-only"; };
-        brCyan = mkOption { type = types.str; description = "read-only"; };
-        brWhite = mkOption { type = types.str; description = "read-only"; };
-      };
+  options.colors = {
+    base = mkOption {
+      type = with types; listOf str;
+      description = "16 theme colors";
     };
+    foreground = mkOption {
+      type = types.str;
+    };
+    background = mkOption {
+      type = types.str;
+    };
+    # 0-1
+    alpha = mkOption {
+      type = types.float;
+      description = "opacity (0.0-1.0)";
+    };
+    hexAlpha = mkOption {
+      type = types.str;
+      description = "hex opacity (read-only)";
+    };
+    percentAlpha = mkOption {
+      type = types.int;
+      description = "opacity percentage (read-only)";
+    };
+    black = mkOption { type = types.str; description = "read-only"; };
+    red = mkOption { type = types.str; description = "read-only"; };
+    green = mkOption { type = types.str; description = "read-only"; };
+    yellow = mkOption { type = types.str; description = "read-only"; };
+    blue = mkOption { type = types.str; description = "read-only"; };
+    magenta = mkOption { type = types.str; description = "read-only"; };
+    cyan = mkOption { type = types.str; description = "read-only"; };
+    white = mkOption { type = types.str; description = "read-only"; };
+    brBlack = mkOption { type = types.str; description = "read-only"; };
+    brRed = mkOption { type = types.str; description = "read-only"; };
+    brGreen = mkOption { type = types.str; description = "read-only"; };
+    brYellow = mkOption { type = types.str; description = "read-only"; };
+    brBlue = mkOption { type = types.str; description = "read-only"; };
+    brMagenta = mkOption { type = types.str; description = "read-only"; };
+    brCyan = mkOption { type = types.str; description = "read-only"; };
+    brWhite = mkOption { type = types.str; description = "read-only"; };
   };
   config.colors.hexAlpha =
     let hex = lib.trivial.toHexString (lib.trivial.min 255 (builtins.floor (config.colors.alpha * 256.0)));
@@ -94,18 +90,13 @@ with lib; {
   config.colors.brCyan = builtins.elemAt config.colors.base 14;
   config.colors.brWhite = builtins.elemAt config.colors.base 15;
   options.termShell = mkOption {
-    type = types.submodule {
-      options = {
-        enable = mkOption {
-          type = types.bool;
-          default = false;
-        };
-        path = mkOption {
-          type = types.str;
-        };
-      };
+    enable = mkOption {
+      description = "Use a separate shell for gui terminal";
+      type = types.bool;
+      default = false;
     };
-    default = {enable=false;};
-    description = "Use a separate shell for gui terminal";
+    path = mkOption {
+      type = types.str;
+    };
   };
 }

@@ -25,11 +25,11 @@
         ]
       },
       "locked": {
-        "lastModified": 1702056258,
-        "narHash": "sha256-Fjhxm6GYq6Tos+Za5slrLRlc+UicOxgzGIxLNtoJpEA=",
+        "lastModified": 1703247585,
+        "narHash": "sha256-EHtgF4H68e7Ft1+ICiInUmEfBIfKW7tLHAapp868WHQ=",
         "owner": "chayleaf",
         "repo": "coop-ofd",
-        "rev": "a96a20b176da515ec090a783de39aa8d9e573be1",
+        "rev": "02ce0fe10c22de27d02aff22f926bd26ee60c0ab",
         "type": "github"
       },
       "original": {

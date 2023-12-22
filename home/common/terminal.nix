@@ -1,14 +1,14 @@
 { config, pkgs, lib, ... }:
 let
-  supportTerminal = (term: builtins.elem term config.terminals);
-  getTerminalBin = (term: ({
+  supportTerminal = term: builtins.elem term config.terminals;
+  getTerminalBin = term: lib.getExe {
     alacritty = "${pkgs.alacritty}/bin/alacritty";
     foot = "${pkgs.foot}/bin/footclient";
     kitty = "${pkgs.kitty}/bin/kitty";
     urxvt = "${pkgs.rxvt-unicode-emoji}/bin/urxvt";
-  }).${term});
+  }.${term};
   color = builtins.elemAt config.colors.base;
-  hex = (x: if builtins.isFunction x then (y: "#" + (x y)) else ("#" + x));
+  hex = x: if builtins.isFunction x then (y: "#" + (x y)) else ("#" + x);
   shell = lib.mkIf config.termShell.enable (lib.mkDefault config.termShell.path);
 in {
   imports = [ ./options.nix ];
@@ -94,7 +94,7 @@ in {
   xresources.properties = lib.mkIf config.programs.urxvt.enable {
     # special colors
     "*.foreground" = hex config.colors.foreground;
-    "*.background" = "[${builtins.toString config.colors.percentAlpha}]#${config.colors.background}";
+    "*.background" = "[${toString config.colors.percentAlpha}]#${config.colors.background}";
     "*.cursorColor" = hex config.colors.foreground;
     # black
     "*.color0" = hex color 0;
@@ -174,7 +174,7 @@ in {
       repaint_delay = 4;
       foreground = hex config.colors.foreground;
       background = hex config.colors.background;
-      background_opacity = builtins.toString config.colors.alpha;
+      background_opacity = toString config.colors.alpha;
       color0 = hex color 0;
       color1 = hex color 1;
       color2 = hex color 2;
@@ -196,18 +196,21 @@ in {
       enabled_layouts = "all";
     };
   };
-  xdg.configFile."fontconfig/conf.d/10-kitty-fonts.conf".text = lib.mkIf ((supportTerminal "kitty") && (config.programs.kitty.font.name == "Noto Sans Mono")) ''
-<?xml version="1.0"?>
-<!DOCTYPE fontconfig SYSTEM "fonts.dtd">
-<fontconfig>
-<match target="scan">
-    <test name="family">
+  xdg.configFile."fontconfig/conf.d/10-kitty-fonts.conf".text =
+    lib.mkIf
+      (supportTerminal "kitty" && config.programs.kitty.font.name == "Noto Sans Mono")
+  ''
+    <?xml version="1.0"?>
+    <!DOCTYPE fontconfig SYSTEM "fonts.dtd">
+    <fontconfig>
+    <match target="scan">
+      <test name="family">
         <string>Noto Sans Mono</string>
-    </test>
-    <edit name="spacing">
+      </test>
+      <edit name="spacing">
         <int>90</int>
-    </edit>
-</match>
-</fontconfig>
+      </edit>
+    </match>
+    </fontconfig>
   '';
 }
