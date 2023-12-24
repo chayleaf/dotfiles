@@ -34,6 +34,21 @@ audioPrev = pkgs.writeShellScript "playerctl-prev" ''
     ${pkgs.playerctl}/bin/playerctl play
   fi
 '';
+swaylock =
+  if config.phone.enable
+  then "${pkgs.schlock}/bin/schlock -fp /secrets/schlock.pin"
+  else "${pkgs.swaylock}/bin/swaylock -f";
+swaylock-start = pkgs.writeShellScript "swaylock-start" ''
+  ${pkgs.procps}/bin/pgrep -fx "${swaylock}" || ${swaylock}
+'';
+dpms-off = pkgs.writeShellScript "sway-dpms-off" ''
+  ${config.wayland.windowManager.sway.package}/bin/swaymsg output "*" power off
+  ${config.wayland.windowManager.sway.package}/bin/swaymsg input type:touch events disabled
+'';
+dpms-on = pkgs.writeShellScript "sway-dpms-on" ''
+  ${config.wayland.windowManager.sway.package}/bin/swaymsg output "*" power on
+  ${config.wayland.windowManager.sway.package}/bin/swaymsg input type:touch events enabled
+'';
 barConfig = {
   mode = "overlay";
   hiddenState = "hide";
@@ -86,7 +101,7 @@ commonConfig = {
         ${pkgs.systemd}/bin/busctl call --user sm.puri.OSK0 /sm/puri/OSK0 sm.puri.OSK0 SetVisible b true
       ''}
       ${pkgs.home-daemon}/bin/home-daemon system76-scheduler&
-      ${pkgs.gnome.zenity}/bin/zenity --password | (${pkgs.keepassxc}/bin/keepassxc --pw-stdin ~/Nextcloud/keepass.kdbx&)
+      ${pkgs.gnome.zenity}/bin/zenity --password | tee /dev/stdout | (${pkgs.keepassxc}/bin/keepassxc --pw-stdin ~/Nextcloud/keepass.kdbx ~/var/local.kdbx&)
       # nextcloud and nheko need secret service access
       ${pkgs.nextcloud-client}/bin/nextcloud --background&
       ${pkgs.nheko}/bin/nheko&
@@ -247,8 +262,17 @@ in
         }
       ];
       terminal = config.terminalBin;
-      window = commonConfig.window // { commands = [
-        { command = "floating enable; move workspace current";
+      window = commonConfig.window // { commands = lib.optionals config.phone.enable [
+        { command = "floating off; fullscreen off";
+          criteria = {
+            floating = true;
+          }; }
+        { command = "fullscreen off";
+          criteria = {
+            tiling = true;
+          }; }
+      ] ++ [
+        { command = "floating on; move workspace current";
           criteria = {
             app_id = "^org.keepassxc.KeePassXC$";
             title = "^KeePassXC - (?:Browser |ブラウザーの)?(?:Access Request|アクセス要求)$";
@@ -320,6 +344,13 @@ in
         "--locked --inhibited XF86AudioPlay" = "exec ${pkgs.playerctl}/bin/playerctl play-pause";
         "--locked --inhibited XF86AudioNext" = "exec ${audioNext}";
         "--locked --inhibited XF86AudioPrev" = "exec ${audioPrev}";
+        "--locked --inhibited --release XF86PowerOff" = lib.mkIf config.phone.enable "exec ${pkgs.writeShellScript "power-key" ''
+          if ${config.wayland.windowManager.sway.package}/bin/swaymsg -rt get_outputs | ${pkgs.jq}/bin/jq ".[].power" | ${pkgs.gnugrep}/bin/grep true; then
+            ${dpms-off}
+          else
+            ${dpms-on}
+          fi
+        ''}";
       });
       startup = commonConfig.startup ++ [
         {
@@ -365,25 +396,26 @@ in
     '';
   };
   services.swayidle = let
-    swaylock =
-      if config.phone.enable
-      then "${pkgs.schlock}/bin/schlock -f /secrets/schlock.pin"
-      else "${pkgs.swaylock}/bin/swaylock -f";
-    swaylock-start = toString (pkgs.writeShellScript "swaylock-start" ''
-      ${pkgs.procps}/bin/pgrep -fx "${swaylock}" || ${swaylock}
-    '');
+    lock = pkgs.writeShellScript "lock-start" ''
+      ${swaylock-start}
+      ${lib.optionalString config.phone.enable
+      # suspend if nothing is playing
+      ''
+        ${pkgs.playerctl}/bin/playerctl -a status | ${pkgs.gnugrep}/bin/grep Playing >/dev/null || /run/current-system/sw/bin/systemctl suspend
+      ''}
+    '';
   in {
     enable = config.wayland.windowManager.sway.enable;
     events = [
-      { event = "before-sleep"; command = swaylock-start; }
+      { event = "before-sleep"; command = toString swaylock-start; }
       # after-resume, lock, unlock
     ];
     timeouts = [
-      { timeout = 300; 
-        command = "${config.wayland.windowManager.sway.package}/bin/swaymsg \"output * power off\"";
-        resumeCommand = "${config.wayland.windowManager.sway.package}/bin/swaymsg \"output * power on\""; }
-      { timeout = 600;
-        command = swaylock-start; }
+      { timeout = if config.phone.enable then 30 else 300; 
+        command = toString dpms-off;
+        resumeCommand = toString dpms-on; }
+      { timeout = if config.phone.enable then 60 else 600;
+        command = toString lock; }
     ];
   };
   programs.swaylock.settings = rec {

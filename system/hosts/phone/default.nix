@@ -27,6 +27,20 @@
     "video"
   ] ++ lib.optional (config.networking.modemmanager.enable || config.networking.networkmanager.enable) "networkmanager";
 
+        
+  security.polkit.extraConfig = ''
+    polkit.addRule(function(action, subject) {
+      if ((action.id.indexOf("org.freedesktop.login1.suspend" == 0)
+        || action.id.indexOf("org.freedesktop.login1.reboot" == 0)
+        || action.id.indexOf("org.freedesktop.login1.power-off" == 0)
+        || action.id.indexOf("org.freedesktop.inhibit") == 0)
+      && subject.user == "${config.common.mainUsername}")
+      {
+        return polkit.Result.YES;
+      }
+    });
+  '';
+
   common.minimal = false;
   services.sshd.enable = true;
   services.tlp.enable = true;
