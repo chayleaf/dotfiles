@@ -6,6 +6,10 @@
     # nixpkgs.url = "github:NixOS/nixpkgs/nixos-unstable";
     nixpkgs.url = "github:chayleaf/nixpkgs";
     nixos-hardware.url = "github:NixOS/nixos-hardware";
+    nix-index-database = {
+      url = "github:nix-community/nix-index-database";
+      inputs.nixpkgs.follows = "nixpkgs";
+    };
     mobile-nixos = {
       # url = "github:NixOS/mobile-nixos";
       url = "github:chayleaf/mobile-nixos/fix-op6-modem";

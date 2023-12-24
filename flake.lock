@@ -253,6 +253,26 @@
         "type": "github"
       }
     },
+    "nix-index-database": {
+      "inputs": {
+        "nixpkgs": [
+          "nixpkgs"
+        ]
+      },
+      "locked": {
+        "lastModified": 1700967448,
+        "narHash": "sha256-sWVi7Nm/fuTgwN8R7Tt3GM3vBP3r6M1/lhX0+LK3p7E=",
+        "owner": "nix-community",
+        "repo": "nix-index-database",
+        "rev": "d189d05f9de237d3b554c91029f9cb78efec8ace",
+        "type": "github"
+      },
+      "original": {
+        "owner": "nix-community",
+        "repo": "nix-index-database",
+        "type": "github"
+      }
+    },
     "nixos-hardware": {
       "locked": {
         "lastModified": 1700559156,
@@ -414,6 +434,7 @@
         "maubot": "maubot",
         "mobile-nixos": "mobile-nixos",
         "nix-gaming": "nix-gaming",
+        "nix-index-database": "nix-index-database",
         "nixos-hardware": "nixos-hardware",
         "nixos-mailserver": "nixos-mailserver",
         "nixos-router": "nixos-router",

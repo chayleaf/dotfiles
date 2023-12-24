@@ -1,4 +1,10 @@
-{ config, pkgs, lib, ... }:
+{ config
+, pkgs
+, lib
+, inputs
+, ...
+}:
+
 {
   imports = [
     ./options.nix
@@ -183,27 +189,7 @@
     text/html;  ${pkgs.w3m}/bin/w3m -dump -o document_charset=%{charset} -o display_link_number=1 '%s'; nametemplate=%s.html; copiousoutput
   '';
 
-  systemd.user.timers.nix-index = {
-    Install.WantedBy = [ "timers.target" ];
-    Unit = {
-      Description = "Update nix-index";
-      PartOf = [ "nix-index.service" ];
-    };
-    Timer = {
-      OnCalendar = "Mon *-*-* 00:00:00";
-      RandomizedDelaySec = 600;
-      Persistent = true;
-    };
-  };
-  systemd.user.services.nix-index = {
-    Unit.Description = "Update nix-index";
-    Service = {
-      Type = "oneshot";
-      ExecStart = "${config.programs.nix-index.package}/bin/nix-index";
-      Environment = [ "PATH=/home/${config.home.username}/.nix-profile/bin:/etc/profiles/per-user/${config.home.username}/bin:/nix/var/nix/profiles/default/bin:/run/current-system/sw/bin" ];
-      TimeoutStartSec = 1800;
-    };
-  };
+  home.file.".cache/nix-index/files".source = assert config.xdg.cacheHome == "${config.home.homeDirectory}/.cache"; inputs.nix-index-database.legacyPackages.${pkgs.system}.database;
 
   systemd.user.tmpfiles.rules = builtins.map (file: "r!  \"/home/${config.home.username}/${file}\"") [
     ".local/share/clipman.json"

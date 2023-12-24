@@ -355,7 +355,6 @@ in
         "--locked --inhibited --release XF86PowerOff" = lib.mkIf config.phone.enable "exec ${pkgs.writeShellScript "power-key" ''
           if ${config.wayland.windowManager.sway.package}/bin/swaymsg -rt get_outputs | ${pkgs.jq}/bin/jq ".[].power" | ${pkgs.gnugrep}/bin/grep true; then
             ${dpms-off}
-            ${lock-script}
           else
             ${dpms-on}
           fi
