@@ -81,7 +81,7 @@
       # workaround for git flakes not having access to non-checked out files
       else if builtins?extraBuiltins.secrets then builtins.extraBuiltins.secrets
       # yes, this is impure, this is a last ditch effort at getting access to secrets
-      else import /etc/nixos/private { };
+      else import /secrets/nixos { };
     devPath = priv.devPath or ../.;
     inputs = builtins.mapAttrs
       (name: input:

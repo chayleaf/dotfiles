@@ -86,7 +86,7 @@ run mkdir -p "$tmp/out/@/var/log"
 
 # secrets, we don't want to pass them via the store
 run mkdir -p "$tmp/out/@/secrets"
-run cp -v /etc/nixos/private/wireguard-key "$tmp/out/@/secrets/"
+run cp -v /secrets/nixos/wireguard-key "$tmp/out/@/secrets/"
 run chmod -R 000 "$tmp/out/@/secrets"
 
 cpr "$rootfs/nix" "$tmp/out/@nix"

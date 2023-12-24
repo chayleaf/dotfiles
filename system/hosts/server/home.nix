@@ -106,10 +106,7 @@ in {
   nix.settings.allowed-users = [ "nix-serve" "harmonia" ] ++ lib.optionals config.services.hydra.enable [ "hydra" "hydra-www" ];
   # make sure only hydra has access to this file
   # so normal nix evals don't have access to builtins
-  nix.settings.extra-builtins-file = "/etc/nixos/extra-builtins.nix";
-  impermanence.directories = lib.mkIf config.services.hydra.enable [
-    { directory = /etc/nixos; user = "hydra"; group = "hydra"; mode = "0700"; }
-  ];
+  nix.settings.extra-builtins-file = "/secrets/nixos/extra-builtins.nix";
   nix.settings.allowed-uris = [
     # required for home-manager
     "https://git.sr.ht/~rycee/nmd/"

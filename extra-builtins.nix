@@ -1,11 +1,11 @@
 { exec, ... }: {
-  secrets = exec [ "cat" "/etc/nixos/private/default.nix" ] {
+  secrets = exec [ "cat" "/secrets/nixos/default.nix" ] {
     # compress and base64 the file to make it representable in nix,
     # then decompress it back in a derivation (shouldn't there be a better way...)
     copyToStore = pkgs: name: path:
       let
         archive = exec [ "${pkgs.bash}/bin/bash" "-c" ''
-          cd /etc/nixos/private
+          cd /secrets/nixos
           echo '"'"$(
             ${pkgs.gnutar}/bin/tar -I ${pkgs.zstd}/bin/zstd --exclude-vcs \
               --transform='s#'${pkgs.lib.escapeShellArg path}'#!#' \

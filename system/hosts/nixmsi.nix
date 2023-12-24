@@ -181,6 +181,5 @@
 
   impermanence.directories = [
     /secrets
-    /etc/nixos
   ];
 }
