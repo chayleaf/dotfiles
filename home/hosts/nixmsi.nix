@@ -6,12 +6,12 @@
 
 {
   imports = [
-    ../common/general.nix
-    ../common/firefox.nix
-    ../common/i3-sway.nix
-    ../common/nvim.nix
-    ../common/helix.nix
-    ../common/kakoune.nix
+    ../modules/general.nix
+    ../modules/firefox.nix
+    ../modules/i3-sway.nix
+    ../modules/nvim.nix
+    ../modules/helix.nix
+    ../modules/kakoune.nix
     inputs.nur.nixosModules.nur
   ];
 
@@ -42,28 +42,10 @@
   home.stateVersion = "22.11";
   home.username = "user";
   home.homeDirectory = "/home/user";
-  termShell = {
-    enable = true;
-    path = "${pkgs.fish}/bin/fish";
-  };
+  terminals = [ "kitty" ];
   # xsession.windowManager.i3.enable = true;
   wayland.windowManager.sway.enable = true;
-  terminals = [ "kitty" "urxvt" ];
-  services.mpd = {
-    enable = true;
-    network.startWhenNeeded = true;
-  };
-  services.mpdris2 = {
-    enable = true;
-  };
-  programs.ncmpcpp = {
-    enable = true;
-  };
   services.kdeconnect.enable = true;
-  systemd.user.services.kdeconnect.Service = {
-    Restart = lib.mkForce "always";
-    RestartSec = "30";
-  };
   home.sessionVariables = {
     STEAM_EXTRA_COMPAT_TOOLS_PATHS = "${pkgs.proton-ge}";
     CARGO_PROFILE_DEV_INCREMENTAL = "true";

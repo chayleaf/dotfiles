@@ -38,10 +38,15 @@ in
         requires = [ "dbus.socket" ];
         serviceConfig.ExecStart = "${pkgs.q6voiced}/bin/q6voiced hw:0,6";
       };
-      environment.etc."wireplumber/main.lua.d/51-qcom-sdm845.lua".source = pkgs.fetchurl {
-        url = "https://gitlab.com/postmarketOS/pmaports/-/raw/0aa9524204e9c9c002c860b87c972bc2ebf025f3/device/community/soc-qcom-sdm845/51-qcom-sdm845.lua";
-        hash = "sha256-56oNJJyuZZe1Iig1xskDuyazw3PbRZtmU/YRFUTqjwk=";
-      };
+      systemd.user.services.wireplumber.environment.WIREPLUMBER_CONFIG_DIR = pkgs.runCommand "wireplumber-config" {} ''
+        cp -a "${pkgs.wireplumber}/share/wireplumber" "$out"
+        chmod +w "$out" "$out/main.lua.d"
+        ln -s ${pkgs.fetchurl {
+          url = "https://gitlab.com/postmarketOS/pmaports/-/raw/0aa9524204e9c9c002c860b87c972bc2ebf025f3/device/community/soc-qcom-sdm845/51-qcom-sdm845.lua";
+          hash = "sha256-56oNJJyuZZe1Iig1xskDuyazw3PbRZtmU/YRFUTqjwk=";
+        }} "$out/main.lua.d/51-qcom-sdm845.lua"
+      '';
+      systemd.services.wireplumber.environment.WIREPLUMBER_CONFIG_DIR = config.systemd.user.services.wireplumber.environment.WIREPLUMBER_CONFIG_DIR;
       networking.modemmanager.enable = !config.networking.networkmanager.enable;
       services.udev.extraRules = ''
         SUBSYSTEM=="input", KERNEL=="event*", ENV{ID_INPUT}=="1", SUBSYSTEMS=="input", ATTRS{name}=="spmi_haptics", TAG+="uaccess", ENV{FEEDBACKD_TYPE}="vibra"
@@ -108,16 +113,23 @@ in
       boot.initrd.postMountCommands = ''
         pkill -x buffyboard
       '';
-      services.getty.extraArgs = [ "--skip-login" ];
-      services.getty.loginProgram = let
-        lockfile = "/tmp/buffyboard-lock.lock";
-      in pkgs.writeShellScript "login-with-buffyboard-once" ''
-        if [ ! -f '${lockfile}' ]; then
-          ${pkgs.coreutils}/bin/touch '${lockfile}'
-          ${pkgs.buffyboard}/bin/buffyboard 2>/dev/null &
-        fi
-        exec ${pkgs.shadow}/bin/login -f user
-      '';
+      common.gettyAutologin = true;
+      systemd.services.buffyboard = {
+        description = "buffyboard";
+        wantedBy = [ "multi-user.target" ];
+        serviceConfig = {
+          ExecStart = "${pkgs.buffyboard}/bin/buffyboard";
+          Restart = "always";
+          RestartSec = "1";
+        };
+      };
+      security.sudo.extraRules = [
+        { groups = [ "users" ];
+          commands = [
+            { command = "/run/current-system/sw/bin/systemctl stop buffyboard"; options = [ "SETENV" "NOPASSWD" ]; }
+            { command = "/run/current-system/sw/bin/systemctl start buffyboard"; options = [ "SETENV" "NOPASSWD" ]; }
+          ]; }
+      ];
     })
     (lib.mkIf cfg.rndis.enable {
       boot.initrd.kernelModules = [ "configfs" "libcomposite" ];

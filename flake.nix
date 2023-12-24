@@ -142,9 +142,13 @@
         };
         home.user = [ ./home/hosts/nixmsi.nix ];
       };
-      phone = {
+      phone = rec {
         system = "aarch64-linux";
         modules = [ ./system/devices/oneplus-6-phone.nix ];
+        home.common.extraSpecialArgs = {
+          notlua = inputs.notlua.lib.${system};
+        };
+        home.user = [ ./home/hosts/phone.nix ];
       };
     };
 
@@ -169,8 +173,10 @@
 
     hydraJobs = {
       server.${config.server.system} = self.nixosConfigurations.server.config.system.build.toplevel;
-      workstation.${config.nixmsi.system} = self.nixosConfigurations.nixmsi.config.system.build.toplevel;
       router.${config.router-emmc.system} = self.nixosConfigurations.router-emmc.config.system.build.toplevel;
+      phone.${config.phone.system} = self.nixosConfigurations.phone.config.system.build.toplevel;
+      phone-home.${config.phone.system} = self.homeConfigurations."user@phone".activation-script;
+      workstation.${config.nixmsi.system} = self.nixosConfigurations.nixmsi.config.system.build.toplevel;
       workstation-home.${config.nixmsi.system} = self.homeConfigurations."user@nixmsi".activation-script;
     };
 

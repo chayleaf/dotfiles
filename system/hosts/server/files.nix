@@ -11,6 +11,13 @@ in {
     enableACME = true;
     forceSSL = true;
     locations."/".proxyPass = "http://${lib.quoteListenAddr settings.server.HTTP_ADDR}:${toString settings.server.HTTP_PORT}";
+    locations."= /robots.txt".extraConfig = ''
+      return 200 ${builtins.toJSON ''
+        User-agent: *
+        Disallow: /mirrors/nixpkgs
+        Disallow: /chayleaf/nixpkgs
+      ''};
+    '';
   };
   services.forgejo = {
     enable = true;

@@ -123,6 +123,7 @@ in {
       wget
 
       kitty.terminfo
+      foot.terminfo
       # rxvt-unicode-unwrapped.terminfo
     ];
     programs.fish.enable = true;
@@ -200,6 +201,7 @@ in {
     security.polkit.enable = true;
     security.rtkit.enable = true;
     services.dbus.enable = true;
+    programs.dconf.enable = true;
   })
 
   ];

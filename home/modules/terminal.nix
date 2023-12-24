@@ -1,7 +1,7 @@
 { config, pkgs, lib, ... }:
 let
   supportTerminal = term: builtins.elem term config.terminals;
-  getTerminalBin = term: lib.getExe {
+  getTerminalBin = term: {
     alacritty = "${pkgs.alacritty}/bin/alacritty";
     foot = "${pkgs.foot}/bin/footclient";
     kitty = "${pkgs.kitty}/bin/kitty";
@@ -123,7 +123,9 @@ in {
     "*antialias" = true;
     "*autohint" = true;
   };
-  home.file.".Xdefaults".source = lib.mkIf config.programs.urxvt.enable config.home.file."${config.home.homeDirectory}/.Xresources".source;
+  home.file.".Xdefaults" = lib.mkIf config.programs.urxvt.enable {
+    source = config.home.file."${config.home.homeDirectory}/.Xresources".source;
+  };
   programs.foot = {
     enable = supportTerminal "foot";
     server.enable = true;

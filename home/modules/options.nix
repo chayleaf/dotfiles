@@ -1,5 +1,12 @@
 { lib, config, ... }:
 with lib; {
+  options.phone = {
+    enable = mkOption {
+      type = types.bool;
+      default = false;
+      description = "whether this is a phone";
+    };
+  };
   options.rustAnalyzerAndroidSettings = mkOption {
     type = with types; attrs;
     description = "Additional cargo arguments for rust-analyzer's RustAndroid command";
@@ -89,7 +96,7 @@ with lib; {
   config.colors.brMagenta = builtins.elemAt config.colors.base 13;
   config.colors.brCyan = builtins.elemAt config.colors.base 14;
   config.colors.brWhite = builtins.elemAt config.colors.base 15;
-  options.termShell = mkOption {
+  options.termShell = {
     enable = mkOption {
       description = "Use a separate shell for gui terminal";
       type = types.bool;

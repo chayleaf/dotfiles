@@ -1,6 +1,6 @@
 { options, config, pkgs, lib, ... }:
 let
-modifier = "Mod4";
+modifier = if config.phone.enable then "Mod1" else "Mod4";
 rofiSway = config.programs.rofi.finalPackage;
 rofiI3 = pkgs.rofi.override { plugins = config.programs.rofi.plugins; };
 audioNext = pkgs.writeShellScript "playerctl-next" ''
@@ -35,7 +35,7 @@ audioPrev = pkgs.writeShellScript "playerctl-prev" ''
   fi
 '';
 barConfig = {
-  mode = "dock";
+  mode = "overlay";
   hiddenState = "hide";
   position = "bottom";
   workspaceButtons = true;
@@ -80,6 +80,11 @@ commonConfig = {
   inherit modifier;
   startup = [
     { command = toString (pkgs.writeShellScript "init-wm" ''
+      ${lib.optionalString config.phone.enable ''
+        ${pkgs.squeekboard}/bin/squeekboard&
+        ${pkgs.wvkbd}/bin/wvkbd-mobintl --hidden -l full,special,cyrillic,emoji&
+        ${pkgs.systemd}/bin/busctl call --user sm.puri.OSK0 /sm/puri/OSK0 sm.puri.OSK0 SetVisible b true
+      ''}
       ${pkgs.home-daemon}/bin/home-daemon system76-scheduler&
       ${pkgs.gnome.zenity}/bin/zenity --password | (${pkgs.keepassxc}/bin/keepassxc --pw-stdin ~/Nextcloud/keepass.kdbx&)
       # nextcloud and nheko need secret service access
@@ -232,7 +237,7 @@ in
     extraConfig = ''
       title_align center
     '';
-    config = let swayConfig = {
+    config = commonConfig // {
       bars = [
         {
           command = "${config.programs.waybar.package}/bin/waybar";
@@ -308,7 +313,7 @@ in
         "--inhibited --no-repeat --allow-other --release Scroll_Lock" = "exec ${pkgs.mumble}/bin/mumble rpc stoptalking";
         "${modifier}+c" = "exec ${rofiSway}/bin/rofi -show calc -no-show-match -no-sort -no-persist-history";
         "${modifier}+Print" = "exec ${grimshot}/bin/grimshot copy area";
-        "${modifier}+Mod1+Print" = "exec ${grimshot}/bin/grimshot copy window";
+        "${modifier}+${if modifier == "Mod1" then "Mod4" else "Mod1"}+Print" = "exec ${grimshot}/bin/grimshot copy window";
         "--locked XF86AudioRaiseVolume" = "exec ${pkgs.pamixer}/bin/pamixer --increase 5";
         "--locked XF86AudioLowerVolume" = "exec ${pkgs.pamixer}/bin/pamixer --decrease 5";
         "--locked XF86AudioMute" = "exec ${pkgs.pamixer}/bin/pamixer --toggle-mute";
@@ -340,7 +345,8 @@ in
         };
       };
       menu = "${rofiSway}/bin/rofi -show drun";
-    }; in commonConfig // swayConfig;
+      workspaceLayout = "tabbed";
+    };
     # export WLR_RENDERER=vulkan
     extraSessionCommands = lib.optionalString config.wayland.windowManager.sway.vulkan ''
       export WLR_RENDERER=vulkan
@@ -358,9 +364,15 @@ in
       export XDG_SESSION_DESKTOP=sway
     '';
   };
-  services.swayidle = let swaylock-start = toString (pkgs.writeShellScript "swaylock-start" ''
-    ${pkgs.procps}/bin/pgrep -fx "${pkgs.swaylock}/bin/swaylock -f" || ${pkgs.swaylock}/bin/swaylock -f
-  ''); in {
+  services.swayidle = let
+    swaylock =
+      if config.phone.enable
+      then "${pkgs.schlock}/bin/schlock -f /secrets/schlock.pin"
+      else "${pkgs.swaylock}/bin/swaylock -f";
+    swaylock-start = toString (pkgs.writeShellScript "swaylock-start" ''
+      ${pkgs.procps}/bin/pgrep -fx "${swaylock}" || ${swaylock}
+    '');
+  in {
     enable = config.wayland.windowManager.sway.enable;
     events = [
       { event = "before-sleep"; command = swaylock-start; }
@@ -466,7 +478,13 @@ in
     };
     terminal = config.terminalBin;
     extraConfig = {
-      modi = [ "steam:${pkgs.rofi-steam-game-list}/bin/rofi-steam-game-list" "drun" "run" "ssh" ];
+      modi = lib.optionals (!config.phone.enable) [
+        "steam:${pkgs.rofi-steam-game-list}/bin/rofi-steam-game-list"
+      ] ++ [
+        "drun"
+        "run"
+        "ssh"
+      ];
       icon-theme = "hicolor";
       drun-match-fields = [ "name" "generic" "exec" "keywords" ];
       show-icons = true;

@@ -8,17 +8,17 @@ let
     "m.server" = "matrix.${cfg.domainName}:443";
   };
   matrixClientJson = {
-    "m.homeserver" = { base_url = "https://matrix.${cfg.domainName}"; };
-    "m.identity_server" = { base_url = "https://vector.im"; };
+    "m.homeserver".base_url = "https://matrix.${cfg.domainName}";
+    "m.identity_server".base_url = "https://vector.im";
   };
   matrixServerConfigResponse = ''
     add_header Content-Type application/json;
-    return 200 '${builtins.toJSON matrixServerJson}';
+    return 200 ${builtins.toJSON (builtins.toJSON matrixServerJson)};
   '';
   matrixClientConfigResponse = ''
     add_header Content-Type application/json;
     add_header Access-Control-Allow-Origin *;
-    return 200 '${builtins.toJSON matrixClientJson}';
+    return 200 ${builtins.toJSON (builtins.toJSON matrixClientJson)};
   '';
   matrixAddr = "::1";
   matrixPort = 8008;

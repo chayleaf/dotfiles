@@ -234,6 +234,23 @@
   #  settings = {
   #  };
   #};
+  termShell = {
+    enable = true;
+    path = "${pkgs.fish}/bin/fish";
+  };
+  services.mpd = {
+    enable = true;
+    network.startWhenNeeded = true;
+  };
+  services.mpdris2 = {
+    enable = true;
+  };
+  systemd.user.services.kdeconnect = lib.mkIf config.services.kdeconnect.enable {
+    Service = {
+      Restart = lib.mkForce "always";
+      RestartSec = "30";
+    };
+  };
 
   # some packages require a pointer theme
   home.pointerCursor.gtk.enable = true;

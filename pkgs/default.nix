@@ -114,6 +114,7 @@ in
   kvmfrOverlay = kvmfr: kvmfr.overrideAttrs (old: {
     inherit (pkgs'.looking-glass-client) version src;
   });
+  mobile-config-firefox = callPackage ./mobile-config-firefox { };
   ping-exporter = callPackage ./ping-exporter { };
   proton-ge = pkgs.stdenvNoCC.mkDerivation {
     inherit (sources.proton-ge) pname version src;
@@ -129,6 +130,7 @@ in
     version = "unstable-" + sources.searxng.date;
     postInstall = builtins.replaceStrings [ "/botdetection" ] [ "" ] old.postInstall;
   }));
+  schlock = callPackage ./schlock { };
   techmino = callPackage ./techmino { };
 
   firefoxAddons = lib.recurseIntoAttrs (callPackage ./firefox-addons { inherit nur sources; });

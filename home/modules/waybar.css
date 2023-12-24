@@ -11,9 +11,17 @@
   border: none;
   border-radius: 0;
   font-family: Noto Sans Mono, "Symbols Nerd Font Mono", monospace;
-  font-size: 19;
+  font-size: 19px;
   min-height: 0;
 }
+
+#custom-a { font-size: 40px; }
+#custom-b { font-size: 40px; }
+#custom-c { font-size: 40px; }
+#custom-d { font-size: 40px; }
+#custom-e { font-size: 40px; }
+#custom-f { font-size: 40px; }
+#custom-g { font-size: 40px; }
 
 #mpris {
   padding-left: 3px;
