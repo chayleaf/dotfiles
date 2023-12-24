@@ -5,7 +5,7 @@ rofiSway = config.programs.rofi.finalPackage;
 rofiI3 = pkgs.rofi.override { plugins = config.programs.rofi.plugins; };
 audioNext = pkgs.writeShellScript "playerctl-next" ''
   ${pkgs.playerctl}/bin/playerctl next
-  PLAYER=$(${pkgs.playerctl}/bin/playerctl -l | head -n 1)
+  PLAYER=$(${pkgs.playerctl}/bin/playerctl -l | ${pkgs.coreutils}/bin/head -n 1)
   # mpdris2 bug: audio wont play after a seek/skip, you have to pause-unpause
   if [[ "$PLAYER" == "mpd" ]]; then
     ${pkgs.playerctl}/bin/playerctl pause
@@ -16,7 +16,7 @@ audioNext = pkgs.writeShellScript "playerctl-next" ''
 audioPrev = pkgs.writeShellScript "playerctl-prev" ''
   # just seek if over 5 seconds into the track
   POS=$(${pkgs.playerctl}/bin/playerctl position)
-  PLAYER=$(${pkgs.playerctl}/bin/playerctl -l | head -n 1)
+  PLAYER=$(${pkgs.playerctl}/bin/playerctl -l | ${pkgs.coreutils}/bin/head -n 1)
   if [ -n "$POS" ]; then
     if (( $(echo "$POS > 5.01" | ${pkgs.bc}/bin/bc -l) )); then
       SEEK=1
@@ -48,6 +48,14 @@ dpms-off = pkgs.writeShellScript "sway-dpms-off" ''
 dpms-on = pkgs.writeShellScript "sway-dpms-on" ''
   ${config.wayland.windowManager.sway.package}/bin/swaymsg output "*" power on
   ${config.wayland.windowManager.sway.package}/bin/swaymsg input type:touch events enabled
+'';
+lock-script = pkgs.writeShellScript "lock-start" ''
+  ${swaylock-start}
+  ${lib.optionalString config.phone.enable
+  # suspend if nothing is playing
+  ''
+    ${pkgs.playerctl}/bin/playerctl -a status | ${pkgs.gnugrep}/bin/grep Playing >/dev/null || /run/current-system/sw/bin/systemctl suspend
+  ''}
 '';
 barConfig = {
   mode = "overlay";
@@ -98,10 +106,10 @@ commonConfig = {
       ${lib.optionalString config.phone.enable ''
         ${pkgs.squeekboard}/bin/squeekboard&
         ${pkgs.wvkbd}/bin/wvkbd-mobintl --hidden -l full,special,cyrillic,emoji&
-        ${pkgs.systemd}/bin/busctl call --user sm.puri.OSK0 /sm/puri/OSK0 sm.puri.OSK0 SetVisible b true
+        /run/current-system/sw/bin/busctl call --user sm.puri.OSK0 /sm/puri/OSK0 sm.puri.OSK0 SetVisible b true
       ''}
       ${pkgs.home-daemon}/bin/home-daemon system76-scheduler&
-      ${pkgs.gnome.zenity}/bin/zenity --password | tee /dev/stdout | (${pkgs.keepassxc}/bin/keepassxc --pw-stdin ~/Nextcloud/keepass.kdbx ~/var/local.kdbx&)
+      ${pkgs.gnome.zenity}/bin/zenity --password | ${pkgs.coreutils}/bin/tee /dev/stdout | (${pkgs.keepassxc}/bin/keepassxc --pw-stdin ~/Nextcloud/keepass.kdbx ~/var/local.kdbx&)
       # nextcloud and nheko need secret service access
       ${pkgs.nextcloud-client}/bin/nextcloud --background&
       ${pkgs.nheko}/bin/nheko&
@@ -347,6 +355,7 @@ in
         "--locked --inhibited --release XF86PowerOff" = lib.mkIf config.phone.enable "exec ${pkgs.writeShellScript "power-key" ''
           if ${config.wayland.windowManager.sway.package}/bin/swaymsg -rt get_outputs | ${pkgs.jq}/bin/jq ".[].power" | ${pkgs.gnugrep}/bin/grep true; then
             ${dpms-off}
+            ${lock-script}
           else
             ${dpms-on}
           fi
@@ -395,17 +404,8 @@ in
       export XDG_SESSION_DESKTOP=sway
     '';
   };
-  services.swayidle = let
-    lock = pkgs.writeShellScript "lock-start" ''
-      ${swaylock-start}
-      ${lib.optionalString config.phone.enable
-      # suspend if nothing is playing
-      ''
-        ${pkgs.playerctl}/bin/playerctl -a status | ${pkgs.gnugrep}/bin/grep Playing >/dev/null || /run/current-system/sw/bin/systemctl suspend
-      ''}
-    '';
-  in {
-    enable = config.wayland.windowManager.sway.enable;
+  services.swayidle = {
+    enable = config.wayland.windowManager.sway.enable && !config.phone.enable;
     events = [
       { event = "before-sleep"; command = toString swaylock-start; }
       # after-resume, lock, unlock
@@ -415,7 +415,7 @@ in
         command = toString dpms-off;
         resumeCommand = toString dpms-on; }
       { timeout = if config.phone.enable then 60 else 600;
-        command = toString lock; }
+        command = toString lock-script; }
     ];
   };
   programs.swaylock.settings = rec {

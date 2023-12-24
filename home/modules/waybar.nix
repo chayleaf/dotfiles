@@ -186,7 +186,7 @@
           interval = "once"; exec = "${pkgs.coreutils}/bin/echo a"; exec-if = "${pkgs.coreutils}/bin/true";
           format = " 󰌌   ";
           on-click = pkgs.writeShellScript "toggle-keyboard.sh" ''
-            pkill -x -SIGRTMIN wvkbd-mobintl
+            ${pkgs.procps}/bin/pkill -SIGRTMIN -x wvkbd-mobintl
           '';
         };
         "custom/c" = {
@@ -203,17 +203,17 @@
           interval = "once"; exec = "${pkgs.coreutils}/bin/echo a"; exec-if = "${pkgs.coreutils}/bin/true";
           format = " 󰌌   ";
           on-click = pkgs.writeShellScript "toggle-keyboard.sh" ''
-            if ${pkgs.systemd}/bin/busctl get-property --user sm.puri.OSK0 /sm/puri/OSK0 sm.puri.OSK0 Visible | ${pkgs.gnugrep}/bin/grep true; then
-              ${pkgs.systemd}/bin/busctl call --user sm.puri.OSK0 /sm/puri/OSK0 sm.puri.OSK0 SetVisible b false
+            if /run/current-system/sw/bin/busctl get-property --user sm.puri.OSK0 /sm/puri/OSK0 sm.puri.OSK0 Visible | ${pkgs.gnugrep}/bin/grep true; then
+              /run/current-system/sw/bin/busctl call --user sm.puri.OSK0 /sm/puri/OSK0 sm.puri.OSK0 SetVisible b false
             else
-              ${pkgs.systemd}/bin/busctl call --user sm.puri.OSK0 /sm/puri/OSK0 sm.puri.OSK0 SetVisible b true
+              /run/current-system/sw/bin/busctl call --user sm.puri.OSK0 /sm/puri/OSK0 sm.puri.OSK0 SetVisible b true
             fi
           '';
         };
         "custom/f" = {
           interval = "once"; exec = "${pkgs.coreutils}/bin/echo a"; exec-if = "${pkgs.coreutils}/bin/true";
           format = " X ";
-          on-click = "${pkgs.sway}/bin/swaymsg kill";
+          on-click = "${config.wayland.windowManager.sway.package}/bin/swaymsg kill";
         };
       }
     ];
