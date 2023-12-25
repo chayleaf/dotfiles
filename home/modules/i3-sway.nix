@@ -104,16 +104,27 @@ commonConfig = {
   startup = [
     { command = toString (pkgs.writeShellScript "init-wm" ''
       ${lib.optionalString config.phone.enable ''
-        ${pkgs.squeekboard}/bin/squeekboard&
+        ${pkgs.procps}/bin/pkill -x wvkbd-mobintl
         ${pkgs.wvkbd}/bin/wvkbd-mobintl --hidden -l full,special,cyrillic,emoji&
+        ${pkgs.procps}/bin/pkill -x squeekboard
+        ${pkgs.squeekboard}/bin/squeekboard&
         /run/current-system/sw/bin/busctl call --user sm.puri.OSK0 /sm/puri/OSK0 sm.puri.OSK0 SetVisible b true
       ''}
+      ${pkgs.procps}/bin/pkill -x home-daemon
       ${pkgs.home-daemon}/bin/home-daemon system76-scheduler&
-      ${pkgs.gnome.zenity}/bin/zenity --password | ${pkgs.coreutils}/bin/tee /dev/stdout | (${pkgs.keepassxc}/bin/keepassxc --pw-stdin ~/Nextcloud/keepass.kdbx ~/var/local.kdbx&)
+      ${pkgs.procps}/bin/pkill -x keepassxc
+      ${pkgs.gnome.zenity}/bin/zenity --password | (${pkgs.keepassxc}/bin/keepassxc --pw-stdin ~/var/local.kdbx &)
+      # sleep to give keepassxc time to take the input
+      sleep 1
       # nextcloud and nheko need secret service access
+      ${pkgs.procps}/bin/pkill -x nextcloud
       ${pkgs.nextcloud-client}/bin/nextcloud --background&
+      ${pkgs.procps}/bin/pkill -x nheko
       ${pkgs.nheko}/bin/nheko&
+      ${pkgs.procps}/bin/pkill -x telegram-desktop
       ${pkgs.tdesktop}/bin/telegram-desktop -startintray&
+      # and final sleep just in case
+      sleep 1
     ''); }
   ];
   colors = {
@@ -360,7 +371,7 @@ in
           fi
         ''}";
       });
-      startup = commonConfig.startup ++ [
+      startup = [
         {
           always = true;
           command = "systemctl --user import-environment DISPLAY WAYLAND_DISPLAY SWAYSOCK XDG_CURRENT_DESKTOP";
@@ -368,7 +379,7 @@ in
         {
           command = "${pkgs.wl-clipboard}/bin/wl-paste -t text --watch ${pkgs.clipman}/bin/clipman store --no-persist";
         }
-      ];
+      ] ++ commonConfig.startup;
       output = {
         "*" = {
           bg = "~/var/wallpaper.jpg fill";
