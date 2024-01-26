@@ -119,10 +119,7 @@ in {
     meta.license = lib.licenses.unfreeRedistributableFirmware;
   };
 
-  linux_enchilada = pkgs.linux_testing.override {
-    argsOverride.version = "6.7-rc3";
-    argsOverride.modDirVersion = lib.versions.pad 3 "6.7-rc3";
-
+  linux_enchilada = pkgs.linux_latest.override {
     # TODO: uncomment
     # ignoreConfigErrors = false;
     kernelPatches = [
@@ -135,12 +132,6 @@ in {
         patch = ./config_fixes.patch;
       }
     ];
-
-    postPatch = ''
-      substituteInPlace arch/arm64/configs/defconfig \
-        --replace CONFIG_QCOM_LLCC=m CONFIG_QCOM_LLCC=y \
-        --replace CONFIG_QCOM_OCMEM=m CONFIG_QCOM_OCMEM=y
-    '';
 
     stdenv = lib.recursiveUpdate pkgs.stdenv {
       hostPlatform.linux-kernel.extraConfig = "";

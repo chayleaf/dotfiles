@@ -3,16 +3,12 @@
 , ... }:
 
 {
-  boot.initrd.availableKernelModules = [ "ahci" "usbhid" "usb_storage" ];
-
-  # TODO: switch to mainline when PCIe support works
-  boot.kernelPackages = pkgs.linuxPackagesFor (pkgs.buildLinuxWithCcache pkgs.linux_testing);
-  boot.kernelPatches = [
-    {
-      name = "linux_6.7.patch";
-      patch = ./linux_6.7.patch;
-    }
+  boot.initrd.availableKernelModules = [
+    "ahci" "usbhid" "usb_storage"
+    "phy-rockchip-naneng-combphy"
   ];
+
+  boot.kernelPackages = pkgs.linuxPackagesFor pkgs.linux_6_7;
 
   boot.kernelParams = [ "dtb=/${config.hardware.deviceTree.name}" ];
   hardware.deviceTree.enable = true;

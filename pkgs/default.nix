@@ -22,12 +22,12 @@ in
   inherit (inputs.nix-gaming.packages.${pkgs.system}) faf-client osu-lazer-bin;
   inherit nixForNixPlugins;
   nix = nixForNixPlugins;
-  nixVersions = pkgs.nixVersions.extend (self: super: {
+  nixVersions = pkgs.nixVersions // {
     stable = nixForNixPlugins;
     unstable = nixForNixPlugins;
-  });
+  };
   # Various patches to change Nix version of existing packages so they don't error out because of nix-plugins in nix.conf
-  nix-plugins = (pkgs.nix-plugins.override { nix = nixForNixPlugins; }).overrideAttrs (old: {
+  /*nix-plugins = (pkgs.nix-plugins.override { nix = nixForNixPlugins; }).overrideAttrs (old: {
     version = "13.0.0";
     patches = [
       (pkgs.fetchpatch {
@@ -36,37 +36,30 @@ in
         hash = "sha256-pOogMtjXYkSDtXW12TmBpGr/plnizJtud2nP3q2UldQ=";
       })
     ];
+  });*/
+  harmonia = (pkgs.harmonia.override { nixVersions.nix_2_19 = nixForNixPlugins; }).overrideAttrs (old: rec {
+    version = "0.7.3";
+    src = old.src.override {
+      rev = "refs/tags/${old.pname}-v${version}";
+      hash = "sha256-XtnK54HvZMKZGSCrVD0FO5PQLMo3Vkj8ezUlsfqStq0=";
+    };
+    cargoDeps = pkgs.rustPlatform.importCargoLock { lockFile = "${src}/Cargo.lock"; };
   });
-  harmonia = (pkgs.harmonia.override { nix = nixForNixPlugins; }); /*.overrideAttrs {
-    patches = [
-      (pkgs.fetchpatch {
-        url = "https://github.com/nix-community/harmonia/pull/145/commits/394c939a45fa9c590347e149400876c318610b1e.patch";
-        hash = "sha256-DvyE7/0PW3XRtFgIrl4IQa7RIQLQZoKLddxCZvhpu3I=";
-      })
-    ];
-  };*/
   nix-init = pkgs.nix-init.override { nix = nixForNixPlugins; };
   nix-serve = pkgs.nix-serve.override { nix = nixForNixPlugins; };
   nix-serve-ng = pkgs.nix-serve-ng.override { nix = nixForNixPlugins; };
   hydra_unstable = (pkgs.hydra_unstable.override {
-    nix = nixForNixPlugins; /*.overrideAttrs (old: {
-      # TODO: remove when https://github.com/NixOS/nix/issues/8796 is fixed or hydra code stops needing a fix
-      configureFlags = builtins.filter (x: x != "--enable-lto") (old.configureFlags or []);
-    });*/
+    nix = nixForNixPlugins;
   }).overrideAttrs (old: {
-    # who cares about failing tests amirite
+    version = "2023-12-01";
+    # who cares about tests amirite
     doCheck = false;
-    patches = (old.patches or [ ]) ++ [
-      (pkgs.fetchpatch {
-        url = "https://github.com/chayleaf/hydra/commit/e9da80fff6234fab2458173272ee0bedbe8935c3.patch";
-        hash = "sha256-PS8rwe5lIzvaVlh/DogYmW5OccVfpKQ6JehTQibx2XQ=";
-      })
-    ];
+    src = old.src.override {
+      rev = "4d1c8505120961f10897b8fe9a070d4e193c9a13";
+      hash = "sha256-vXTuE83GL15mgZHegbllVAsVdDFcWWSayPfZxTJN5ys=";
+    };
   });
   nurl = pkgs.nurl.override { nix = nixForNixPlugins; };
-  /*nvfetcher = pkgs.nvfetcher.overrideAttrs (old: {
-    meta = builtins.removeAttrs old.meta [ "broken" ];
-  });*/
 
   buffyboard = pkgs.callPackage ./buffyboard { };
   clang-tools_latest = pkgs.clang-tools_16;
@@ -74,30 +67,6 @@ in
   /*ghidra = pkgs.ghidra.overrideAttrs (old: {
     patches = old.patches ++ [ ./ghidra-stdcall.patch ];
   });*/
-  ffmpeg-custom = (pkgs.callPackage (import /${pkgs.path}/pkgs/development/libraries/ffmpeg/generic.nix {
-    version = "6.1";
-    sha256 = "sha256-NzhD2D16bCVCyCXo0TRwZYp3Ta5eFSfoQPa+iRkeNZg=";
-  }) {
-    ffmpegVariant = "full";
-    withCuda = false;
-    withCudaLLVM = false;
-    withNvdec = false;
-    withNvenc = false;
-    inherit (pkgs'.darwin.apple_sdk.frameworks)
-      Cocoa CoreServices CoreAudio CoreMedia AVFoundation MediaToolbox
-      VideoDecodeAcceleration VideoToolbox;
-  }).overrideAttrs (old: {
-    postPatch = ''
-      ${old.postPatch or ""}
-      substituteInPlace libavutil/hwcontext_vulkan.c \
-        --replace FF_VK_KHR_VIDEO_DECODE_QUEUE FF_VK_EXT_VIDEO_DECODE_QUEUE \
-        --replace FF_VK_KHR_VIDEO_DECODE_H264 FF_VK_EXT_VIDEO_DECODE_H264 \
-        --replace FF_VK_KHR_VIDEO_DECODE_H265 FF_VK_EXT_VIDEO_DECODE_H265 \
-        --replace FF_VK_KHR_VIDEO_DECODE_AV1 FF_VK_EXT_VIDEO_DECODE_AV1
-    '';
-    buildInputs = old.buildInputs ++ [ pkgs.libaribcaption ];
-    configureFlags = old.configureFlags ++ [ "--enable-libaribcaption" ];
-  });
   gimp = callPackage ./gimp { inherit (pkgs) gimp; };
   home-daemon = callPackage ./home-daemon { };
   # pin version

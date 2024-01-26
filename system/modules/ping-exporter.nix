@@ -5,7 +5,7 @@
 }:
 
 let
-  cfg = config.services.prometheus.exporters.ping;
+  cfg = config.services.prometheus.exporters.ping2;
   inherit (lib) concatStrings literalExpression mkMerge mkDefault mkEnableOption mkIf mkOption types;
   # copied from nixpkgs/nixos/modules/services/monitoring/prometheus/exporters
   mkExporterOpts = { name, port }: {
@@ -118,7 +118,7 @@ let
   };
   format = pkgs.formats.toml { };
 in {
-  options.services.prometheus.exporters.ping = mkExporterOpts { name = "ping"; port = 9390; } // {
+  options.services.prometheus.exporters.ping2 = mkExporterOpts { name = "ping2"; port = 9390; } // {
     config = mkOption {
       type = format.type;
       default = { };
@@ -126,7 +126,7 @@ in {
     };
   };
   config = mkExporterConf {
-    name = "ping";
+    name = "ping2";
     conf = cfg;
     serviceOpts = {
       serviceConfig = rec {

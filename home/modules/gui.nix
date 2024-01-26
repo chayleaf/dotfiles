@@ -187,7 +187,7 @@
     # profiles = { };
     package = pkgs.wrapMpv ((pkgs.mpv-unwrapped.override {
       # webp support
-      ffmpeg = pkgs.ffmpeg-custom;
+      ffmpeg = pkgs.ffmpeg-full;
     }).overrideAttrs (old: {
       patches = old.patches or [] ++ [
         (pkgs.fetchpatch {

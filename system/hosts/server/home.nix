@@ -108,12 +108,13 @@ in {
   # so normal nix evals don't have access to builtins
   nix.settings.extra-builtins-file = "/secrets/nixos/extra-builtins.nix";
   nix.settings.allowed-uris = [
-    # required for home-manager
+    # required for home-manager (no idea if it's required at this point)
     "https://git.sr.ht/~rycee/nmd/"
-    # required for server (I suppose since nvfetcher uses fetchTarball here...)
-    "https://github.com/searxng/searxng/"
-    # required for home config (nvfetcher again)
+    # ...for the rest of the home config
     "https://api.github.com/repos/FAForever/"
+    "https://github.com/nix-community/nix-index-database/releases/download/"
+    # required for server (I suppose since nvfetcher uses fetchTarball here...)
+    "https://github.com/searxng/searxng/releases/download/"
     # for nginx CF-Connecting-IP config generation
     "https://www.cloudflare.com/ips-v4"
     "https://www.cloudflare.com/ips-v6"
@@ -146,6 +147,11 @@ in {
     notificationSender = "noreply@${cfg.domainName}";
     # smtpHost = "mail.${cfg.domainName}";
     useSubstitutes = true;
+    # I really don't want to do this... but nix-plugins refuses to work otherwise
+    # TODO: fix, hopefully
+    extraConfig = ''
+      evaluator_pure_eval = 0
+    '';
   };
   # boot.binfmt.emulatedSystems = builtins.filter (x: x != pkgs.system) [ "aarch64-linux" "x86_64-linux" ];
   nix.buildMachines = [

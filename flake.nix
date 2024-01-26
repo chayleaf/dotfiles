@@ -4,7 +4,7 @@
   inputs = {
     #nixpkgs.url = "github:NixOS/nixpkgs/3dc2b4f8166f744c3b3e9ff8224e7c5d74a5424f";
     # nixpkgs.url = "github:NixOS/nixpkgs/nixos-unstable";
-    nixpkgs.url = "github:chayleaf/nixpkgs";
+    nixpkgs.url = "github:chayleaf/nixpkgs/ci";
     nixos-hardware.url = "github:NixOS/nixos-hardware";
     nix-index-database = {
       url = "github:nix-community/nix-index-database";
@@ -45,17 +45,13 @@
       url = "github:chayleaf/nixos-router";
       inputs.nixpkgs.follows = "nixpkgs";
     };
-    maubot = {
-      url = "github:chayleaf/maubot.nix";
-      inputs.nixpkgs.follows = "nixpkgs";
-    };
     nixos-mailserver = {
       url = "gitlab:simple-nixos-mailserver/nixos-mailserver";
       inputs.nixpkgs.follows = "nixpkgs";
       # prevent extra input from being in flake.lock
       # (this doesn't affect any behavior)
-      inputs.nixpkgs-22_11.follows = "nixpkgs";
       inputs.nixpkgs-23_05.follows = "nixpkgs";
+      inputs.nixpkgs-23_11.follows = "nixpkgs";
     };
     flake-compat = {
       url = "github:edolstra/flake-compat";
@@ -69,7 +65,6 @@
     # it takes the paths for modules from filesystem as opposed to flake inputs
     dev = {
       # coop-ofd = true;
-      # maubot = true;
       # mobile-nixos = true;
       # nixos-router = true;
       # notnft = true;

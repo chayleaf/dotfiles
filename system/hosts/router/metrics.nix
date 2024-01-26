@@ -31,7 +31,7 @@ in {
       ];
       listenAddress = netAddresses.lan4;
     };
-    ping = {
+    ping2 = {
       enable = true;
       listenAddress = netAddresses.lan4;
       port = 9380;

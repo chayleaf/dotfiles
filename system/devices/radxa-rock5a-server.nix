@@ -73,11 +73,14 @@ in
         };
       };
     };*/
+    # eth0 on some kernels
+    # end0 on other kernels
+    # sometimes even version dependent
     preLVMCommands = lib.mkOrder 499 ''
-      ip link set eth0 address ${router-config.router-settings.serverInitrdMac} || true
+      ip link set end0 address ${router-config.router-settings.serverInitrdMac} || ip link set eth0 address ${router-config.router-settings.serverInitrdMac} || true
     '';
     postMountCommands = ''
-      ip link set eth0 address ${router-config.router-settings.serverMac} || true
+      ip link set end0 address ${router-config.router-settings.serverMac} || ip link set eth0 address ${router-config.router-settings.serverInitrdMac} || true
     '';
     network.enable = true;
     network.udhcpc.extraArgs = [ "-t6" ];

@@ -72,7 +72,7 @@ in {
   };
   services.nextcloud = {
     enable = true;
-    package = pkgs.nextcloud27;
+    package = pkgs.nextcloud28;
     autoUpdateApps.enable = true;
     # TODO: use socket auth and remove the next line
     database.createLocally = false;
@@ -81,8 +81,8 @@ in {
       dbpassFile = "/var/lib/nextcloud/db_password";
       dbtype = "pgsql";
       dbhost = "/run/postgresql";
-      overwriteProtocol = "https";
     };
+    extraOptions.overwriteprotocol = "https";
     hostName = "cloud.${cfg.domainName}";
     https = true;
   };
