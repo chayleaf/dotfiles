@@ -58,6 +58,18 @@
       description = "ipv6 to assign to wan netns";
       type = router-lib.types.ipv6;
     };
+    wgNetwork = lib.mkOption {
+      description = "wg network gateway+cidr (ex: 192.168.2.1/24)";
+      type = router-lib.types.cidr4;
+    };
+    wgNetwork6 = lib.mkOption {
+      description = "wg network gateway+cidr6 (ex: fd00:abab:8989:3434::1/64)";
+      type = router-lib.types.cidr6;
+    };
+    wgPubkeys = lib.mkOption {
+      description = "wg pubkeys";
+      type = lib.types.listOf lib.types.str;
+    };
     country_code = lib.mkOption {
       description = "wlan country_code (ex: US)";
       type = lib.types.str;

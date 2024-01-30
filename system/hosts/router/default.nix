@@ -212,6 +212,8 @@ let
     lan6 = cfg.network6;
     netns4 = cfg.netnsNet;
     netns6 = cfg.netnsNet6;
+    wg4 = cfg.wgNetwork;
+    wg6 = cfg.wgNetwork6;
   };
 
   # parse a.b.c.d/x into { address, prefixLength }
@@ -327,13 +329,13 @@ in {
   }) ++ lib.flip map rangesUdpOnly (range: {
     port = notnft.dsl.range range.from range.to; tcp = false; udp = true;
     target4.address = serverAddress4; target6.address = serverAddress6;
-  }) ++ lib.toList {
+  }) ++ [ {
     port = 24; tcp = true; udp = true; target4.port = 22; target6.port = 22;
     target4.address = serverInitrdAddress4; target6.address = serverInitrdAddress6;
-  } ++ lib.toList {
+  } {
     inVpn = true; port = server-config.services.qbittorrent-nox.torrent.port; tcp = true; udp = true;
     target4.address = serverAddress4; target6.address = serverAddress6;
-  };
+  } ];
 
   router.enable = true;
   # 2.4g ap
@@ -410,6 +412,7 @@ in {
   router.interfaces.wan = {
     dependentServices = [
       { service = "wireguard-wg0"; inNetns = false; }
+      { service = "wireguard-wg1"; inNetns = false; }
     ];
     systemdLink.linkConfig.MACAddressPolicy = "none";
     systemdLink.linkConfig.MACAddress = cfg.routerMac;
@@ -494,16 +497,18 @@ in {
     # nftables rules
     # things to note: this has the code for switching between rtables
     # otherwise, boring stuff
-    nftables.jsonRules = mkRules {
+    nftables.jsonRules = let
+      lanSet = notnft.dsl.set [ "br0" "wg1" ];
+    in mkRules {
       selfIp4 = netAddresses.lan4;
       selfIp6 = netAddresses.lan6;
-      lans = [ "br0" ];
+      lans = [ "br0" "wg1" ];
       wans = [ "wg0" "veth-wan-a" ];
       logPrefix = "lan ";
       netdevIngressWanRules = with notnft.dsl; with payload; [
         # check oif only from vpn
         # dont check it from veth-wan-a because of dnat fuckery and because we already check packets coming from wan there
-        [(is.eq meta.iifname "wg0") (is.eq (fib (f: with f; [ saddr mark iif ]) (f: f.oif)) missing) (log "lan oif missing ") drop]
+        [(is.eq meta.iifname (set [ "wg0" "wg1" ])) (is.eq (fib (f: with f; [ saddr mark iif ]) (f: f.oif)) missing) (log "lan oif missing ") drop]
       ];
       inetDnatRules = 
         builtins.concatLists (map
@@ -521,16 +526,16 @@ in {
           (builtins.filter (x: x.inVpn && (x.tcp || x.udp)) cfg.dnatRules))
         ++ (with notnft.dsl; with payload; [
           # hijack Microsoft DNS server hosted on Cloudflare
-          [(is.eq meta.iifname "br0") (is.eq ip.daddr "162.159.36.2") (is.eq ip.protocol (f: set [ f.tcp f.udp ])) (dnat.ip netAddresses.lan4)]
+          [(is.eq meta.iifname lanSet) (is.eq ip.daddr "162.159.36.2") (is.eq ip.protocol (f: set [ f.tcp f.udp ])) (dnat.ip netAddresses.lan4)]
         ] ++ lib.optionals (cfg.naughtyMacs != []) [
-          [(is.eq meta.iifname "br0") (is.eq ether.saddr (setIfNeeded cfg.naughtyMacs)) (is.eq ip.protocol (f: set [ f.tcp f.udp ]))
+          [(is.eq meta.iifname lanSet) (is.eq ether.saddr (setIfNeeded cfg.naughtyMacs)) (is.eq ip.protocol (f: set [ f.tcp f.udp ]))
            (is.eq th.dport (set [ 53 853 ])) (dnat.ip netAddresses.lan4)]
-          [(is.eq meta.iifname "br0") (is.eq ether.saddr (setIfNeeded cfg.naughtyMacs)) (is.eq ip6.nexthdr (f: set [ f.tcp f.udp ]))
+          [(is.eq meta.iifname lanSet) (is.eq ether.saddr (setIfNeeded cfg.naughtyMacs)) (is.eq ip6.nexthdr (f: set [ f.tcp f.udp ]))
            (is.eq th.dport (set [ 53 853 ])) (dnat.ip6 netAddresses.lan6)]
         ]);
       inetForwardRules = with notnft.dsl; with payload; [
         # allow access to lan from the wan namespace
-        [(is.eq meta.iifname "veth-wan-a") (is.eq meta.oifname "br0") accept]
+        [(is.eq meta.iifname "veth-wan-a") (is.eq meta.oifname lanSet) accept]
         # allow dnat ("ct status dnat" doesn't work)
       ];
       inetInboundWanRules = with notnft.dsl; with payload; [
@@ -583,8 +588,8 @@ in {
           # [(is.eq ip.saddr "@force_vpn4") (mangle meta.mark vpn_table)]
           # [(is.eq ip6.saddr "@force_vpn6") (mangle meta.mark vpn_table)]
           # block requests to port 25 from hosts other than the server so they can't send mail pretending to originate from my domain
-          # only do this for br0 since traffic from other interfaces isn't forwarded to wan
-          [(is.eq meta.iifname "br0") (is.ne ether.saddr cfg.serverMac) (is.eq meta.l4proto (f: f.tcp)) (is.eq tcp.dport 25) (log "smtp ") drop]
+          # only do this for lans since traffic from other interfaces isn't forwarded to wan
+          [(is.eq meta.iifname lanSet) (is.ne ether.saddr cfg.serverMac) (is.eq meta.l4proto (f: f.tcp)) (is.eq tcp.dport 25) (log "smtp ") drop]
           # don't vpn smtp requests so spf works fine (and in case the vpn blocks requests over port 25, which it usually does)
           [(is.eq meta.l4proto (f: f.tcp)) (is.eq tcp.dport 25) (mangle meta.mark wan_table)]
         ] ++ # 1. dnat non-vpn: change rttable to wan
@@ -594,12 +599,12 @@ in {
             rule4 = rule.target4; rule6 = rule.target6;
           in with notnft.dsl; with payload;
             lib.optionals (rule4 != null) [
-              [ (is.eq meta.iifname "br0") (is.eq ip.protocol protocols) (is.eq ip.saddr rule4.address)
+              [ (is.eq meta.iifname lanSet) (is.eq ip.protocol protocols) (is.eq ip.saddr rule4.address)
                 (is.eq th.sport (if rule4.port != null then rule4.port else rule.port)) (mangle meta.mark wan_table) ]
               [ (is.eq meta.iifname "veth-wan-a") (is.eq ip.protocol protocols) (is.eq ip.daddr rule4.address)
                 (is.eq th.dport (if rule4.port != null then rule4.port else rule.port)) (mangle meta.mark wan_table) ]
             ] ++ lib.optionals (rule6 != null) [
-              [ (is.eq meta.iifname "br0") (is.eq ip6.nexthdr protocols) (is.eq ip6.saddr rule6.address)
+              [ (is.eq meta.iifname lanSet) (is.eq ip6.nexthdr protocols) (is.eq ip6.saddr rule6.address)
                 (is.eq th.sport (if rule6.port != null then rule6.port else rule.port)) (mangle meta.mark wan_table) ]
               [ (is.eq meta.iifname "veth-wan-a") (is.eq ip6.nexthdr protocols) (is.eq ip6.daddr rule6.address)
                 (is.eq th.dport (if rule6.port != null then rule6.port else rule.port)) (mangle meta.mark wan_table) ]
@@ -612,12 +617,12 @@ in {
             rule4 = rule.target4; rule6 = rule.target6;
           in with notnft.dsl; with payload;
             lib.optionals (rule4 != null) [
-              [ (is.eq meta.iifname "br0") (is.eq ip.protocol protocols) (is.eq ip.saddr rule4.address)
+              [ (is.eq meta.iifname lanSet) (is.eq ip.protocol protocols) (is.eq ip.saddr rule4.address)
                 (is.eq th.sport (if rule4.port != null then rule4.port else rule.port)) (mangle meta.mark vpn_table) ]
               [ (is.eq meta.iifname "wg0") (is.eq ip.protocol protocols) (is.eq ip.daddr rule4.address)
                 (is.eq th.dport (if rule4.port != null then rule4.port else rule.port)) (mangle meta.mark vpn_table) ]
             ] ++ lib.optionals (rule6 != null) [
-              [ (is.eq meta.iifname "br0") (is.eq ip6.nexthdr protocols) (is.eq ip6.saddr rule6.address)
+              [ (is.eq meta.iifname lanSet) (is.eq ip6.nexthdr protocols) (is.eq ip6.saddr rule6.address)
                 (is.eq th.sport (if rule6.port != null then rule6.port else rule.port)) (mangle meta.mark vpn_table) ]
               [ (is.eq meta.iifname "wg0") (is.eq ip6.nexthdr protocols) (is.eq ip6.daddr rule6.address)
                 (is.eq th.dport (if rule6.port != null then rule6.port else rule.port)) (mangle meta.mark vpn_table) ]
@@ -637,9 +642,9 @@ in {
            (mangle tcpOpt.maxseg.size vpn_ipv6_mss)]
           # warn about dns requests to foreign servers
           # TODO: check back and see if I should forcefully redirect DNS requests from certain IPs to router
-          [(is.eq meta.iifname "br0") (is.ne ip.daddr (netAddresses.lan4)) (is.eq ip.protocol (f: set [ f.tcp f.udp ]))
+          [(is.eq meta.iifname lanSet) (is.ne ip.daddr (netAddresses.lan4)) (is.eq ip.protocol (f: set [ f.tcp f.udp ]))
            (is.eq th.dport (set [ 53 853 ])) (log "dns4 ")]
-          [(is.eq meta.iifname "br0") (is.ne ip6.daddr (netAddresses.lan6)) (is.eq ip6.nexthdr (f: set [ f.tcp f.udp ]))
+          [(is.eq meta.iifname lanSet) (is.ne ip6.daddr (netAddresses.lan6)) (is.eq ip6.nexthdr (f: set [ f.tcp f.udp ]))
            (is.eq th.dport (set [ 53 853 ])) (log "dns6 ")]
           # finally, preserve the mark via conntrack
           [(mangle ct.mark meta.mark)]
@@ -742,7 +747,9 @@ in {
           (is.eq icmpv6.type (f: with f; set [ nd-neighbor-solicit nd-neighbor-advert ]))
           accept]
         # SSH
-        [(is.eq tcp.dport 23) accept]
+        [(is.eq meta.l4proto (f: f.tcp)) (is.eq tcp.dport 23) accept]
+        # wg1
+        [(is.eq meta.l4proto (f: f.udp)) (is.eq udp.dport 854) accept]
       ];
     };
   };
@@ -916,6 +923,21 @@ in {
   services.opentracker = {
     enable = true;
     extraOptions = "-i ${netAddresses.lan4} -p 6969 -P 6969 -p 80";
+  };
+
+  networking.wireguard.interfaces.wg1 = let
+    parsedAddr4 = router-lib.parseIp4 netAddresses.wg4;
+    parsedAddr6 = router-lib.parseIp6 netAddresses.wg6;
+  in {
+    ips = [ "${addToIp parsedAddr4 0}/24" "${addToIp parsedAddr6 1}/64" ];
+    listenPort = 854;
+    privateKeyFile = "/secrets/wg1/wg_key";
+    socketNamespace = "wan";
+    peers = lib.flip lib.imap0 cfg.wgPubkeys (i: publicKey: {
+      inherit publicKey;
+      allowedIPs = [ "${addToIp parsedAddr4 (1 + i)}/32" "${addToIp parsedAddr6 (2 + i)}/128" ];
+      presharedKeyFile = "/secrets/wg1/wg_psk${toString i}";
+    });
   };
 
   # I only have 2GB RAM, so Unbound is killed during peak system load without this option
