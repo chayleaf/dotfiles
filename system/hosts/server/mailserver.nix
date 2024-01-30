@@ -46,6 +46,8 @@ in {
     hashedPassword = cfg.hashedNoreplyPassword;
     sendOnly = true;
   };
+  # TODO: remove when https://gitlab.com/simple-nixos-mailserver/nixos-mailserver/-/issues/275 is fixed
+  services.dovecot2.sieve.extensions = [ "fileinto" ];
   services.dovecot2.extraConfig =
     let
       passwd = builtins.toFile "dovecot2-local-passwd" ''

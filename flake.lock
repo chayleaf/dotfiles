@@ -302,16 +302,15 @@
     },
     "nixpkgs": {
       "locked": {
-        "lastModified": 1706397479,
-        "narHash": "sha256-f5aOlL5eKiOkQy89sOvN653Yue1r/aXWTCL/Kz1iRMc=",
+        "lastModified": 1706628962,
+        "narHash": "sha256-BBbgY5OsYMxithcHtoulfAJHTmNxQ41Gr99cHZo4yOM=",
         "owner": "chayleaf",
         "repo": "nixpkgs",
-        "rev": "74ece655ded61dc9cb4a718cb574a73bb34a68bf",
+        "rev": "8a98311cb973d73718e004461d57635b23f632af",
         "type": "github"
       },
       "original": {
         "owner": "chayleaf",
-        "ref": "ci",
         "repo": "nixpkgs",
         "type": "github"
       }
