@@ -749,7 +749,7 @@ in {
         # SSH
         [(is.eq meta.l4proto (f: f.tcp)) (is.eq tcp.dport 23) accept]
         # wg1
-        [(is.eq meta.l4proto (f: f.udp)) (is.eq udp.dport 854) accept]
+        [(is.eq meta.l4proto (f: with f; set [ udp tcp ])) (is.eq th.dport (set [ 854 855 ])) accept]
       ];
     };
   };
@@ -935,7 +935,7 @@ in {
     socketNamespace = "wan";
     peers = lib.flip lib.imap0 cfg.wgPubkeys (i: publicKey: {
       inherit publicKey;
-      allowedIPs = [ "${addToIp parsedAddr4 (1 + i)}/32" "${addToIp parsedAddr6 (2 + i)}/128" ];
+      allowedIPs = [ "${addToIp parsedAddr4 (1 + i)}/32" "${addToIp parsedAddr6 (1 + i)}/128" ];
       presharedKeyFile = "/secrets/wg1/wg_psk${toString i}";
     });
   };
