@@ -26,7 +26,7 @@
       inputs.nixpkgs.follows = "nixpkgs";
     };
     home-manager = {
-      url = "github:nix-community/home-manager";
+      url = "github:chayleaf/home-manager/librewolf";
       inputs.nixpkgs.follows = "nixpkgs";
     };
     nix-gaming = {
@@ -65,6 +65,7 @@
     # it takes the paths for modules from filesystem as opposed to flake inputs
     dev = {
       # coop-ofd = true;
+      # home-manager = true;
       # mobile-nixos = true;
       # nixos-router = true;
       # notnft = true;
@@ -82,7 +83,8 @@
       (name: input:
         if dev.${name} or false then
           (if input._type or null == "flake"
-          then (import base-inputs.flake-compat { src = /${devPath}/${name}; }).defaultNix
+          then let inputs = input.inputs // { self = (import /${devPath}/${name}/flake.nix).outputs inputs; };
+          in inputs.self
           else /${devPath}/${name})
           else input)
       base-inputs;
