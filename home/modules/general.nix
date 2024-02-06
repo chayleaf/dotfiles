@@ -17,6 +17,7 @@
     enableSshSupport = true;
     maxCacheTtl = 72000;
     maxCacheTtlSsh = 72000;
+    pinentryFlavor = "tty";
   };
   home.shellAliases = {
     s = "sudo -A";
