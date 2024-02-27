@@ -948,6 +948,6 @@ in {
     { directory = /secrets; mode = "0000"; }
     # my custom impermanence module doesnt detect it
     { directory = /var/db/dhcpcd; mode = "0755"; }
-    { directory = /var/lib/private/kea; mode = "0750"; }
+    { directory = /var/lib/private/kea; mode = "0750"; parentDirectory.mode = "0700"; }
   ];
 }
