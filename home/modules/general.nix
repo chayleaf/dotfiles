@@ -17,7 +17,7 @@
     enableSshSupport = true;
     maxCacheTtl = 72000;
     maxCacheTtlSsh = 72000;
-    pinentryFlavor = "tty";
+    pinentryPackage = pkgs.pinentry.tty;
   };
   home.shellAliases = {
     s = "sudo -A";

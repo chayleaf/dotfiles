@@ -70,14 +70,14 @@ in {
       ] ++ lib.optionals config.services.akkoma.enable [
         { directory = /var/lib/akkoma; user = "akkoma"; group = "akkoma"; mode = "0700"; }
       ] ++ lib.optionals config.services.botamusique.enable [
-        { directory = /var/lib/private/botamusique; user = "root"; group = "root"; mode = "0750"; parentDirectory.mode = "0700"; }
+        { directory = /var/lib/private/botamusique; user = "root"; group = "root"; mode = "0750"; defaultPerms.mode = "0700"; }
       ] ++ lib.optionals config.programs.ccache.enable [
         { directory = config.programs.ccache.cacheDir; user = "root"; group = "nixbld"; mode = "0770"; }
         { directory = /var/cache/sccache; user = "root"; group = "nixbld"; mode = "0770"; }
       ] ++ lib.optionals config.services.certspotter.enable [
         { directory = /var/lib/certspotter; user = "certspotter"; group = "certspotter"; mode = "0755"; }
       ] ++ lib.optionals (config.services.coop-ofd.enable or false) [
-        { directory = /var/lib/private/coop-ofd; mode = "0750"; parentDirectory.mode = "0700"; }
+        { directory = /var/lib/private/coop-ofd; mode = "0750"; defaultPerms.mode = "0700"; }
       ] ++ lib.optionals config.services.dovecot2.enable [
         { directory = /var/lib/dhparams; user = "root"; group = "root"; mode = "0755"; }
         { directory = /var/lib/dovecot; user = "root"; group = "root"; mode = "0755"; }

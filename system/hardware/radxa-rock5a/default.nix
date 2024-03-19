@@ -8,7 +8,7 @@
     "phy-rockchip-naneng-combphy"
   ];
 
-  boot.kernelPackages = pkgs.linuxPackagesFor pkgs.linux_6_7;
+  boot.kernelPackages = pkgs.linuxPackagesFor pkgs.linux_latest;
 
   boot.kernelParams = [ "dtb=/${config.hardware.deviceTree.name}" ];
   hardware.deviceTree.enable = true;

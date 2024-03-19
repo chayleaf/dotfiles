@@ -114,7 +114,7 @@ in {
     "https://api.github.com/repos/FAForever/"
     "https://github.com/nix-community/nix-index-database/releases/download/"
     # required for server (I suppose since nvfetcher uses fetchTarball here...)
-    "https://github.com/searxng/searxng/releases/download/"
+    "https://github.com/searxng/searxng/"
     # for nginx CF-Connecting-IP config generation
     "https://www.cloudflare.com/ips-v4"
     "https://www.cloudflare.com/ips-v6"

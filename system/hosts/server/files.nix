@@ -82,7 +82,7 @@ in {
       dbtype = "pgsql";
       dbhost = "/run/postgresql";
     };
-    extraOptions.overwriteprotocol = "https";
+    settings.overwriteprotocol = "https";
     hostName = "cloud.${cfg.domainName}";
     https = true;
   };

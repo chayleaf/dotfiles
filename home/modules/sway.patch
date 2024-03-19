@@ -1,5 +1,5 @@
 diff --git a/include/sway/config.h b/include/sway/config.h
-index aa58da53..223efae0 100644
+index f9da1967..fa2d8858 100644
 --- a/include/sway/config.h
 +++ b/include/sway/config.h
 @@ -50,6 +50,7 @@ enum binding_flags {
@@ -24,10 +24,10 @@ index 979e178f..d17458ea 100644
  			break;
  		}
 diff --git a/sway/input/keyboard.c b/sway/input/keyboard.c
-index c3bf4fbb..78ef8e61 100644
+index 8927287f..3faff953 100644
 --- a/sway/input/keyboard.c
 +++ b/sway/input/keyboard.c
-@@ -162,8 +162,9 @@ static void get_active_binding(const struct sway_shortcut_state *state,
+@@ -161,8 +161,9 @@ static void get_active_binding(const struct sway_shortcut_state *state,
  		bool binding_locked = (binding->flags & BINDING_LOCKED) != 0;
  		bool binding_inhibited = (binding->flags & BINDING_INHIBITED) != 0;
  		bool binding_release = binding->flags & BINDING_RELEASE;
@@ -38,7 +38,7 @@ index c3bf4fbb..78ef8e61 100644
  				release != binding_release ||
  				locked > binding_locked ||
  				inhibited > binding_inhibited ||
-@@ -175,7 +176,42 @@ static void get_active_binding(const struct sway_shortcut_state *state,
+@@ -174,7 +175,42 @@ static void get_active_binding(const struct sway_shortcut_state *state,
  		}
  
  		bool match = false;
@@ -83,21 +83,18 @@ index c3bf4fbb..78ef8e61 100644
  			for (size_t j = 0; j < state->npressed; j++) {
  				uint32_t key = *(uint32_t *)binding->keys->items[j];
 diff --git a/sway/sway.5.scd b/sway/sway.5.scd
-index 25082c41..268e0526 100644
+index 7e58b528..794965b9 100644
 --- a/sway/sway.5.scd
 +++ b/sway/sway.5.scd
-@@ -389,8 +389,8 @@ runtime.
- 		for_window <criteria> move container to output <output>
+@@ -390,6 +390,7 @@ runtime.
  
  *bindsym* [--whole-window] [--border] [--exclude-titlebar] [--release] [--locked] \
--[--to-code] [--input-device=<device>] [--no-warn] [--no-repeat] [Group<1-4>+]<key combo> \
--<command>
-+[--to-code] [--input-device=<device>] [--no-warn] [--no-repeat] [--allow-other] \
-+[Group<1-4>+]<key combo> <command>
+ [--to-code] [--input-device=<device>] [--no-warn] [--no-repeat] [--inhibited] \
++[--allow-other] \
+ [Group<1-4>+]<key combo> <command>
  	Binds _key combo_ to execute the sway command _command_ when pressed. You
  	may use XKB key names here (*wev*(1) is a good tool for discovering these).
- 	With the flag _--release_, the command is executed when the key combo is
-@@ -419,6 +419,11 @@ runtime.
+@@ -419,6 +420,11 @@ runtime.
  	repeatedly when the key is held, according to the repeat
  	settings specified in the input configuration.
  

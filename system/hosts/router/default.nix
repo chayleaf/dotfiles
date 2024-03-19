@@ -582,11 +582,11 @@ in {
           [(is.eq ip.saddr "@force_unvpn4") (mangle meta.mark wan_table)]
           [(is.eq ip6.saddr "@force_unvpn6") (mangle meta.mark wan_table)]
           # ...force vpn to/from force_vpn4/force_vpn6
-          # (temporarily disable this because it breaks codeforces.org)
-          # [(is.eq ip.daddr "@force_vpn4") (mangle meta.mark vpn_table)]
-          # [(is.eq ip6.daddr "@force_vpn6") (mangle meta.mark vpn_table)]
-          # [(is.eq ip.saddr "@force_vpn4") (mangle meta.mark vpn_table)]
-          # [(is.eq ip6.saddr "@force_vpn6") (mangle meta.mark vpn_table)]
+          # (disable this if it breaks some sites)
+          [(is.eq ip.daddr "@force_vpn4") (mangle meta.mark vpn_table)]
+          [(is.eq ip6.daddr "@force_vpn6") (mangle meta.mark vpn_table)]
+          [(is.eq ip.saddr "@force_vpn4") (mangle meta.mark vpn_table)]
+          [(is.eq ip6.saddr "@force_vpn6") (mangle meta.mark vpn_table)]
           # block requests to port 25 from hosts other than the server so they can't send mail pretending to originate from my domain
           # only do this for lans since traffic from other interfaces isn't forwarded to wan
           [(is.eq meta.iifname lanSet) (is.ne ether.saddr cfg.serverMac) (is.eq meta.l4proto (f: f.tcp)) (is.eq tcp.dport 25) (log "smtp ") drop]
@@ -948,6 +948,6 @@ in {
     { directory = /secrets; mode = "0000"; }
     # my custom impermanence module doesnt detect it
     { directory = /var/db/dhcpcd; mode = "0755"; }
-    { directory = /var/lib/private/kea; mode = "0750"; parentDirectory.mode = "0700"; }
+    { directory = /var/lib/private/kea; mode = "0750"; defaultPerms.mode = "0700"; }
   ];
 }

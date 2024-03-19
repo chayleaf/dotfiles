@@ -3,7 +3,7 @@
   programs.zsh = {
     enable = true;
     # zsh-autosuggestions
-    enableAutosuggestions = true;
+    autosuggestion.enable = true;
     # zsh-syntax-highlighting
     syntaxHighlighting.enable = true;
     defaultKeymap = "viins";

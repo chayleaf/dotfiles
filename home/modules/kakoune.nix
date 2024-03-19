@@ -1,3 +1,4 @@
+# broken
 { pkgs, lib, ... }:
 let
   wrapKakoune = { extraPackages ? [ ], withPython3 ? true, extraPython3Packages ? (_: [ ]) }:

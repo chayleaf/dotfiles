@@ -1,3 +1,4 @@
+use cpal::{traits::{DeviceTrait, HostTrait, StreamTrait}, SampleFormat};
 use futures_util::stream::StreamExt;
 use std::collections::HashSet;
 use swayipc_async::{Connection, Event, EventType, WindowChange};
@@ -8,14 +9,26 @@ async fn main() {
     let _ses_dbus = Box::leak(Box::new(zbus::Connection::session().await.unwrap()));
 
     let mut handlers = Vec::<Box<dyn SwayIpcHandler>>::new();
+    let mut panic = true;
     for args in std::env::args().skip(1) {
         handlers.push(match args.as_str() {
             "system76-scheduler" => Box::new(System76::new(sys_dbus).await),
+            "empty-sound" => {
+                panic = false;
+                tokio::spawn(async {
+                    play_empty_sound().await;
+                });
+                continue;
+            }
             _ => panic!("handler not supported"),
         })
     }
     if handlers.is_empty() {
-        panic!("no handlers set up");
+        if panic {
+            panic!("no handlers set up");
+        } else {
+            futures_util::future::pending::<()>().await;
+        }
     }
 
     let mut subs = HashSet::new();
@@ -29,11 +42,11 @@ async fn main() {
     }
 }
 
-async fn start(subs: &[EventType], handlers: &mut [Box<dyn SwayIpcHandler>]) -> Result<(), swayipc_async::Error> {
-    let mut events = Connection::new()
-        .await?
-        .subscribe(&subs)
-        .await?;
+async fn start(
+    subs: &[EventType],
+    handlers: &mut [Box<dyn SwayIpcHandler>],
+) -> Result<(), swayipc_async::Error> {
+    let mut events = Connection::new().await?.subscribe(&subs).await?;
     while let Some(event) = events.next().await {
         match event {
             Ok(event) => {
@@ -42,15 +55,48 @@ async fn start(subs: &[EventType], handlers: &mut [Box<dyn SwayIpcHandler>]) -> 
                 }
             }
             Err(err) => match err {
-                swayipc_async::Error::Io(_) 
+                swayipc_async::Error::Io(_)
                 | swayipc_async::Error::InvalidMagic(_)
-                | swayipc_async::Error::SubscriptionFailed(_)
-                    => return Err(err),
+                | swayipc_async::Error::SubscriptionFailed(_) => return Err(err),
                 _ => {}
-            }
+            },
         }
     }
     Ok(())
+}
+
+async fn play_empty_sound() {
+    let device = cpal::default_host()
+        .default_output_device()
+        .expect("no output device available");
+    let supported_config = device
+        .supported_output_configs()
+        .unwrap()
+        .find(|config| {
+            config.sample_format() == SampleFormat::F32
+                && (config.min_sample_rate()..=config.max_sample_rate())
+                    .contains(&cpal::SampleRate(44100))
+                && config.channels() == 1
+        })
+        .unwrap()
+        .with_sample_rate(cpal::SampleRate(44100));
+    let config = supported_config.into();
+    let stream = Box::leak(Box::new(
+        device
+            .build_output_stream(
+                &config,
+                |data: &mut [f32], _: &cpal::OutputCallbackInfo| {
+                    for sample in data.iter_mut() {
+                        *sample = 1.0 / 1985.0;
+                    }
+                },
+                |err| eprintln!("an error occurred on the output audio stream: {}", err),
+                None,
+            )
+            .unwrap(),
+    ));
+    stream.play().unwrap();
+    futures_util::future::pending::<()>().await;
 }
 
 trait SwayIpcHandler {
@@ -97,4 +143,3 @@ impl SwayIpcHandler for System76<'static> {
         }
     }
 }
-

@@ -11,7 +11,7 @@
     ../modules/i3-sway.nix
     ../modules/nvim.nix
     ../modules/helix.nix
-    ../modules/kakoune.nix
+    # ../modules/kakoune.nix
     inputs.nur.nixosModules.nur
   ];
 

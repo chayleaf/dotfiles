@@ -31,7 +31,7 @@ in {
   };
   systemd.services.gitea.after = [ "keycloak.service" ];
 
-  services.nextcloud.extraOptions.allow_local_remote_servers = true;
+  services.nextcloud.settings.allow_local_remote_servers = true;
   systemd.services.nextcloud.after = [ "keycloak.service" ];
 
   # a crude way to make some python packages available for synapse

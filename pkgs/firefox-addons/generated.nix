@@ -17,16 +17,16 @@
           "tabs"
           "declarativeNetRequestWithHostAccess"
           "<all_urls>"
-          ];
+        ];
         platforms = platforms.all;
-        };
       };
+    };
     "rikaitan" = buildFirefoxXpiAddon {
       pname = "rikaitan";
-      version = "24.1.22.0";
+      version = "24.3.7.1";
       addonId = "tatsu@autistici.org";
-      url = "https://addons.mozilla.org/firefox/downloads/file/4224979/rikaitan-24.1.22.0.xpi";
-      sha256 = "7df217a68077d45b9f41fe0170193c9224abc2a543c121429ebef4e7e857b0df";
+      url = "https://addons.mozilla.org/firefox/downloads/file/4246908/rikaitan-24.3.7.1.xpi";
+      sha256 = "db849343b029b2f1b510cc66032157502e3fe9e6168072d27e8aad9867b6ec17";
       meta = with lib;
       {
         homepage = "https://github.com/Ajatt-Tools/rikaitan";
@@ -41,10 +41,10 @@
           "http://*/*"
           "https://*/*"
           "file://*/*"
-          ];
+        ];
         platforms = platforms.all;
-        };
       };
+    };
     "youtube-nonstop" = buildFirefoxXpiAddon {
       pname = "youtube-nonstop";
       version = "0.9.2";
@@ -59,8 +59,8 @@
         mozPermissions = [
           "https://www.youtube.com/*"
           "https://music.youtube.com/*"
-          ];
+        ];
         platforms = platforms.all;
-        };
       };
-    }
+    };
+  }

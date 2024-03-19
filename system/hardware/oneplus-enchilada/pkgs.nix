@@ -124,8 +124,8 @@ in {
     # ignoreConfigErrors = false;
     kernelPatches = [
       {
-        name = "linux_6_7";
-        patch = ./linux_6_7.patch;
+        name = "linux_6_8";
+        patch = ./linux_6_8.patch;
       }
       {
         name = "config_fixes";

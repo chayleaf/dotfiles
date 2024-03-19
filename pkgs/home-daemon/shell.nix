@@ -1,8 +1,8 @@
-{ pkgs ? import <nixpkgs> {} }:
+{ pkgs ? import <nixpkgs> {}, lib ? pkgs.lib }:
 
-pkgs.mkShell {
+pkgs.mkShell rec {
   name = "shell-rust";
-  buildInputs = [
-    pkgs.rustc pkgs.cargo
-  ];
+  nativeBuildInputs = with pkgs; [ pkg-config rustc cargo ];
+  buildInputs = with pkgs; [ alsa-lib ];
+  LD_LIBRARY_PATH = "${lib.makeLibraryPath buildInputs}";
 }

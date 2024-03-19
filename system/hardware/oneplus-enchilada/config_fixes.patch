@@ -1,10 +1,10 @@
 diff --git a/arch/arm64/configs/defconfig b/arch/arm64/configs/defconfig
-index b60aa1f8934..0e3191950d5 100644
+index e6cf3e5d63c..54d5d7c10e4 100644
 --- a/arch/arm64/configs/defconfig
 +++ b/arch/arm64/configs/defconfig
-@@ -1317,8 +1317,9 @@ CONFIG_QCOM_AOSS_QMP=y
+@@ -1351,8 +1351,9 @@ CONFIG_MTK_SVS=m
+ CONFIG_QCOM_AOSS_QMP=y
  CONFIG_QCOM_COMMAND_DB=y
- CONFIG_QCOM_CPR=y
  CONFIG_QCOM_GENI_SE=y
 -CONFIG_QCOM_LLCC=m
 -CONFIG_QCOM_OCMEM=m

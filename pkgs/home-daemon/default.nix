@@ -1,9 +1,18 @@
-{ lib, rustPlatform, nix-gitignore }:
+{ lib
+, rustPlatform
+, nix-gitignore
+, pkg-config
+, alsa-lib
+}:
+
 rustPlatform.buildRustPackage {
   pname = "home-daemon";
-  version = "0.1";
+  version = "0.2.0";
 
-  src = nix-gitignore.gitignoreSource ["/target" "default.nix"] (lib.cleanSource ./.);
+  nativeBuildInputs = [ pkg-config ];
+  buildInputs = [ alsa-lib ];
+
+  src = nix-gitignore.gitignoreSource [ "/target" "default.nix" ] ./.;
 
   cargoLock.lockFile = ./Cargo.lock;
 

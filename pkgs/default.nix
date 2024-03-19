@@ -37,7 +37,7 @@ in
       })
     ];
   });*/
-  harmonia = (pkgs.harmonia.override { nixVersions.nix_2_19 = nixForNixPlugins; }).overrideAttrs (old: rec {
+  harmonia = (pkgs.harmonia.override { nixVersions.nix_2_21 = nixForNixPlugins; }).overrideAttrs (old: rec {
     version = "0.7.3";
     src = old.src.override {
       rev = "refs/tags/${old.pname}-v${version}";

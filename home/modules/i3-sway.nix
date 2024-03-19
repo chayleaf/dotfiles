@@ -111,7 +111,7 @@ commonConfig = {
         /run/current-system/sw/bin/busctl call --user sm.puri.OSK0 /sm/puri/OSK0 sm.puri.OSK0 SetVisible b true
       ''}
       ${pkgs.procps}/bin/pkill -x home-daemon
-      ${pkgs.home-daemon}/bin/home-daemon system76-scheduler&
+      ${pkgs.home-daemon}/bin/home-daemon system76-scheduler ${lib.optionalString (!config.phone.enable) "empty-sound"}&
       ${pkgs.procps}/bin/pkill -x keepassxc
       ${pkgs.gnome.zenity}/bin/zenity --password | (${pkgs.keepassxc}/bin/keepassxc --pw-stdin ~/var/local.kdbx &)
       # sleep to give keepassxc time to take the input
@@ -271,6 +271,7 @@ in
     extraConfig = ''
       title_align center
     '';
+    checkConfig = false;
     config = commonConfig // {
       bars = [
         {
@@ -516,7 +517,7 @@ in
         selected-urgent-background = mkLiteral "#394893";
         selected-urgent-foreground = mkLiteral "#${config.colors.yellow}";
       };
-      "@import" = "gruvbox-common.rasi";
+      "@import" = "${./gruvbox-common.rasi}";
     };
     terminal = config.terminalBin;
     extraConfig = {

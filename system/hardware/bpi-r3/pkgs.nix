@@ -131,6 +131,7 @@ in rec {
 
       CPU_FREQ_GOV_ONDEMAND = yes;
       CPU_FREQ_DEFAULT_GOV_ONDEMAND = yes;
+      CPU_FREQ_DEFAULT_GOV_SCHEDUTIL = lib.mkForce no;
       CPU_FREQ_DEFAULT_GOV_PERFORMANCE = lib.mkForce no;
       CPU_FREQ_GOV_CONSERVATIVE = yes;
       # disable virtualisation stuff
@@ -243,7 +244,7 @@ in rec {
 
       # hardware specific stuff
       FB = lib.mkForce no;
-      DRM = no;
+      DRM = lib.mkForce no;
       SOUND = no;
       INFINIBAND = lib.mkForce no;
       CFG80211 = module;
@@ -306,6 +307,13 @@ in rec {
 
       # keys that are unused in this case
       # used because i got bitten by config keys changing once
+      SND_AC97_POWER_SAVE_DEFAULT.optional = lib.mkForce true; SND_HDA_POWER_SAVE_DEFAULT.optional = lib.mkForce true;
+      SND_USB_AUDIO_MIDI_V2.tristate = lib.mkForce null;
+      DRM_ACCEL.tristate = lib.mkForce null; DRM_AMD_ACP.tristate = lib.mkForce null; DRM_AMD_SECURE_DISPLAY.tristate = lib.mkForce null;
+      DRM_DP_CEC.tristate = lib.mkForce null; DRM_NOUVEAU_SVM.tristate = lib.mkForce null; MEM_SOFT_DIRTY.tristate = lib.mkForce null;
+      PM_TRACE.tristate = lib.mkForce null; RAS_CEC.tristate = lib.mkForce null; SND_AC97_POWER_SAVE_DEFAULT.tristate = lib.mkForce null;
+      AGP.tristate = lib.mkForce null; ACPI_HOTPLUG_CPU.tristate = lib.mkForce null; CEPH_FSCACHE.tristate = lib.mkForce null;
+      CIFS_FSCACHE.tristate = lib.mkForce null; DRM_NOUVEAU_GSP_DEFAULT.tristate = lib.mkForce null; FSCACHE_STATS.tristate = lib.mkForce null;
       "9P_FSCACHE".tristate = lib.mkForce null; CROS_EC_ISHTP.tristate = lib.mkForce null; CROS_EC_LPC.tristate = lib.mkForce null;
       DRM_AMDGPU_CIK.tristate = lib.mkForce null; DRM_AMDGPU_SI.tristate = lib.mkForce null; DRM_AMDGPU_USERPTR.tristate = lib.mkForce null;
       DRM_AMD_DC_FP.tristate = lib.mkForce null; DRM_AMD_DC_SI.tristate = lib.mkForce null; DRM_DP_AUX_CHARDEV.tristate = lib.mkForce null;
