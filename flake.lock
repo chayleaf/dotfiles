@@ -306,7 +306,6 @@
       },
       "original": {
         "owner": "chayleaf",
-        "ref": "ci",
         "repo": "nixpkgs",
         "type": "github"
       }
