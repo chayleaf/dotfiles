@@ -1,0 +1,324 @@
+From ec87cc3742130c138e4caa37084c92c46b9cb9ad Mon Sep 17 00:00:00 2001
+From: Torge Matthies <openglfreak@googlemail.com>
+Date: Sun, 3 Jul 2022 15:54:01 +0200
+Subject: [PATCH 2/2] winex11.drv: Add OpenGL latency reduction code.
+
+---
+ dlls/winex11.drv/opengl.c | 255 +++++++++++++++++++++++++++++++++++++-
+ 1 file changed, 252 insertions(+), 3 deletions(-)
+
+diff --git a/dlls/winex11.drv/opengl.c b/dlls/winex11.drv/opengl.c
+index 11111111111..11111111111 100644
+--- a/dlls/winex11.drv/opengl.c
++++ b/dlls/winex11.drv/opengl.c
+@@ -42,6 +42,8 @@
+ #include "xcomposite.h"
+ #include "winternl.h"
+ #include "wine/debug.h"
++#include "wine/server.h"
++#include "../win32u/ntuser_private.h"
+ 
+ #ifdef SONAME_LIBGL
+
+
+@@ -225,6 +229,8 @@ enum dc_gl_layered_type
+     DC_GL_LAYERED_ATTRIBUTES,
+ };
+ 
++typedef LONGLONG rtime_t;
++
+ struct gl_drawable
+ {
+     LONG                           ref;          /* reference count */
+
+@@ -3443,6 +3454,130 @@ static void X11DRV_WineGL_LoadExtensions(void)
+     }
+ }
+ 
++static inline BOOL allow_latency_reduction( void )
++{
++    static int status = -1;
++    if (status == -1)
++    {
++        const char *env = getenv( "WINE_OPENGL_LATENCY_REDUCTION" );
++        status = !!(env && atoi(env));
++    }
++    return status == 1;
++}
++
++#define TICKSPERSEC 10000000
++
++typedef struct ftime_t {
++    LONGLONG time;
++    ULONGLONG freq;
++} ftime_t;
++
++static inline ftime_t current_ftime( void )
++{
++    LARGE_INTEGER counter, freq;
++    ftime_t ret;
++    NtQueryPerformanceCounter( &counter, &freq );
++    ret.time = counter.QuadPart;
++    ret.freq = (ULONGLONG)freq.QuadPart;
++    return ret;
++}
++
++static inline rtime_t ftime_to_rtime( ftime_t ftime, BOOL round_up )
++{
++    ftime.time *= TICKSPERSEC;
++    if (round_up)
++        ftime.time += ftime.freq - 1;
++    return ftime.time / ftime.freq;
++}
++
++static inline rtime_t current_rtime( BOOL round_up )
++{
++    return ftime_to_rtime( current_ftime(), round_up );
++}
++
++static rtime_t get_vblank_interval( HWND hwnd )
++{
++    HMONITOR monitor;
++    UNICODE_STRING device_name;
++    MONITORINFOEXW moninfo = { sizeof(MONITORINFOEXW) };
++    DEVMODEW devmode = { {0}, 0, 0, sizeof(DEVMODEW) };
++
++    monitor = NtUserMonitorFromWindow( hwnd, MONITOR_DEFAULTTONEAREST );
++    if (!monitor || !NtUserGetMonitorInfo( monitor, (MONITORINFO*)&moninfo ))
++        return 0;
++
++    RtlInitUnicodeString( &device_name, moninfo.szDevice );
++    if (!NtUserEnumDisplaySettings( &device_name, ENUM_CURRENT_SETTINGS, &devmode, 0 )
++        || devmode.dmDisplayFrequency <= 1)
++        return 0;
++    MESSAGE("detected display frequency: %u\n", devmode.dmDisplayFrequency);
++    return TICKSPERSEC / devmode.dmDisplayFrequency;
++}
++
++#define FRAMETIME_MARGIN_SHIFT 2
++
++static inline rtime_t frame_time_with_margin( rtime_t frame_time )
++{
++    return frame_time + (frame_time >> FRAMETIME_MARGIN_SHIFT) + 3500;
++}
++
++static void get_swap_interval(GLXDrawable drawable, int *interval)
++{
++    /* HACK: does not work correctly with __GL_SYNC_TO_VBLANK */
++    /*pglXQueryDrawable(gdi_display, gl->drawable, GLX_SWAP_INTERVAL_EXT, (unsigned int*)interval);*/
++    *interval = 0;
++}
++
++#define WAIT_MASK (QS_MOUSEBUTTON | QS_KEY | QS_SENDMESSAGE | QS_TIMER | QS_HOTKEY)
++
++static void msg_wait( const LARGE_INTEGER *timeout )
++{
++    LARGE_INTEGER to = *timeout, to2 = to;
++    rtime_t start, end;
++    DWORD ret;
++
++    /* HACK: __wine_msg_wait_objects likes to wait for about 1 ms too long */
++
++    if (to2.QuadPart < 0)
++    {
++        to2.QuadPart += 10000;
++        if (to2.QuadPart >= 0)
++        {
++            end = current_rtime( TRUE );
++            goto busy_loop;
++        }
++    }
++    else if (to2.QuadPart >= 10000)
++        to2.QuadPart -= 10000;
++
++    if (to2.QuadPart >= 0)
++    {
++        __wine_msg_wait_objects( 0, NULL, &to2, WAIT_MASK, MWMO_INPUTAVAILABLE );
++        return;
++    }
++
++again:
++    start = current_rtime( FALSE );
++    ret = __wine_msg_wait_objects( 0, NULL, &to2, WAIT_MASK, MWMO_INPUTAVAILABLE );
++    if (ret == WAIT_OBJECT_0)
++        return;
++    end = current_rtime( TRUE );
++
++    to.QuadPart += end - start;
++    if (to.QuadPart < -11000)
++    {
++        to2.QuadPart = to.QuadPart + 10000;
++        goto again;
++    }
++
++busy_loop:
++    if (to.QuadPart < -1000)
++    {
++        end = end - to.QuadPart - 1000;
++        while (current_rtime( TRUE ) < end)
++            YieldProcessor();
++    }
++}
+ 
+ /**
+  * glxdrv_SwapBuffers
+@@ -3457,6 +3592,11 @@ static BOOL glxdrv_wglSwapBuffers( HDC hdc )
+     INT64 ust, msc, sbc, target_sbc = 0;
+     HWND hwnd;
+ 
++    BOOL enable_latency_reduction = FALSE;
++    BOOL synchronize_to_vblank = FALSE;
++    rtime_t frame_end_time;
++    rtime_t next_vblank_time = 0;
++
+     TRACE("(%p)\n", hdc);
+ 
+     escape.code = X11DRV_PRESENT_DRAWABLE;
+@@ -3469,18 +3609,78 @@ static BOOL glxdrv_wglSwapBuffers( HDC hdc )
+         return FALSE;
+     }
+ 
++    if (allow_latency_reduction())
++        enable_latency_reduction = gl->type == DC_GL_WINDOW
++            || gl->type == DC_GL_CHILD_WIN || gl->type == DC_GL_PIXMAP_WIN;
++
++    if (enable_latency_reduction)
++    {
++        if (ctx && (gl->type == DC_GL_WINDOW || gl->type == DC_GL_CHILD_WIN
++                    || gl->type == DC_GL_PIXMAP_WIN))
++            sync_context( ctx );
++        pglFinish();
++        frame_end_time = current_rtime( TRUE );
++    }
++
+     pthread_mutex_lock( &context_mutex );
+-    if (gl->refresh_swap_interval)
++
++    if (enable_latency_reduction)
++    {
++        if (!gl->vblank_interval)
++        {
++            HWND hwnd = 0;
++            assert(!XFindContext( gdi_display, gl->window, winContext, (char **)&hwnd ));
++            assert(hwnd);
++            gl->vblank_interval = get_vblank_interval( hwnd );
++            assert(gl->vblank_interval);
++        }
++
++        if (gl->last_vblank_time)
++        {
++            next_vblank_time = gl->last_vblank_time + gl->vblank_interval;
++            while (next_vblank_time < frame_end_time)
++                next_vblank_time += gl->vblank_interval;
++        }
++
++        if (gl->last_swap_time)
++        {
++            rtime_t new_frame_time = frame_end_time - gl->last_swap_time;
++            if (new_frame_time >= gl->frame_time)
++                gl->frame_time = new_frame_time;
++            else if (gl->frame_time > new_frame_time * 3)
++                gl->frame_time = frame_time_with_margin( new_frame_time );
++            else
++                gl->frame_time = (gl->frame_time * 20 + new_frame_time) / 21;
++        }
++
++        if (frame_end_time - gl->last_vblank_time >= TICKSPERSEC
++            || (!gl->refresh_swap_interval && next_vblank_time - frame_end_time <= frame_time_with_margin( gl->frame_time )))
++            synchronize_to_vblank = TRUE;
++    }
++
++    if (synchronize_to_vblank)
++    {
++        if (!gl->previous_frame_synchronized)
++        {
++            get_swap_interval(gl->drawable, &gl->swap_interval);
++            if (!set_swap_interval(gl->drawable, 1))
++                synchronize_to_vblank = FALSE;
++            gl->previous_frame_synchronized = TRUE;
++        }
++    }
++    else if (gl->refresh_swap_interval || gl->previous_frame_synchronized)
+     {
+         set_swap_interval(gl->drawable, gl->swap_interval);
+         gl->refresh_swap_interval = FALSE;
++        gl->previous_frame_synchronized = FALSE;
+     }
++
+     pthread_mutex_unlock( &context_mutex );
+ 
+     switch (gl->type)
+     {
+     case DC_GL_PIXMAP_WIN:
+-        if (ctx) sync_context( ctx );
++        if (!enable_latency_reduction && ctx) sync_context( ctx );
+	 escape.drawable = gl->pixmap;
+         if (pglXCopySubBufferMESA) {
+             /* (glX)SwapBuffers has an implicit glFlush effect, however
+@@ -3501,7 +3701,7 @@ static BOOL glxdrv_wglSwapBuffers( HDC hdc )
+         break;
+     case DC_GL_WINDOW:
+     case DC_GL_CHILD_WIN:
+-        if (ctx) sync_context( ctx );
++        if (!enable_latency_reduction && ctx) sync_context( ctx );
+         if (gl->type == DC_GL_CHILD_WIN) escape.drawable = gl->window;
+         /* fall through */
+     default:
+@@ -3519,5 +3719,54 @@ static BOOL glxdrv_wglSwapBuffers( HDC hdc )
+         pglXWaitForSbcOML( gdi_display, gl->drawable, target_sbc, &ust, &msc, &sbc );
+ 
++
++    if (enable_latency_reduction)
++    {
++        rtime_t current_time = current_rtime( FALSE );
++
++        if (!synchronize_to_vblank && gl->last_vblank_time && gl->frame_time)
++        {
++            LARGE_INTEGER timeout;
++
++            next_vblank_time = gl->last_vblank_time + gl->vblank_interval;
++            while (next_vblank_time < current_time + frame_time_with_margin( gl->frame_time ))
++                next_vblank_time += gl->vblank_interval;
++
++            timeout.QuadPart = -(next_vblank_time - frame_time_with_margin( gl->frame_time ) - current_time);
++            if (timeout.QuadPart < 0 && -timeout.QuadPart < TICKSPERSEC)
++                msg_wait( &timeout );
++
++            current_time = current_rtime( FALSE );
++        }
++
++        pthread_mutex_lock( &context_mutex );
++
++        gl->last_swap_time = current_time;
++        if (synchronize_to_vblank)
++            gl->last_vblank_time = current_time;
++
++        pthread_mutex_unlock( &context_mutex );
++
++        if (synchronize_to_vblank && gl->frame_time)
++        {
++            LARGE_INTEGER timeout;
++
++            next_vblank_time = gl->last_vblank_time + gl->vblank_interval;
++            while (next_vblank_time < current_time + frame_time_with_margin( gl->frame_time ))
++                next_vblank_time += gl->vblank_interval;
++
++            timeout.QuadPart = -(next_vblank_time - frame_time_with_margin( gl->frame_time ) - current_time);
++            if (timeout.QuadPart < 0 && -timeout.QuadPart < TICKSPERSEC)
++            {
++                msg_wait( &timeout );
++
++                current_time = current_rtime( FALSE );
++                pthread_mutex_lock( &context_mutex );
++                gl->last_swap_time = current_time;
++                pthread_mutex_unlock( &context_mutex );
++            }
++        }
++    }
++
+     release_gl_drawable( gl );
+ 
+     if (ctx && escape.drawable)
+-- 
+2.40.0
+

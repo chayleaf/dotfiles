@@ -1,0 +1,13 @@
+## osu! fix: disables assertion causing game to crash when importing maps
+diff --git a/dlls/ntdll/unix/thread.c b/dlls/ntdll/unix/thread.c
+index 9e84ec3cc96..dfa2a2781bc 100644
+--- a/dlls/ntdll/unix/thread.c
++++ b/dlls/ntdll/unix/thread.c
+@@ -1783,7 +1783,6 @@ NTSTATUS get_thread_context( HANDLE handle, void *context, BOOL *self, USHORT ma
+  */
+ void ntdll_set_exception_jmp_buf( __wine_jmp_buf *jmp )
+ {
+-    assert( !jmp || !ntdll_get_thread_data()->jmp_buf );
+     ntdll_get_thread_data()->jmp_buf = jmp;
+ }
+ 

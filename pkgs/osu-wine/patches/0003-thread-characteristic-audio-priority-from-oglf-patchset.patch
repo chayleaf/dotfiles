@@ -1,0 +1,12 @@
+--- a/dlls/avrt/main.c
++++ b/dlls/avrt/main.c
+@@ -70,6 +70,9 @@
+         return NULL;
+     }
+ 
++    if (!wcscmp(name, L"Audio") || !wcscmp(name, L"Pro Audio"))
++        SetThreadPriority(GetCurrentThread(), THREAD_PRIORITY_TIME_CRITICAL);
++
+     return (HANDLE)0x12345678;
+ }
+ 

@@ -1,0 +1,82 @@
+diff --git a/dlls/win32u/sysparams.c b/dlls/win32u/sysparams.c
+index 11111111111..11111111111 100644
+--- a/dlls/win32u/sysparams.c
++++ b/dlls/win32u/sysparams.c
+@@ -26,9 +26,14 @@
+ 
+ #include <pthread.h>
+ #include <assert.h>
++#include <stdarg.h>
+ 
+ #include "ntstatus.h"
+ #define WIN32_NO_STATUS
++#include "windef.h"
++#include "winbase.h"
++#include "winternl.h"
++#include "ddk/wdm.h"
+ #include "ntgdi_private.h"
+ #include "ntuser_private.h"
+ #include "devpropdef.h"
+@@ -1679,12 +1684,31 @@ static void clear_display_devices(void)
+     }
+ }
+ 
++static ULONGLONG last_update = 0;
++
++#define user_shared_data ((volatile const struct _KUSER_SHARED_DATA *)0x7ffe0000)
++
++static ULONGLONG get_tick_count(void)
++{
++    ULONG high, low;
++
++    do
++    {
++        high = user_shared_data->TickCount.High1Time;
++        low = user_shared_data->TickCount.LowPart;
++    }
++    while (high != user_shared_data->TickCount.High2Time);
++    /* note: we ignore TickCountMultiplier */
++    return (ULONGLONG)high << 32 | low;
++}
++
+ static BOOL update_display_cache_from_registry(void)
+ {
+     DWORD adapter_id, monitor_id, monitor_count = 0, size;
+     KEY_BASIC_INFORMATION key;
+     struct adapter *adapter;
+     struct monitor *monitor, *monitor2;
++    ULONGLONG tick_count;
+     HANDLE mutex = NULL;
+     NTSTATUS status;
+     BOOL ret;
+@@ -1694,12 +1718,18 @@ static BOOL update_display_cache_from_registry(void)
+                                                   sizeof(devicemap_video_keyW) )))
+         return FALSE;
+ 
++    if ((tick_count = get_tick_count()) - last_update < 1000) return TRUE;
++
+     status = NtQueryKey( video_key, KeyBasicInformation, &key,
+                          offsetof(KEY_BASIC_INFORMATION, Name), &size );
+     if (status && status != STATUS_BUFFER_OVERFLOW)
+         return FALSE;
+ 
+-    if (key.LastWriteTime.QuadPart <= last_query_display_time) return TRUE;
++    if (key.LastWriteTime.QuadPart <= last_query_display_time)
++    {
++        last_update = tick_count;
++        return TRUE;
++    }
+ 
+     mutex = get_display_device_init_mutex();
+     pthread_mutex_lock( &display_lock );
+@@ -1746,7 +1776,10 @@ static BOOL update_display_cache_from_registry(void)
+     }
+ 
+     if ((ret = !list_empty( &adapters ) && !list_empty( &monitors )))
++    {
+         last_query_display_time = key.LastWriteTime.QuadPart;
++        last_update = tick_count;
++    }
+     pthread_mutex_unlock( &display_lock );
+     release_display_device_init_mutex( mutex );
+     return ret;

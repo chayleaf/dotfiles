@@ -84,6 +84,7 @@ in
     inherit (pkgs'.looking-glass-client) version src;
   });
   mobile-config-firefox = callPackage ./mobile-config-firefox { };
+  osu-wine = callPackage ./osu-wine { };
   ping-exporter = callPackage ./ping-exporter { };
   proton-ge = pkgs.stdenvNoCC.mkDerivation {
     inherit (sources.proton-ge) pname version src;
