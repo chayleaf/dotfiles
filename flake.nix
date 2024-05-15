@@ -21,8 +21,8 @@
       url = "github:oxalica/rust-overlay";
       inputs.nixpkgs.follows = "nixpkgs";
     };
-    coop-ofd = {
-      url = "github:chayleaf/coop-ofd";
+    coop-fd = {
+      url = "github:chayleaf/coop-fd";
       inputs.nixpkgs.follows = "nixpkgs";
     };
     home-manager = {
@@ -60,7 +60,7 @@
     # --impure required for developing
     # it takes the paths for modules from filesystem as opposed to flake inputs
     dev = {
-      # coop-ofd = true;
+      # coop-fd = true;
       # home-manager = true;
       # mobile-nixos = true;
       # nixos-router = true;

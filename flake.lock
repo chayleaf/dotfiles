@@ -16,7 +16,7 @@
         "type": "gitlab"
       }
     },
-    "coop-ofd": {
+    "coop-fd": {
       "inputs": {
         "crane": "crane",
         "flake-compat": "flake-compat",
@@ -25,32 +25,32 @@
         ]
       },
       "locked": {
-        "lastModified": 1712785740,
-        "narHash": "sha256-5r88elsHgFXDdr/NOwK+2oKMfrFqcXV4tQPhVXTLI0E=",
+        "lastModified": 1715464067,
+        "narHash": "sha256-TlG5vT+473QV2IHTpRe43K8TF2kboWCjiIsa63pEzNo=",
         "owner": "chayleaf",
-        "repo": "coop-ofd",
-        "rev": "348dbe813090de3c3b694695699439893df8ad62",
+        "repo": "coop-fd",
+        "rev": "0ac65ba71562f83e70d1c778191b0b70cd97ce88",
         "type": "github"
       },
       "original": {
         "owner": "chayleaf",
-        "repo": "coop-ofd",
+        "repo": "coop-fd",
         "type": "github"
       }
     },
     "crane": {
       "inputs": {
         "nixpkgs": [
-          "coop-ofd",
+          "coop-fd",
           "nixpkgs"
         ]
       },
       "locked": {
-        "lastModified": 1700327093,
-        "narHash": "sha256-OgYvlBABxJYWhZ/HBd0bPVcIEkT+xDhDCpRYqtVhYWY=",
+        "lastModified": 1715274763,
+        "narHash": "sha256-3Iv1PGHJn9sV3HO4FlOVaaztOxa9uGLfOmUWrH7v7+A=",
         "owner": "ipetkov",
         "repo": "crane",
-        "rev": "ae7cd510e508ee03d792005c2f1c0a3ff25ecb80",
+        "rev": "27025ab71bdca30e7ed0a16c88fd74c5970fc7f5",
         "type": "github"
       },
       "original": {
@@ -385,7 +385,7 @@
     },
     "root": {
       "inputs": {
-        "coop-ofd": "coop-ofd",
+        "coop-fd": "coop-fd",
         "flake-compat": "flake-compat_2",
         "home-manager": "home-manager",
         "impermanence": "impermanence",

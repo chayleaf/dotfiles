@@ -76,8 +76,8 @@ in {
         { directory = /var/cache/sccache; user = "root"; group = "nixbld"; mode = "0770"; }
       ] ++ lib.optionals config.services.certspotter.enable [
         { directory = /var/lib/certspotter; user = "certspotter"; group = "certspotter"; mode = "0755"; }
-      ] ++ lib.optionals (config.services.coop-ofd.enable or false) [
-        { directory = /var/lib/private/coop-ofd; mode = "0750"; defaultPerms.mode = "0700"; }
+      ] ++ lib.optionals (config.services.coop-fd.enable or false) [
+        { directory = /var/lib/private/coop-fd; mode = "0750"; defaultPerms.mode = "0700"; }
       ] ++ lib.optionals config.services.dovecot2.enable [
         { directory = /var/lib/dhparams; user = "root"; group = "root"; mode = "0755"; }
         { directory = /var/lib/dovecot; user = "root"; group = "root"; mode = "0755"; }

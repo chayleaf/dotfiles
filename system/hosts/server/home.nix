@@ -17,7 +17,7 @@ let
     withQt5 = false;
   };
 in {
-  imports = [ inputs.coop-ofd.nixosModules.default ];
+  imports = [ inputs.coop-fd.nixosModules.default ];
 
   # a bunch of services for personal use not intended for the public
   # TODO: keycloakify this
@@ -45,7 +45,7 @@ in {
   # services.keycloak.plugins = [ pkgs.keycloak.plugins.keycloak-metrics-spi ];
   services.keycloak.settings.metrics-enabled = true;
 
-  services.coop-ofd = {
+  services.coop-fd = {
     enable = true;
     config.listener = "127.0.0.1:25783";
   };
@@ -74,7 +74,7 @@ in {
       proxyWebsockets = true;
     };
     locations."/money/" = {
-      proxyPass = "http://${config.services.coop-ofd.config.listener}/";
+      proxyPass = "http://${config.services.coop-fd.config.listener}/";
     };
   };
   services.nginx.virtualHosts."hydra.${cfg.domainName}" = {
