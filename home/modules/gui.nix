@@ -155,6 +155,8 @@
       CLOSE_WIN = "quit";
       "CLOSE_WIN {encode}" = "quit 4";
       "Ctrl+w" = ''set hwdec "no"'';
+      "[" = "multiply speed 1/1.1";
+      "]" = "multiply speed 1.1";
       # T = "script-binding generate-thumbnails";
     };
     config = {
