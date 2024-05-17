@@ -72,7 +72,7 @@ in {
   };
   services.nextcloud = {
     enable = true;
-    package = pkgs.nextcloud28;
+    package = pkgs.nextcloud29;
     autoUpdateApps.enable = true;
     # TODO: use socket auth and remove the next line
     database.createLocally = false;

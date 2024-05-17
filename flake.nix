@@ -4,6 +4,7 @@
   inputs = {
     #nixpkgs.url = "github:NixOS/nixpkgs/3dc2b4f8166f744c3b3e9ff8224e7c5d74a5424f";
     # nixpkgs.url = "github:NixOS/nixpkgs/nixos-unstable";
+    nixpkgs-kernel.url = "github:NixOS/nixpkgs/nixos-unstable";
     nixpkgs.url = "github:chayleaf/nixpkgs";
     nixos-hardware.url = "github:NixOS/nixos-hardware";
     nix-index-database = {
@@ -22,7 +23,7 @@
       inputs.nixpkgs.follows = "nixpkgs";
     };
     coop-fd = {
-      url = "github:chayleaf/coop-fd/442f5d91bebffbf3e7c83723e9bcda87d0adee52";
+      url = "github:chayleaf/coop-fd";
       inputs.nixpkgs.follows = "nixpkgs";
     };
     home-manager = {
@@ -94,30 +95,32 @@
     # extended lib
     lib = nixpkgs.lib // import ./lib.nix { inherit (nixpkgs) lib; };
     # can't use callPackage ./pkgs here, idk why; use import instead
-    overlay' = args: self: super: import ./pkgs ({
+    overlay' = args: self: super: import (if args.pluginsOverlay or false then ./pkgs/nix-plugins-overlay.nix else ./pkgs) ({
       pkgs = super;
       pkgs' = self;
       lib = super.lib;
       inherit inputs;
     } // args);
     overlay = overlay' { };
+    nix-plugins-overlay = overlay' { pluginsOverlay = true; };
+    all-overlays = [ nix-plugins-overlay overlay ];
     # I override some settings down the line, but overlays always stay the same
     mkPkgs = config: import nixpkgs (config // {
-      overlays = config.overlays or [ ] ++ [ overlay ];
+      overlays = config.overlays or [ ] ++ all-overlays;
     });
     # this is actual config, it gets processed below
     config = let
       mkBpiR3 = args: config: config // {
         system = "aarch64-linux";
-        modules = config.modules or [ ] ++ [ (import ./system/devices/bpi-r3-router.nix args) ];
+        modules = config.modules or [ ] ++ [
+          (import ./system/devices/bpi-r3-router.nix args)
+        ];
       };
       routerConfig = rec {
         system = "aarch64-linux";
         modules = [
-          {
-            _module.args.server-config = self.nixosConfigurations.server.config;
-            _module.args.notnft = inputs.notnft.lib.${system};
-          }
+          { _module.args.server-config = self.nixosConfigurations.server.config;
+            _module.args.notnft = inputs.notnft.lib.${system}; }
           inputs.nixos-router.nixosModules.default
         ];
       };
@@ -150,7 +153,10 @@
     };
 
   in {
-    overlays.default = overlay;
+    overlays = {
+      default = overlay;
+      nix-plugins = nix-plugins-overlay;
+    };
     packages = lib.genAttrs [
       "x86_64-linux"
       "aarch64-linux"
@@ -187,13 +193,16 @@
           inherit inputs lib;
           hardware = inputs.nixos-hardware.nixosModules;
         } // args.specialArgs or { };
-        modules = args.modules or [ ]
-        ++ [
+        modules = [
+          { _module.args = {
+              pkgs-kernel = import inputs.nixpkgs-kernel { inherit (args) system; overlays = all-overlays; };
+            }; }
           (getPrivSys hostname)
           { networking.hostName = lib.mkDefault hostname;
-            nixpkgs.overlays = [ overlay ]; }
+            nixpkgs.overlays = all-overlays; }
           inputs.impermanence.nixosModule 
         ]
+        ++ args.modules or [ ]
         ++ map (x: ./system/modules/${x}) (builtins.attrNames (builtins.readDir ./system/modules))
         # the following is NixOS home-manager module configuration. Currently unused, but I might start using it for some hosts later.
         ++ lib.optionals (home != { } && home.common.enableNixosModule or false) [
@@ -207,7 +216,7 @@
                 { nixpkgs = home.common.nixpkgs or { };
                   nix = home.common.nix or { }; }
                 ({ config, pkgs, lib, ...}: {
-                  nixpkgs.overlays = [ overlay ];
+                  nixpkgs.overlays = all-overlays;
                   nix.package = lib.mkDefault pkgs.nixForNixPlugins; })
                 (getPrivUser hostname username)
               ];
@@ -236,7 +245,7 @@
                   ++ [
                     (getPrivUser hostname user)
                     ({ pkgs, lib, ... }: {
-                      nixpkgs.overlays = [ overlay ];
+                      nixpkgs.overlays = all-overlays;
                       nix.package = lib.mkDefault pkgs.nixForNixPlugins;
                     })
                   ];

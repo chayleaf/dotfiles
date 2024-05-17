@@ -1,0 +1,24 @@
+diff --git a/kvmfr.c b/kvmfr.c
+index 121aae5b..4c386f98 100644
+--- a/kvmfr.c
++++ b/kvmfr.c
+@@ -30,6 +30,7 @@
+ #include <linux/highmem.h>
+ #include <linux/memremap.h>
+ #include <linux/version.h>
++#include <linux/vmalloc.h>
+ 
+ #include <asm/io.h>
+ 
+@@ -539,7 +540,11 @@ static int __init kvmfr_module_init(void)
+   if (kvmfr->major < 0)
+     goto out_free;
+ 
++#if LINUX_VERSION_CODE < KERNEL_VERSION(6, 4, 0)
+   kvmfr->pClass = class_create(THIS_MODULE, KVMFR_DEV_NAME);
++#else
++  kvmfr->pClass = class_create(KVMFR_DEV_NAME);
++#endif
+   if (IS_ERR(kvmfr->pClass))
+     goto out_unreg;
+ 

@@ -11,7 +11,6 @@ let
   sources = import ./_sources/generated.nix {
     inherit (pkgs) fetchgit fetchurl fetchFromGitHub dockerTools;
   };
-  nixForNixPlugins = pkgs.nixVersions.nix_2_18;
   nur = import inputs.nur {
     inherit pkgs;
     nurpkgs = pkgs;
@@ -20,91 +19,7 @@ in
 
 {
   inherit (inputs.nix-gaming.packages.${pkgs.system}) faf-client osu-lazer-bin;
-  inherit nixForNixPlugins;
-  nix = nixForNixPlugins;
-  nixVersions = pkgs.nixVersions // {
-    stable = nixForNixPlugins;
-    unstable = nixForNixPlugins;
-  };
-  matrix-appservice-discord = pkgs.matrix-appservice-discord.overrideAttrs (old: {
-    doCheck = false;
-    patches = (old.patches or []) ++ [
-      # https://github.com/matrix-org/matrix-appservice-discord/pull/917
-      (pkgs.fetchpatch {
-        url = "https://github.com/matrix-org/matrix-appservice-discord/commit/eb989fa710e8db4ebc8f2ce36c6679ee6cbc1a44.patch";
-        hash = "sha256-GPeFDw3XujqXHJveHSsBHwHuG51vad50p55FX1Esq58=";
-        name = "set-missing-config-defaults.patch";
-      })
-      # https://github.com/matrix-org/matrix-appservice-discord/pull/918
-      (pkgs.fetchpatch {
-        url = "https://github.com/matrix-org/matrix-appservice-discord/commit/a4cd5e3a6a2d544adac2a263e164671c8a9009d9.patch";
-        hash = "sha256-qQJ4V6/Ns2Msu8+X8JoEycuQ2Jc90TXulsuLLmPecGU=";
-        name = "dont-send-filenames.patch";
-      })
-      # https://github.com/matrix-org/matrix-appservice-discord/pull/878/
-      (pkgs.fetchpatch {
-        url = "https://github.com/matrix-org/matrix-appservice-discord/commit/fc850ba2473973e28858449ec4020380470d78b2.patch";
-        hash = "sha256-Lq0FWmR08wLsoq4APRTokZzb7U2po98pgyxH4UR/9/M=";
-        name = "bridge-discord-replies-1.patch";
-      })
-      (pkgs.fetchpatch {
-        url = "https://github.com/matrix-org/matrix-appservice-discord/commit/86388901fa44d5d0f9d3dec8727c18cc00d613e7.patch";
-        hash = "sha256-XcLbKJPmFZElzwU4YS8Md8dNLajddJPKmau0U65bp00=";
-        name = "bridge-discord-replies-2.patch";
-      })
-      (pkgs.fetchpatch {
-        url = "https://github.com/matrix-org/matrix-appservice-discord/commit/8299c626188e676723a708e49635d2c4afa26ffa.patch";
-        hash = "sha256-ZfUwpJ21/m3QbktbxxHyO8Lcl/IuDhaSKQRXBEPeJBo=";
-        name = "bridge-discord-replies-3.patch";
-      })
-      # https://github.com/matrix-org/matrix-appservice-discord/pull/819
-      (pkgs.fetchpatch {
-        url = "https://github.com/matrix-org/matrix-appservice-discord/commit/1c3223387aaf78ba5637f58ca57bd8206ad0446c.patch";
-        hash = "sha256-3hxyqjI9F4j/XBq/59b7c2PorYRN2mR4XZJjpygs9dI=";
-        name = "bridge-matrix-edits-1.patch";
-      })
-      (pkgs.fetchpatch {
-        url = "https://github.com/matrix-org/matrix-appservice-discord/commit/f8e9449908b332d97f11932fb835552adca0aa5b.patch";
-        hash = "sha256-1qb4Zah1XKzxTpVJqOOqz+TiXMFmnsIMZeuqJQdqSIA=";
-        name = "bridge-matrix-edits-2.patch";
-      })
-      ./matrix-appservice-discord/disable-attachment-forwarding-to-matrix.patch
-    ];
-  });
-  # Various patches to change Nix version of existing packages so they don't error out because of nix-plugins in nix.conf
-  /*nix-plugins = (pkgs.nix-plugins.override { nix = nixForNixPlugins; }).overrideAttrs (old: {
-    version = "13.0.0";
-    patches = [
-      (pkgs.fetchpatch {
-        # pull 16
-        url = "https://github.com/chayleaf/nix-plugins/commit/8f945cadad7f2e60e8f308b2f498ec5e16961ede.patch";
-        hash = "sha256-pOogMtjXYkSDtXW12TmBpGr/plnizJtud2nP3q2UldQ=";
-      })
-    ];
-  });*/
-  harmonia = (pkgs.harmonia.override { nixVersions.nix_2_21 = nixForNixPlugins; }).overrideAttrs (old: rec {
-    version = "0.7.3";
-    src = old.src.override {
-      rev = "refs/tags/${old.pname}-v${version}";
-      hash = "sha256-XtnK54HvZMKZGSCrVD0FO5PQLMo3Vkj8ezUlsfqStq0=";
-    };
-    cargoDeps = pkgs.rustPlatform.importCargoLock { lockFile = "${src}/Cargo.lock"; };
-  });
-  nix-init = pkgs.nix-init.override { nix = nixForNixPlugins; };
-  nix-serve = pkgs.nix-serve.override { nix = nixForNixPlugins; };
-  nix-serve-ng = pkgs.nix-serve-ng.override { nix = nixForNixPlugins; };
-  hydra_unstable = (pkgs.hydra_unstable.override {
-    nix = nixForNixPlugins;
-  }).overrideAttrs (old: {
-    version = "2023-12-01";
-    # who cares about tests amirite
-    doCheck = false;
-    src = old.src.override {
-      rev = "4d1c8505120961f10897b8fe9a070d4e193c9a13";
-      hash = "sha256-vXTuE83GL15mgZHegbllVAsVdDFcWWSayPfZxTJN5ys=";
-    };
-  });
-  nurl = pkgs.nurl.override { nix = nixForNixPlugins; };
+  matrix-appservice-discord = pkgs.callPackage ./matrix-appservice-discord { inherit (pkgs) matrix-appservice-discord; };
 
   buffyboard = pkgs.callPackage ./buffyboard { };
   clang-tools_latest = pkgs.clang-tools_16;
@@ -124,9 +39,11 @@ in
       sha256 = "sha256-6vYbNmNJBCoU23nVculac24tHqH7F4AZVftIjL93WJU=";
       fetchSubmodules = true;
     };
+    patches = [ ];
   });
   kvmfrOverlay = kvmfr: kvmfr.overrideAttrs (old: {
     inherit (pkgs'.looking-glass-client) version src;
+    patches = [ ./looking-glass.patch ];
   });
   mobile-config-firefox = callPackage ./mobile-config-firefox { };
   osu-wine = callPackage ./osu-wine { };
@@ -176,7 +93,9 @@ in
     qemu = pkgs'.qemu_7_ccache;
     stdenv = pkgs'.ccacheStdenv;
   };
+  ccachePkgs = import ./ccache.nix { inherit pkgs pkgs' lib sources; };
+
+  # hardware stuff
+  hw.bpi-r3 = import ../system/hardware/bpi-r3/pkgs.nix { inherit pkgs pkgs' lib sources; };
+  hw.oneplus-enchilada = import ../system/hardware/oneplus-enchilada/pkgs.nix { inherit inputs pkgs pkgs' lib sources; };
 }
-// import ./ccache.nix { inherit pkgs pkgs' lib sources; }
-// import ../system/hardware/bpi-r3/pkgs.nix { inherit pkgs pkgs' lib sources; }
-// import ../system/hardware/oneplus-enchilada/pkgs.nix { inherit inputs pkgs pkgs' lib sources; }

@@ -133,7 +133,7 @@ in {
       extraGroups = [ "wheel" ];
     };
     # nixos-hardware uses mkDefault here, so we use slightly higher priority
-    services.xserver.libinput.enable = mkForceDefault (!cfg.minimal);
+    services.libinput.enable = mkForceDefault (!cfg.minimal);
     programs.fuse.userAllowOther = true;
     # autologin once after boot
     # --skip-login means directly call login instead of first asking for username
@@ -190,6 +190,9 @@ in {
   })
 
   (lib.mkIf (!cfg.minimal) {
+    environment.systemPackages = with pkgs; [
+      unixtools.xxd
+    ];
     hardware.pulseaudio.enable = false;
     services.pipewire = {
       enable = lib.mkDefault true;

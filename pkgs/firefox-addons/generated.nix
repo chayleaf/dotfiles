@@ -2,10 +2,10 @@
   {
     "fastforwardteam" = buildFirefoxXpiAddon {
       pname = "fastforwardteam";
-      version = "0.2334";
+      version = "0.2383";
       addonId = "addon@fastforward.team";
-      url = "https://addons.mozilla.org/firefox/downloads/file/4177101/fastforwardteam-0.2334.xpi";
-      sha256 = "d790219622469f08316b41c0d01abf2b584a37fa87b45666a74bd30cffb95ed0";
+      url = "https://addons.mozilla.org/firefox/downloads/file/4258067/fastforwardteam-0.2383.xpi";
+      sha256 = "eec6328df3df1afe2cb6a331f6907669d804235551ea766d48655f8f831caf28";
       meta = with lib;
       {
         homepage = "https://fastforward.team";
@@ -23,10 +23,10 @@
     };
     "rikaitan" = buildFirefoxXpiAddon {
       pname = "rikaitan";
-      version = "24.3.7.1";
+      version = "24.5.21.0";
       addonId = "tatsu@autistici.org";
-      url = "https://addons.mozilla.org/firefox/downloads/file/4246908/rikaitan-24.3.7.1.xpi";
-      sha256 = "db849343b029b2f1b510cc66032157502e3fe9e6168072d27e8aad9867b6ec17";
+      url = "https://addons.mozilla.org/firefox/downloads/file/4291845/rikaitan-24.5.21.0.xpi";
+      sha256 = "a2a94d88af04023f14daaafda1f6ca7a7197f2ab92ada08ee2e9e4292d57a391";
       meta = with lib;
       {
         homepage = "https://github.com/Ajatt-Tools/rikaitan";

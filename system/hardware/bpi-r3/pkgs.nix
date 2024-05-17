@@ -4,7 +4,7 @@
 , ... }:
 
 let
-  armTrustedFirmwareBpiR3 = { bootDevice, uboot ? null }: pkgs.buildArmTrustedFirmware rec {
+  mkArmTrustedFirmwareBpiR3 = { bootDevice, uboot ? null }: pkgs.buildArmTrustedFirmware rec {
     inherit (sources.atf-bpir3) src;
     patches = [ ./bpi-r3-atf-backport-mkimage-support.patch ];
     extraMakeFlags = assert builtins.elem bootDevice [
@@ -36,7 +36,7 @@ let
   # CONFIG_DISTRO_DEFAULTS - surely this won't hurt, it adds autocomplete and stuff and doesn't weight much in the large scale of things
   # CONFIG_SYS_BOOTM_LEN - increase max initrd? size
   # CONFIG_ZSTD - allow zstd initrd
-  ubootConfig = storage: ''
+  mkUbootConfig = storage: ''
     CONFIG_AUTOBOOT=y
     CONFIG_BOOTCOMMAND="${builtins.replaceStrings [ "\n" ] [ "; " ] ''
         setenv boot_prefixes /@boot/ /@/ /boot/ /
@@ -61,9 +61,9 @@ let
   };
 
 in rec {
-  ubootBpiR3Sd = pkgs.buildUBoot {
+  sd.uboot = pkgs.buildUBoot {
     defconfig = "mt7986a_bpir3_sd_defconfig";
-    extraConfig = ubootConfig "sd";
+    extraConfig = mkUbootConfig "sd";
     src = ubootSrc;
     version = ubootVersion;
     extraMeta.platforms = [ "aarch64-linux" ];
@@ -71,52 +71,52 @@ in rec {
     patches = [ ./mt7986-default-bootcmd.patch ];
     filesToInstall = [ "u-boot.bin" ];
   };
-  ubootBpiR3Emmc = pkgs.buildUBoot {
+  emmc.uboot = pkgs.buildUBoot {
     defconfig = "mt7986a_bpir3_emmc_defconfig";
-    extraConfig = ubootConfig "emmc";
+    extraConfig = mkUbootConfig "emmc";
     src = ubootSrc;
     version = ubootVersion;
     extraMeta.platforms = [ "aarch64-linux" ];
     patches = [ ./mt7986-default-bootcmd.patch ];
     filesToInstall = [ "u-boot.bin" ];
   };
-  armTrustedFirmwareBpiR3Sd = armTrustedFirmwareBpiR3 { uboot = ubootBpiR3Sd; bootDevice = "sdmmc"; };
-  armTrustedFirmwareBpiR3Emmc = armTrustedFirmwareBpiR3 { uboot = ubootBpiR3Emmc; bootDevice = "emmc"; };
-  bpiR3StuffCombined = pkgs.stdenvNoCC.mkDerivation {
+  sd.armTrustedFirmware = mkArmTrustedFirmwareBpiR3 { inherit (sd) uboot; bootDevice = "sdmmc"; };
+  emmc.armTrustedFirmware = mkArmTrustedFirmwareBpiR3 { inherit (emmc) uboot; bootDevice = "emmc"; };
+  combinedStuff = pkgs.stdenvNoCC.mkDerivation {
     name = "bpi-r3-stuff";
     unpackPhase = "true";
     buildPhase = "true";
     installPhase = ''
       mkdir -p $out/sd
       mkdir -p $out/emmc
-      cp ${bpiR3StuffEmmc}/* $out/emmc
-      cp ${bpiR3StuffSd}/* $out/sd
+      cp ${emmc.stuff}/* $out/emmc
+      cp ${sd.stuff}/* $out/sd
     '';
     fixupPhase = "true";
   };
-  bpiR3StuffEmmc = pkgs.stdenvNoCC.mkDerivation {
+  emmc.stuff = pkgs.stdenvNoCC.mkDerivation {
     name = "bpi-r3-stuff-emmc";
     unpackPhase = "true";
     buildPhase = "true";
     installPhase = ''
       mkdir -p $out
-      cp ${ubootBpiR3Emmc}/*.* $out
-      cp ${armTrustedFirmwareBpiR3Emmc}/*.* $out
+      cp ${emmc.uboot}/*.* $out
+      cp ${emmc.armTrustedFirmware}/*.* $out
     '';
     fixupPhase = "true";
   };
-  bpiR3StuffSd = pkgs.stdenvNoCC.mkDerivation {
+  sd.stuff = pkgs.stdenvNoCC.mkDerivation {
     name = "bpi-r3-stuff-sd";
     unpackPhase = "true";
     buildPhase = "true";
     installPhase = ''
       mkdir -p $out
-      cp ${ubootBpiR3Sd}/*.* $out
-      cp ${armTrustedFirmwareBpiR3Sd}/*.* $out
+      cp ${sd.uboot}/*.* $out
+      cp ${sd.armTrustedFirmware}/*.* $out
     '';
     fixupPhase = "true";
   };
-  linux_bpiR3 = pkgs.linux_latest.override {
+  linux = pkgs.linux_latest.override {
     ignoreConfigErrors = false;
     # there's probably more enabled-by-default configs that are better left disabled, but whatever
     structuredExtraConfig = with lib.kernel; {
@@ -351,5 +351,5 @@ in rec {
       XEN_PVHVM.tristate = lib.mkForce null; XEN_SAVE_RESTORE.tristate = lib.mkForce null; XEN_SYS_HYPERVISOR.tristate = lib.mkForce null;
     };
   };
-  linuxPackages_bpiR3 = pkgs.linuxPackagesFor linux_bpiR3;
+  linuxPackages = pkgs.linuxPackagesFor linux;
 }

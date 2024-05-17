@@ -35,7 +35,7 @@ in {
     meta.license = lib.licenses.mit;
   };
 
-  alsa-ucm-conf-enchilada = pkgs.stdenvNoCC.mkDerivation {
+  alsa-ucm-conf = pkgs.stdenvNoCC.mkDerivation {
     pname = "alsa-ucm-conf-enchilada";
     version = "unstable-2022-12-08";
     src = pkgs.fetchFromGitLab {
@@ -55,7 +55,7 @@ in {
     meta.priority = -10;
   };
 
-  ubootEnchilada = pkgs.buildUBoot {
+  uboot = pkgs.buildUBoot {
     defconfig = "qcom_defconfig";
     version = "unstable-2023-12-11";
     src = pkgs.fetchFromGitLab {
@@ -73,7 +73,7 @@ in {
     filesToInstall = [ "u-boot-nodtb.bin" "u-boot-dtb.bin" "u-boot.dtb" ];
   };
 
-  ubootImageEnchilada = pkgs.stdenvNoCC.mkDerivation {
+  ubootImage = pkgs.stdenvNoCC.mkDerivation {
     name = "u-boot-enchilada.img";
     nativeBuildInputs = [
       # available from mobile-nixos's overlay
@@ -97,13 +97,13 @@ in {
     '';
   };
 
-  firmware-oneplus-sdm845 = pkgs.stdenvNoCC.mkDerivation {
+  firmware = pkgs.stdenvNoCC.mkDerivation {
     name = "firmware-oneplus-sdm845";
     src = pkgs.fetchFromGitLab {
       owner = "sdm845-mainline";
       repo = "firmware-oneplus-sdm845";
-      rev = "dc9c77f220d104d7224c03fcbfc419a03a58765e";
-      hash = "sha256-jrbWIS4T9HgBPYOV2MqPiRQCxGMDEfQidKw9Jn5pgBI=";
+      rev = "176ca713448c5237a983fb1f158cf3a5c251d775";
+      hash = "sha256-ZrBvYO+MY0tlamJngdwhCsI1qpA/2FXoyEys5FAYLj4=";
     };
     installPhase = ''
       cp -a . "$out"
@@ -119,13 +119,13 @@ in {
     meta.license = lib.licenses.unfreeRedistributableFirmware;
   };
 
-  linux_enchilada = pkgs.linux_latest.override {
+  linux = pkgs.linux_latest.override {
     # TODO: uncomment
     # ignoreConfigErrors = false;
     kernelPatches = [
       {
-        name = "linux_6_8";
-        patch = ./linux_6_8.patch;
+        name = "linux_6_9";
+        patch = ./linux_6_9.patch;
       }
       {
         name = "config_fixes";
@@ -627,5 +627,5 @@ in {
       XEN_PVHVM.tristate = lib.mkForce null; XEN_SAVE_RESTORE.tristate = lib.mkForce null; XEN_SYS_HYPERVISOR.tristate = lib.mkForce null;
     };
   };
-  linux_enchilada_ccache = pkgs'.buildLinuxWithCcache pkgs'.linux_enchilada;
+  linux_ccache = pkgs'.ccachePkgs.buildLinuxWithCcache pkgs'.hw.oneplus-enchilada.linux;
 }

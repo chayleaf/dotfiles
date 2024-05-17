@@ -1,4 +1,5 @@
 { pkgs
+, pkgs-kernel
 , config
 , ... }:
 
@@ -8,7 +9,7 @@
     generic-extlinux-compatible.enable = true;
   };
 
-  boot.kernelPackages = pkgs.linuxPackagesFor (pkgs.buildLinuxWithCcache pkgs.linux_bpiR3);
+  boot.kernelPackages = pkgs-kernel.linuxPackagesFor (pkgs-kernel.ccachePkgs.buildLinuxWithCcache pkgs-kernel.hw.bpi-r3.linux);
 
   hardware.deviceTree.enable = true;
   hardware.deviceTree.filter = "mt7986a-bananapi-bpi-r3.dtb";

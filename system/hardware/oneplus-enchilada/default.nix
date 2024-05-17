@@ -1,4 +1,5 @@
 { pkgs
+, pkgs-kernel
 , lib
 , config
 , inputs
@@ -7,6 +8,8 @@
 
 let
   cfg = config.phone;
+  hw = pkgs.hw.oneplus-enchilada;
+  hw-kernel = pkgs-kernel.hw.oneplus-enchilada;
 in
 {
   imports = [
@@ -27,16 +30,21 @@ in
 
   config = lib.mkMerge [
     {
+      nixpkgs.overlays = [
+        (self: super: {
+          inherit (self.hw.oneplus-enchilada) pd-mapper qrtr rmtfs tqftpserv;
+        })
+      ];
       hardware.enableRedistributableFirmware = true;
       mobile.quirks.qualcomm.sdm845-modem.enable = true;
       mobile.quirks.audio.alsa-ucm-meld = true;
-      environment.systemPackages = [ pkgs.alsa-ucm-conf-enchilada ];
+      environment.systemPackages = [ hw.alsa-ucm-conf ];
       systemd.services.q6voiced = {
         description = "QDSP6 driver daemon";
         after = [ "ModemManager.service" "dbus.socket" ];
         wantedBy = [ "ModemManager.service" ];
         requires = [ "dbus.socket" ];
-        serviceConfig.ExecStart = "${pkgs.q6voiced}/bin/q6voiced hw:0,6";
+        serviceConfig.ExecStart = "${hw.q6voiced}/bin/q6voiced hw:0,6";
       };
       # TODO when testing PipeWire instead of PulseAudio, the following is needed:
       # https://gitlab.freedesktop.org/pipewire/wireplumber/-/blob/master/docs/rst/daemon/configuration/migration.rst
@@ -62,8 +70,8 @@ in
         percentageAction = 3;
         criticalPowerAction = "PowerOff";
       };
-      hardware.firmware = lib.mkAfter [ pkgs.firmware-oneplus-sdm845 ];
-      boot.kernelPackages = lib.mkForce (pkgs.linuxPackagesFor pkgs.linux_enchilada_ccache);
+      hardware.firmware = lib.mkAfter [ hw.firmware ];
+      boot.kernelPackages = lib.mkForce (pkgs-kernel.linuxPackagesFor hw-kernel.linux_ccache);
       hardware.deviceTree.enable = true;
       hardware.deviceTree.name = "qcom/sdm845-oneplus-enchilada.dtb";
       # loglevel=7 console=ttyMSM0,115200 is a way to delay boot
@@ -79,7 +87,7 @@ in
         "firmware-oneplus-sdm845"
         "firmware-oneplus-sdm845-xz"
       ];
-      system.build.uboot = pkgs.ubootImageEnchilada;
+      system.build.uboot = pkgs.ubootImage;
       boot.initrd.includeDefaultModules = false;
       boot.initrd.availableKernelModules = [
         "sd_mod"
@@ -187,7 +195,7 @@ in
       };
 
       boot.initrd.extraUtilsCommands = ''
-        copy_bin_and_libs ${pkgs.adbd}/bin/adbd
+        copy_bin_and_libs ${hw.adbd}/bin/adbd
         cp -pv ${pkgs.glibc.out}/lib/libnss_files.so.* $out/lib
       '';
 
@@ -222,7 +230,7 @@ in
         description = "adb daemon";
         wantedBy = [ "multi-user.target" ];
         serviceConfig = {
-          ExecStart = "${pkgs.adbd}/bin/adbd";
+          ExecStart = "${hw.adbd}/bin/adbd";
           Restart = "always";
         };
       };

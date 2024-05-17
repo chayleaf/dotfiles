@@ -190,7 +190,7 @@
     text/html;  ${pkgs.w3m}/bin/w3m -dump -o document_charset=%{charset} -o display_link_number=1 '%s'; nametemplate=%s.html; copiousoutput
   '';
 
-  home.file.".cache/nix-index/files".source = assert config.xdg.cacheHome == "${config.home.homeDirectory}/.cache"; inputs.nix-index-database.legacyPackages.${pkgs.system}.database;
+  home.file.".cache/nix-index/files".source = assert config.xdg.cacheHome == "${config.home.homeDirectory}/.cache"; inputs.nix-index-database.packages.${pkgs.system}.nix-index-database;
 
   systemd.user.tmpfiles.rules = builtins.map (file: "r!  \"/home/${config.home.username}/${file}\"") [
     ".local/share/clipman.json"
