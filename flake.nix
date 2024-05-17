@@ -22,7 +22,7 @@
       inputs.nixpkgs.follows = "nixpkgs";
     };
     coop-fd = {
-      url = "github:chayleaf/coop-fd";
+      url = "github:chayleaf/coop-fd/442f5d91bebffbf3e7c83723e9bcda87d0adee52";
       inputs.nixpkgs.follows = "nixpkgs";
     };
     home-manager = {
