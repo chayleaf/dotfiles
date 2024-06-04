@@ -80,6 +80,7 @@
       ripgrep
       (python3.withPackages (p: with p; [
         python-lsp-server
+        python-lsp-black
         pylsp-mypy
         python-lsp-server.optional-dependencies.pyflakes
         python-lsp-server.optional-dependencies.mccabe
@@ -433,6 +434,7 @@
                 pylsp = {
                   settings = {
                     pylsp.plugins.pylsp_mypy.enabled = true;
+                    pylsp.plugins.black.enabled = true;
                   };
                 };
                 svelte = { };
