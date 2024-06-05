@@ -5,6 +5,38 @@
 
 {
   options.router-settings = {
+    vpn = {
+      tunnel = {
+        enable = lib.mkEnableOption "VPN tunnel";
+        localPort = lib.mkOption {
+          description = "local port";
+          type = lib.types.port;
+        };
+        remotePort = lib.mkOption {
+          description = "remote port";
+          type = lib.types.port;
+        };
+        ip = lib.mkOption {
+          description = "remote ip";
+          type = router-lib.types.ipv4;
+        };
+        port = lib.mkOption {
+          description = "SSH port";
+          type = lib.types.port;
+          default = 22;
+        };
+      };
+      openvpn.enable = lib.mkEnableOption "OpenVPN";
+      openvpn.config = lib.mkOption {
+        description = "OpenVPN config";
+        type = lib.types.lines;
+      };
+      wireguard.enable = lib.mkEnableOption "Wireguard";
+      wireguard.config = lib.mkOption {
+        description = "wireguard config";
+        type = lib.types.attrs;
+      };
+    };
     routerMac = lib.mkOption {
       description = "router's mac address";
       type = lib.types.str;
@@ -81,10 +113,6 @@
     wpa_passphrase = lib.mkOption {
       description = "wlan passphrase";
       type = lib.types.str;
-    };
-    wireguard = lib.mkOption {
-      description = "wireguard config";
-      type = lib.types.attrs;
     };
     dhcpReservations = lib.mkOption {
       description = "dhcp reservations (ipv4)";

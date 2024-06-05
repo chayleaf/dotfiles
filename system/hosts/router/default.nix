@@ -49,7 +49,12 @@ let
   # vpn table, assign an id but don't actually add a rule for it, so it is the default
   vpn_table = 2;
 
-  vpn_mtu = config.networking.wireguard.interfaces.wg0.mtu;
+  vpn_iface =
+    if cfg.vpn.openvpn.enable && !cfg.vpn.wireguard.enable then "tun0"
+    else if cfg.vpn.wireguard.enable && !cfg.vpn.openvpn.enable then "wg0"
+    else throw "Exactly one of OpenVPN/Wireguard must be used";
+
+  vpn_mtu = config.networking.wireguard.interfaces.${vpn_iface}.mtu or 1320;
   vpn_ipv4_mss = vpn_mtu - 40;
   vpn_ipv6_mss = vpn_mtu - 60;
 
@@ -411,7 +416,8 @@ in {
   # ethernet wan
   router.interfaces.wan = {
     dependentServices = [
-      { service = "wireguard-wg0"; inNetns = false; }
+      (lib.mkIf cfg.vpn.wireguard.enable { service = "wireguard-${vpn_iface}"; inNetns = false; })
+      (lib.mkIf cfg.vpn.openvpn.enable { service = "openvpn-client"; inNetns = false; })
       { service = "wireguard-wg1"; inNetns = false; }
     ];
     systemdLink.linkConfig.MACAddressPolicy = "none";
@@ -503,12 +509,12 @@ in {
       selfIp4 = netAddresses.lan4;
       selfIp6 = netAddresses.lan6;
       lans = [ "br0" "wg1" ];
-      wans = [ "wg0" "veth-wan-a" ];
+      wans = [ vpn_iface "veth-wan-a" ];
       logPrefix = "lan ";
       netdevIngressWanRules = with notnft.dsl; with payload; [
         # check oif only from vpn
         # dont check it from veth-wan-a because of dnat fuckery and because we already check packets coming from wan there
-        [(is.eq meta.iifname (set [ "wg0" "wg1" ])) (is.eq (fib (f: with f; [ saddr mark iif ]) (f: f.oif)) missing) (log "lan oif missing ") drop]
+        [(is.eq meta.iifname (set [ vpn_iface "wg1" ])) (is.eq (fib (f: with f; [ saddr mark iif ]) (f: f.oif)) missing) (log "lan oif missing ") drop]
       ];
       inetDnatRules = 
         builtins.concatLists (map
@@ -517,10 +523,10 @@ in {
             rule4 = rule.target4; rule6 = rule.target6;
           in with notnft.dsl; with payload;
             lib.optional (rule4 != null)
-              [ (is.eq meta.iifname "wg0") (is.eq ip.protocol protocols) (is.eq th.dport rule.port)
+              [ (is.eq meta.iifname vpn_iface) (is.eq ip.protocol protocols) (is.eq th.dport rule.port)
                 (if rule4.port == null then dnat.ip rule4.address else dnat.ip rule4.address rule4.port) ]
             ++ lib.optional (rule6 != null)
-              [ (is.eq meta.iifname "wg0") (is.eq ip6.nexthdr protocols) (is.eq th.dport rule.port)
+              [ (is.eq meta.iifname vpn_iface) (is.eq ip6.nexthdr protocols) (is.eq th.dport rule.port)
                 (if rule6.port == null then dnat.ip6 rule6.address else dnat.ip6 rule6.address rule6.port) ]
             )
           (builtins.filter (x: x.inVpn && (x.tcp || x.udp)) cfg.dnatRules))
@@ -574,13 +580,14 @@ in {
           [(is.eq ip6.daddr "@block6") (log "block6 ") drop]
           [(is.eq ip.saddr "@block4") (log "block4/s ") drop]
           [(is.eq ip6.saddr "@block6") (log "block6/s ") drop]
+          [(mangle meta.mark wan_table)]
           # default to vpn...
-          [(mangle meta.mark vpn_table)]
+          # [(mangle meta.mark vpn_table)]
           # ...but unvpn traffic to/from force_unvpn4/force_unvpn6
-          [(is.eq ip.daddr "@force_unvpn4") (mangle meta.mark wan_table)]
-          [(is.eq ip6.daddr "@force_unvpn6") (mangle meta.mark wan_table)]
-          [(is.eq ip.saddr "@force_unvpn4") (mangle meta.mark wan_table)]
-          [(is.eq ip6.saddr "@force_unvpn6") (mangle meta.mark wan_table)]
+          # [(is.eq ip.daddr "@force_unvpn4") (mangle meta.mark wan_table)]
+          # [(is.eq ip6.daddr "@force_unvpn6") (mangle meta.mark wan_table)]
+          # [(is.eq ip.saddr "@force_unvpn4") (mangle meta.mark wan_table)]
+          # [(is.eq ip6.saddr "@force_unvpn6") (mangle meta.mark wan_table)]
           # ...force vpn to/from force_vpn4/force_vpn6
           # (disable this if it breaks some sites)
           [(is.eq ip.daddr "@force_vpn4") (mangle meta.mark vpn_table)]
@@ -619,12 +626,12 @@ in {
             lib.optionals (rule4 != null) [
               [ (is.eq meta.iifname lanSet) (is.eq ip.protocol protocols) (is.eq ip.saddr rule4.address)
                 (is.eq th.sport (if rule4.port != null then rule4.port else rule.port)) (mangle meta.mark vpn_table) ]
-              [ (is.eq meta.iifname "wg0") (is.eq ip.protocol protocols) (is.eq ip.daddr rule4.address)
+              [ (is.eq meta.iifname vpn_iface) (is.eq ip.protocol protocols) (is.eq ip.daddr rule4.address)
                 (is.eq th.dport (if rule4.port != null then rule4.port else rule.port)) (mangle meta.mark vpn_table) ]
             ] ++ lib.optionals (rule6 != null) [
               [ (is.eq meta.iifname lanSet) (is.eq ip6.nexthdr protocols) (is.eq ip6.saddr rule6.address)
                 (is.eq th.sport (if rule6.port != null then rule6.port else rule.port)) (mangle meta.mark vpn_table) ]
-              [ (is.eq meta.iifname "wg0") (is.eq ip6.nexthdr protocols) (is.eq ip6.daddr rule6.address)
+              [ (is.eq meta.iifname vpn_iface) (is.eq ip6.nexthdr protocols) (is.eq ip6.daddr rule6.address)
                 (is.eq th.dport (if rule6.port != null then rule6.port else rule.port)) (mangle meta.mark vpn_table) ]
             ])
           (builtins.filter (x: x.inVpn && (x.tcp || x.udp) && dnatRuleMode x == "mark") cfg.dnatRules))
@@ -756,9 +763,43 @@ in {
 
   # vpn socket is in wan namespace, meaning traffic gets sent through the wan namespace
   # vpn interface is in default namespace, meaning it can be used in the default namespace
-  networking.wireguard.interfaces.wg0 = cfg.wireguard // {
-    socketNamespace = "wan";
-    interfaceNamespace = "init";
+  # networking.wireguard.interfaces.${vpn_iface} = cfg.vpn.wireguard.config // {
+  #   socketNamespace = "wan";
+  #   interfaceNamespace = "init";
+  # };
+
+  systemd.services.vpn-tunnel = {
+    description = "VPN Tunnel";
+    wantedBy = [
+      "multi-user.target"
+      (lib.mkIf cfg.vpn.openvpn.enable "openvpn-client.service")
+      (lib.mkIf cfg.vpn.wireguard.enable "wireguard-${vpn_iface}.service")
+    ];
+    after = [ "network.target" "netns-wan.service" ]; 
+    bindsTo = [ "netns-wan.service" ]; 
+    stopIfChanged = false;
+    path = [ config.programs.ssh.package ];
+    script = ''
+      while true; do
+        ${config.programs.ssh.package}/bin/ssh \
+          -i /secrets/vpn/sshtunnel.key \
+          -L ${netAddresses.netnsWan4}:${toString cfg.vpn.tunnel.localPort}:127.0.0.1:${toString cfg.vpn.tunnel.remotePort} \
+          -p ${toString cfg.vpn.tunnel.port} \
+          -N -T -v \
+          sshtunnel@${cfg.vpn.tunnel.ip}
+        echo "Restarting..."
+        sleep 10
+      done
+    '';
+    serviceConfig = {
+      Restart = "always";
+      Type = "simple";
+      NetworkNamespacePath = "/var/run/netns/wan";
+    };
+  };
+
+  services.openvpn.servers = lib.mkIf cfg.vpn.openvpn.enable {
+    client.config = cfg.vpn.openvpn.config;
   };
 
   # use main netns's address instead of 127.0.0.1
@@ -847,6 +888,7 @@ in {
     wants = [ "nftables-default.service" "avahi-daemon.service" ];
     # allow it to call nft
     serviceConfig.AmbientCapabilities = [ "CAP_NET_ADMIN" ];
+    serviceConfig.CapabilityBoundingSet = [ "CAP_NET_ADMIN" ];
   };
   systemd.services.update-rkn-blacklist = {
     # fetch vpn_ips.json and vpn_domains.json for unbound
@@ -864,7 +906,6 @@ in {
   systemd.timers.update-rkn-blacklist = {
     wantedBy = [ "timers.target" ];
     partOf = [ "update-rkn-blacklist.service" ];
-    # slightly unusual time to reduce server load
     timerConfig.OnCalendar = [ "*-*-* 00:00:00" ]; # every day
     timerConfig.RandomizedDelaySec = 43200; # execute at random time in the first 12 hours
   };
