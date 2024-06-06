@@ -30,5 +30,6 @@ in {
   ];
   services.maubot.pythonPackages = with pkgs.python3.pkgs; [
     levenshtein
+    pillow
   ];
 }

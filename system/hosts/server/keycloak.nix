@@ -36,7 +36,8 @@ in {
 
   # a crude way to make some python packages available for synapse
   services.matrix-synapse.plugins = with pkgs.python3.pkgs; [ authlib ];
-  services.matrix-synapse.settings.password_config.enabled = false;
+  # i'm managing this manually in a stateful way
+  # services.matrix-synapse.settings.password_config.enabled = false;
   systemd.services.matrix-synapse.after = [ "keycloak.service" ];
 
   # See also https://meta.akkoma.dev/t/390

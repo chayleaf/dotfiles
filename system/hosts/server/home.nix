@@ -107,14 +107,11 @@ in {
   # make sure only hydra has access to this file
   # so normal nix evals don't have access to builtins
   nix.settings.extra-builtins-file = "/secrets/nixos/extra-builtins.nix";
+  # required for hydra which uses restricted mode
   nix.settings.allowed-uris = [
-    # required for home-manager (no idea if it's required at this point)
-    "https://git.sr.ht/~rycee/nmd/"
-    # ...for the rest of the home config
-    "https://api.github.com/repos/FAForever/"
-    "https://github.com/nix-community/nix-index-database/releases/download/"
-    # required for server (I suppose since nvfetcher uses fetchTarball here...)
-    "https://github.com/searxng/searxng/"
+    "https://git.sr.ht/"
+    "https://api.github.com/repos/"
+    "https://github.com/"
     # for nginx CF-Connecting-IP config generation
     "https://www.cloudflare.com/ips-v4"
     "https://www.cloudflare.com/ips-v6"
@@ -283,7 +280,7 @@ in {
         job_name = "local_medium_freq";
         scrape_interval = "15m";
         static_configs = [ {
-          targets = [ "127.0.0.1:9548" "127.0.0.1:9198" ];
+          targets = [ "127.0.0.1:9548" "127.0.0.1:9198" "127.0.0.1:9173" ];
           labels.machine = "server";
         } ];
       }
@@ -358,6 +355,12 @@ in {
         } ];
       }
     ];
+  };
+  # TODO: enable
+  services.matrix-appservice-discord.settings.metrics = {
+    enable = true;
+    host = "127.0.0.1";
+    port = 9173;
   };
   services.matrix-synapse.settings = {
     enable_metrics = true;

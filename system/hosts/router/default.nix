@@ -483,7 +483,7 @@ in {
       { ipv6 = true; extraArgs = [ "fwmark" wan_table "table" wan_table ]; }
       # below is dnat config
     ] ++ builtins.concatLists (map (rule: let
-      table = if rule.inVpn then 0 else wan_table;
+      table = if rule.inVpn then vpn_table else wan_table;
       forEachPort = func: port:
         if builtins.isInt port then [ (func port) ]
         else if port?set then builtins.concatLists (map (forEachPort func) port.set)

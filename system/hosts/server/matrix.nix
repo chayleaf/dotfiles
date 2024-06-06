@@ -1,5 +1,6 @@
 { config
 , lib
+, pkgs
 , ... }:
 
 let
@@ -51,12 +52,32 @@ in {
     homeserver = "http://${lib.quoteListenAddr matrixAddr}:${toString matrixPort}/";
   };
 
+  services.matrix-appservice-discord = {
+    enable = true;
+    environmentFile = "/secrets/discord-bridge-token";
+    settings = {
+      auth.usePrivilegedIntents = true;
+      database.filename = "";
+      bridge = {
+        domain = "matrix.${cfg.domainName}";
+        homeserverUrl = "https://matrix.${cfg.domainName}";
+        enableSelfServiceBridging = true;
+        disablePresence = true;
+        disablePortalBridging = true;
+        disableInviteNotifications = true;
+        disableJoinLeaveNotifications = true;
+        disableRoomTopicNotifications = true;
+      };
+    };
+  };
+
   services.matrix-synapse = {
     enable = true;
     extraConfigFiles = [ "/var/lib/matrix-synapse/config.yaml" ];
     settings = {
       app_service_config_files = [
         "/var/lib/heisenbridge/registration.yml"
+        "/var/lib/matrix-synapse/discord-registration.yaml"
       ];
       allow_guest_access = true;
       url_preview_enabled = true;

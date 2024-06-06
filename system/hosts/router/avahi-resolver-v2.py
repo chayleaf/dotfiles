@@ -682,7 +682,7 @@ def init(*args: Any, **kwargs: Any):
                 with open(f"{base}/{k}_dpi.json", "rt", encoding="utf-8") as f:
                     dpi: list[DpiInfo] = json.load(f)
                 for dpi_info in dpi:
-                    all_domains.extend(dpi_info.get("domains", []))
+                    all_domains.extend(dpi_info["domains"])
             except FileNotFoundError:
                 pass
             except:
