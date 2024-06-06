@@ -894,10 +894,12 @@ in {
     # fetch vpn_ips.json and vpn_domains.json for unbound
     script = ''
       BLACKLIST=$(${pkgs.coreutils}/bin/mktemp) || exit 1
-      ${pkgs.curl}/bin/curl "https://reestr.rublacklist.net/api/v2/ips/json/" -o "$BLACKLIST" || exit 1
+      ${pkgs.curl}/bin/curl "https://reestr.rublacklist.net/api/v3/ips/" -o "$BLACKLIST" || exit 1
       ${pkgs.jq}/bin/jq ".[0:0]" "$BLACKLIST" && chown unbound:unbound "$BLACKLIST" && mv "$BLACKLIST" /var/lib/unbound/vpn_ips.json
-      ${pkgs.curl}/bin/curl "https://reestr.rublacklist.net/api/v2/domains/json/" -o "$BLACKLIST" || exit 1
+      ${pkgs.curl}/bin/curl "https://reestr.rublacklist.net/api/v3/domains/" -o "$BLACKLIST" || exit 1
       ${pkgs.jq}/bin/jq ".[0:0]" "$BLACKLIST" && chown unbound:unbound "$BLACKLIST" && mv "$BLACKLIST" /var/lib/unbound/vpn_domains.json
+      ${pkgs.curl}/bin/curl "https://reestr.rublacklist.net/api/v3/dpi/" -o "$BLACKLIST" || exit 1
+      ${pkgs.jq}/bin/jq ".[0:0]" "$BLACKLIST" && chown unbound:unbound "$BLACKLIST" && mv "$BLACKLIST" /var/lib/unbound/vpn_dpi.json
     '';
     serviceConfig = {
       Type = "oneshot";
