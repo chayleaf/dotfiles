@@ -1,0 +1,25 @@
+diff --git a/src/bot.ts b/src/bot.ts
+index fc575cd..b0b2624 100644
+--- a/src/bot.ts
++++ b/src/bot.ts
+@@ -1042,7 +1042,7 @@ export class DiscordBot {
+         try {
+             const intent = this.GetIntentFromDiscordMember(msg.author, msg.webhookID);
+             // Check Attachements
+-            if (!editEventId) {
++            if (false && !editEventId) {
+                 // on discord you can't edit in images, you can only edit text
+                 // so it is safe to only check image upload stuff if we don't have
+                 // an edit
+@@ -1093,6 +1093,11 @@ export class DiscordBot {
+                     });
+                 });
+             }
++            for (let attachment of msg.attachments.array()) {
++                // this will be a temporary URL, which I don't care about, it's fine
++                if (!msg.content) msg.content = "";
++                msg.content += "\n" + attachment.url;
++            }
+             if (!msg.content && msg.embeds.length === 0) {
+                 return;
+             }

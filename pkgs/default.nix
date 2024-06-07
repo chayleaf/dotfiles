@@ -27,6 +27,7 @@ in
     unstable = nixForNixPlugins;
   };
   matrix-appservice-discord = pkgs.matrix-appservice-discord.overrideAttrs (old: {
+    doCheck = false;
     patches = (old.patches or []) ++ [
       (pkgs.fetchpatch {
         url = "https://github.com/matrix-org/matrix-appservice-discord/commit/eb989fa710e8db4ebc8f2ce36c6679ee6cbc1a44.patch";
@@ -44,6 +45,7 @@ in
         url = "https://github.com/matrix-org/matrix-appservice-discord/commit/7f3d41d86ebce057cfdc82ce3aaab64b533e8f0b.patch";
         hash = "sha256-HmQ1KASZS+a78fe5yOCVXAnXLRmJUglzc6OxNJazOSk=";
       })
+      ./matrix-appservice-discord/disable-attachment-forwarding-to-matrix.patch
     ];
   });
   # Various patches to change Nix version of existing packages so they don't error out because of nix-plugins in nix.conf

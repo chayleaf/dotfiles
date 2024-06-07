@@ -206,7 +206,7 @@ IF_UNSPEC = -1
 PROTO_UNSPEC = -1
 
 
-Domains = dict[str, dict]
+Domains = dict[str, "Domains | bool"]
 
 
 class NftQuery(TypedDict):
@@ -591,15 +591,22 @@ def add_ips(set: str, ipv6: bool, ips: list[str], flush: bool = False):
             traceback.print_exc(file=f)
 
 
-def add_split_domain(domains: Domains, split_domain):
-    domains1: dict = domains
-    while split_domain:
+def add_split_domain(domains: Domains, split_domain: list[str]):
+    if not split_domain:
+        return
+    split_domain = split_domain[:]
+    while len(split_domain) > 1:
         key = split_domain[-1]
-        if key not in domains1.keys():
-            domains1[key] = {}
-        domains = domains1[key]
-        split_domain = split_domain[:-1]
-    domains1["__IsTrue__"] = True
+        if key in domains.keys():
+            domains1 = domains[key]
+            if isinstance(domains1, bool):
+                return
+        else:
+            domains1 = {}
+            domains[key] = domains1
+        domains = domains1
+        split_domain.pop()
+    domains[split_domain[-1]] = True
 
 
 def build_domains(domains: list[str]) -> Domains:
@@ -611,20 +618,14 @@ def build_domains(domains: list[str]) -> Domains:
 
 def lookup_domain(domains: Domains, domain: str) -> bool:
     split_domain: list[str] = domain.split(".")
-    domains1: dict = domains
     while len(split_domain):
         key: str = split_domain[-1]
         split_domain = split_domain[:-1]
-        star: Optional[dict] = domains1.get("*", None)
-        if star is not None and star.get("__IsTrue__", False):
-            return True
-        domains1 = domains1.get(key, None)
-        if domains1 is None:
-            return False
-    star = domains.get("*", None)
-    if star is not None and star.get("__IsTrue__", False):
-        return True
-    return bool(domains.get("__IsTrue__", False))
+        domains1 = domains.get(key, False)
+        if isinstance(domains1, bool):
+            return domains1
+        domains = domains1
+    return False
 
 
 class DpiInfo(TypedDict):
@@ -827,7 +828,7 @@ def operate(id, event, qstate, qdata) -> bool:
                     n4 = n3.removesuffix(f".{k}")
                     qdomains = v["domains"]
                     if not lookup_domain(qdomains, n4):
-                        add_split_domain(qdomains, ["*"] + n4.split("."))
+                        add_split_domain(qdomains, n4.split("."))
                         old = []
                         if os.path.exists(f"/var/lib/unbound/{k}_domains.json"):
                             with open(f"/var/lib/unbound/{k}_domains.json", "rt") as f:
@@ -836,7 +837,7 @@ def operate(id, event, qstate, qdata) -> bool:
                                 f"/var/lib/unbound/{k}_domains.json",
                                 f"/var/lib/unbound/{k}_domains.json.bak",
                             )
-                        old.append("*." + n4)
+                        old.append(n4)
                         with open(f"/var/lib/unbound/{k}_domains.json", "wt") as f:
                             json.dump(old, f)
         elif n2.endswith(f".tmp{NFT_TOKEN}"):
@@ -846,7 +847,7 @@ def operate(id, event, qstate, qdata) -> bool:
                     n4 = n3.removesuffix(f".{k}")
                     qdomains = v["domains"]
                     if not lookup_domain(qdomains, n4):
-                        add_split_domain(qdomains, ["*"] + n4.split("."))
+                        add_split_domain(qdomains, n4.split("."))
         return True
     qnames: list[str] = []
     for k, v in NFT_QUERIES.items():
