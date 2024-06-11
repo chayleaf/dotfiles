@@ -1,0 +1,28 @@
+diff --git a/src/config.ts b/src/config.ts
+index 1e2f862..fd6e411 100644
+--- a/src/config.ts
++++ b/src/config.ts
+@@ -163,7 +163,7 @@ export class LoggingFile {
+ 
+ class DiscordBridgeConfigGhosts {
+     public nickPattern: string = ":nick";
+-    public usernamePattern: string = ":username#:tag";
++    public usernamePattern: string = ":username";
+ }
+ 
+ export class DiscordBridgeConfigMetrics {
+diff --git a/src/usersyncroniser.ts b/src/usersyncroniser.ts
+index b82722d..fb534c6 100644
+--- a/src/usersyncroniser.ts
++++ b/src/usersyncroniser.ts
+@@ -207,6 +207,10 @@ export class UserSyncroniser {
+             log.warn("Remote user wasn't found, using blank avatar");
+         }
+         const intent = this.bridge.getIntentForUserId(memberState.mxUserId);
++        const oldState = await intent.underlyingClient.getRoomStateEvent(roomId, "m.room.member", memberState.mxUserId);
++        if (oldState && (oldState.avatar_url || "") == avatar && (oldState.displayname || "") == memberState.displayName) {
++            return;
++        }
+         /* The intent class tries to be smart and deny a state update for <PL50 users.
+            Obviously a user can change their own state so we use the client instead. */
+         await intent.underlyingClient.sendStateEvent(roomId, "m.room.member", memberState.mxUserId, {

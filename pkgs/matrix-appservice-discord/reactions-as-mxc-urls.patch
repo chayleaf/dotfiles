@@ -1,0 +1,100 @@
+diff --git a/src/bot.ts b/src/bot.ts
+index 4445aa6..8613b5a 100644
+--- a/src/bot.ts
++++ b/src/bot.ts
+@@ -1199,7 +1199,9 @@ export class DiscordBot {
+ 
+     public async OnMessageReactionAdd(reaction: Discord.MessageReaction, user: Discord.User | Discord.PartialUser) {
+         const message = reaction.message;
+-        const reactionName = reaction.emoji.name;
++        const reactionName = (reaction.emoji.id
++            ? await this.GetEmoji(reaction.emoji.name, reaction.emoji.animated, reaction.emoji.id) + "#" + reaction.emoji.name
++            : reaction.emoji.name);
+         log.verbose(`Got message reaction add event for ${message.id} with ${reactionName}`);
+ 
+         const storeEvent = await this.store.Get(DbEvent, {
+@@ -1229,7 +1231,7 @@ export class DiscordBot {
+             const reactionEventId = await intent.underlyingClient.unstableApis.addReactionToEvent(
+                 roomId,
+                 eventId,
+-                reaction.emoji.id ? `:${reactionName}:` : reactionName
++                reactionName,
+             );
+ 
+             const event = new DbEvent();
+@@ -1246,7 +1248,10 @@ export class DiscordBot {
+ 
+     public async OnMessageReactionRemove(reaction: Discord.MessageReaction, user: Discord.User | Discord.PartialUser) {
+         const message = reaction.message;
+-        log.verbose(`Got message reaction remove event for ${message.id} with ${reaction.emoji.name}`);
++        const reactionName = (reaction.emoji.id
++            ? await this.GetEmoji(reaction.emoji.name, reaction.emoji.animated, reaction.emoji.id) + "#" + reaction.emoji.name
++            : reaction.emoji.name);
++        log.verbose(`Got message reaction remove event for ${message.id} with ${reactionName}`);
+ 
+         const storeEvent = await this.store.Get(DbEvent, {
+             discord_id: message.id,
+@@ -1274,7 +1279,7 @@ export class DiscordBot {
+ 
+             const underlyingClient = intent.underlyingClient;
+ 
+-            const { chunk } = await underlyingClient.unstableApis.getRelationsForEvent(
++            const { chunk } = await underlyingClient.getRelationsForEvent(
+                 roomId,
+                 eventId,
+                 "m.annotation"
+@@ -1285,7 +1290,7 @@ export class DiscordBot {
+                     return false;
+                 }
+ 
+-                return event.content["m.relates_to"].key === reaction.emoji.name;
++                return event.content["m.relates_to"].key === reactionName;
+             });
+ 
+             if (!event) {
+@@ -1324,7 +1329,7 @@ export class DiscordBot {
+             const [ eventId, roomId ] = storeEvent.MatrixId.split(";");
+             const underlyingClient = this.bridge.botIntent.underlyingClient;
+ 
+-            const { chunk } = await underlyingClient.unstableApis.getRelationsForEvent(
++            const { chunk } = await underlyingClient.getRelationsForEvent(
+                 roomId,
+                 eventId,
+                 "m.annotation"
+diff --git a/test/mocks/appservicemock.ts b/test/mocks/appservicemock.ts
+index 06cc3ce..f6ef585 100644
+--- a/test/mocks/appservicemock.ts
++++ b/test/mocks/appservicemock.ts
+@@ -281,6 +281,10 @@ class MatrixClientMock extends AppserviceMockBase {
+     public async redactEvent(roomId: string, eventId: string, reason?: string | null) {
+         this.funcCalled("redactEvent", roomId, eventId, reason);
+     }
++
++    public async getRelationsForEvent(roomId: string, eventId: string, relationType?: string, eventType?: string): Promise<any> {
++        this.funcCalled("getRelationsForEvent", roomId, eventId, relationType, eventType);
++    }
+ }
+ 
+ class UnstableApis extends AppserviceMockBase {
+@@ -288,8 +292,4 @@ class UnstableApis extends AppserviceMockBase {
+     public async addReactionToEvent(roomId: string, eventId: string, emoji: string) {
+         this.funcCalled("addReactionToEvent", roomId, eventId, emoji);
+     }
+-
+-    public async getRelationsForEvent(roomId: string, eventId: string, relationType?: string, eventType?: string): Promise<any> {
+-        this.funcCalled("getRelationsForEvent", roomId, eventId, relationType, eventType);
+-    }
+ }
+diff --git a/test/test_discordbot.ts b/test/test_discordbot.ts
+index 9c9e469..2109bb7 100644
+--- a/test/test_discordbot.ts
++++ b/test/test_discordbot.ts
+@@ -501,7 +501,7 @@ describe("DiscordBot", () => {
+             discordBot = getDiscordBot();
+             const intent = mockBridge.getIntent(author.id);
+ 
+-            intent.underlyingClient.unstableApis.getRelationsForEvent = async () => {
++            intent.underlyingClient.getRelationsForEvent = async () => {
+                 return {
+                     chunk: [
+                         {

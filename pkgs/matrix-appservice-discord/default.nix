@@ -42,6 +42,29 @@ matrix-appservice-discord.overrideAttrs (old: {
       hash = "sha256-1qb4Zah1XKzxTpVJqOOqz+TiXMFmnsIMZeuqJQdqSIA=";
       name = "bridge-matrix-edits-2.patch";
     })
+    # https://github.com/matrix-org/matrix-appservice-discord/pull/862
+    (fetchpatch {
+      url = "https://github.com/matrix-org/matrix-appservice-discord/commit/3106957ebd857bc88ba3f62182a61dd00275f2fc.patch";
+      hash = "sha256-Xf+TuWXNVqi+0YRwBbCkLcMfsYNxq1ZlsgLWpwjqPww=";
+      name = "discord-to-matrix-reactions-1.patch";
+    })
+    (fetchpatch {
+      url = "https://github.com/matrix-org/matrix-appservice-discord/commit/a8186874b03c545a8728892b299a4367776fc538.patch";
+      hash = "sha256-Hq2HY44hPeGPXI3MglyN7Am+NCNAHAbr2hYhXvDYtGk=";
+      name = "discord-to-matrix-reactions-2.patch";
+    })
+    (fetchpatch {
+      url = "https://github.com/matrix-org/matrix-appservice-discord/commit/da2c3b88c7dd4f3a679890c58f934e9b2ed775df.patch";
+      hash = "sha256-4NMAr+Ni+7pI/I007YH5Y+4ZwAhwg91/BXGvLVcO0BQ=";
+      name = "discord-to-matrix-reactions-3.patch";
+    })
+    (fetchpatch {
+      url = "https://github.com/matrix-org/matrix-appservice-discord/commit/a33f269c88c432c532d7816f180e5262d73ebf02.patch";
+      hash = "sha256-0WkfDkQsDoxfKH3MgPb893UPDPxeWueQwVSaxD2RKAw=";
+      name = "discord-to-matrix-reactions-4.patch";
+    })
+    ./reactions-as-mxc-urls.patch
     ./disable-attachment-forwarding-to-matrix.patch
+    ./reduce-spamminess.patch
   ];
 })
