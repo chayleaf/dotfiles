@@ -83,7 +83,7 @@ in
       ip link set end0 address ${router-config.router-settings.serverMac} || ip link set eth0 address ${router-config.router-settings.serverInitrdMac} || true
     '';
     network.enable = true;
-    network.udhcpc.extraArgs = [ "-t6" ];
+    network.udhcpc.extraArgs = [ "-t100" ];
     network.ssh = {
       enable = true;
       port = 22;
