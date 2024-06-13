@@ -580,20 +580,21 @@ in {
           [(is.eq ip6.daddr "@block6") (log "block6 ") drop]
           [(is.eq ip.saddr "@block4") (log "block4/s ") drop]
           [(is.eq ip6.saddr "@block6") (log "block6/s ") drop]
+          # default to no vpn...
           [(mangle meta.mark wan_table)]
-          # default to vpn...
+          # # default to vpn...
           # [(mangle meta.mark vpn_table)]
-          # ...but unvpn traffic to/from force_unvpn4/force_unvpn6
-          # [(is.eq ip.daddr "@force_unvpn4") (mangle meta.mark wan_table)]
-          # [(is.eq ip6.daddr "@force_unvpn6") (mangle meta.mark wan_table)]
-          # [(is.eq ip.saddr "@force_unvpn4") (mangle meta.mark wan_table)]
-          # [(is.eq ip6.saddr "@force_unvpn6") (mangle meta.mark wan_table)]
           # ...force vpn to/from force_vpn4/force_vpn6
           # (disable this if it breaks some sites)
           [(is.eq ip.daddr "@force_vpn4") (mangle meta.mark vpn_table)]
           [(is.eq ip6.daddr "@force_vpn6") (mangle meta.mark vpn_table)]
           [(is.eq ip.saddr "@force_vpn4") (mangle meta.mark vpn_table)]
           [(is.eq ip6.saddr "@force_vpn6") (mangle meta.mark vpn_table)]
+          # ...but unvpn traffic to/from force_unvpn4/force_unvpn6
+          [(is.eq ip.daddr "@force_unvpn4") (mangle meta.mark wan_table)]
+          [(is.eq ip6.daddr "@force_unvpn6") (mangle meta.mark wan_table)]
+          [(is.eq ip.saddr "@force_unvpn4") (mangle meta.mark wan_table)]
+          [(is.eq ip6.saddr "@force_unvpn6") (mangle meta.mark wan_table)]
           # block requests to port 25 from hosts other than the server so they can't send mail pretending to originate from my domain
           # only do this for lans since traffic from other interfaces isn't forwarded to wan
           [(is.eq meta.iifname lanSet) (is.ne ether.saddr cfg.serverMac) (is.eq meta.l4proto (f: f.tcp)) (is.eq tcp.dport 25) (log "smtp ") drop]
@@ -780,24 +781,23 @@ in {
     stopIfChanged = false;
     path = [ config.programs.ssh.package ];
     script = ''
-      while true; do
-        ${config.programs.ssh.package}/bin/ssh \
-          -i /secrets/vpn/sshtunnel.key \
-          -L ${netAddresses.netnsWan4}:${toString cfg.vpn.tunnel.localPort}:127.0.0.1:${toString cfg.vpn.tunnel.remotePort} \
-          -p ${toString cfg.vpn.tunnel.port} \
-          -N -T -v \
-          sshtunnel@${cfg.vpn.tunnel.ip}
-        echo "Restarting..."
-        sleep 10
-      done
+      ${config.programs.ssh.package}/bin/ssh \
+        -i /secrets/vpn/sshtunnel.key \
+        -L ${netAddresses.netnsWan4}:${toString cfg.vpn.tunnel.localPort}:127.0.0.1:${toString cfg.vpn.tunnel.remotePort} \
+        -p ${toString cfg.vpn.tunnel.port} \
+        -N -T -v \
+        ${cfg.vpn.tunnel.user}@${cfg.vpn.tunnel.ip}
     '';
     serviceConfig = {
       Restart = "always";
+      RestartSec = "10s";
       Type = "simple";
       NetworkNamespacePath = "/var/run/netns/wan";
     };
   };
-
+  systemd.services.openvpn-client = lib.mkIf cfg.vpn.openvpn.enable {
+    wantedBy = [ "nftables-netns-default.service" ];
+  };
   services.openvpn.servers = lib.mkIf cfg.vpn.openvpn.enable {
     client.config = cfg.vpn.openvpn.config;
   };
@@ -874,6 +874,8 @@ in {
       unbound-python = pkgs.python3.withPackages (ps: with ps; [ pydbus dnspython requests pytricia nftables ]);
     in
       "${unbound-python}/${unbound-python.sitePackages}";
+    # see https://github.com/NixOS/nixpkgs/pull/310514
+    environment.GI_TYPELIB_PATH = "${lib.getLib pkgs.glib}/lib/girepository-1.0";
     environment.MDNS_ACCEPT_NAMES = "^(.*\\.)?local\\.$";
     # resolve retracker.local to whatever router.local resolves to
     # we can't add a local zone alongside using avahi resolver, so we have to use hacks like this
@@ -884,8 +886,8 @@ in {
     environment.NFT_QUERIES = "vpn:force_vpn4,force_vpn6;unvpn!:force_unvpn4,force_unvpn6;iot:allow_iot4,allow_iot6";
     serviceConfig.EnvironmentFile = "/secrets/unbound_env";
     # it needs to run after nftables has been set up because it sets up the sets
-    after = [ "nftables-default.service" "avahi-daemon.service" ];
-    wants = [ "nftables-default.service" "avahi-daemon.service" ];
+    after = [ "nftables-netns-default.service" "avahi-daemon.service" ];
+    wants = [ "nftables-netns-default.service" "avahi-daemon.service" ];
     # allow it to call nft
     serviceConfig.AmbientCapabilities = [ "CAP_NET_ADMIN" ];
     serviceConfig.CapabilityBoundingSet = [ "CAP_NET_ADMIN" ];

@@ -25,6 +25,11 @@
           type = lib.types.port;
           default = 22;
         };
+        user = lib.mkOption {
+          description = "SSH user";
+          type = lib.types.str;
+          default = "sshtunnel";
+        };
       };
       openvpn.enable = lib.mkEnableOption "OpenVPN";
       openvpn.config = lib.mkOption {

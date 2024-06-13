@@ -595,6 +595,10 @@ def add_split_domain(domains: Domains, split_domain: list[str]):
     if not split_domain:
         return
     split_domain = split_domain[:]
+    if split_domain and split_domain[-1] == '*':
+        split_domain.pop()
+    if not split_domain:
+        return
     while len(split_domain) > 1:
         key = split_domain[-1]
         if key in domains.keys():

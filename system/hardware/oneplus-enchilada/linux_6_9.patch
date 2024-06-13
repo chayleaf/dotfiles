@@ -4090,40 +4090,8 @@ index b84fdd17c3d..23beef9a62b 100644
  };
  
  static struct gdsc *disp_cc_sdm845_gdscs[] = {
-diff --git a/drivers/gpu/drm/drm_bridge.c b/drivers/gpu/drm/drm_bridge.c
-index 521a71c61b1..17ed94885dc 100644
---- a/drivers/gpu/drm/drm_bridge.c
-+++ b/drivers/gpu/drm/drm_bridge.c
-@@ -687,11 +687,17 @@ void drm_atomic_bridge_chain_post_disable(struct drm_bridge *bridge,
- 				 */
- 				list_for_each_entry_from(next, &encoder->bridge_chain,
- 							 chain_node) {
--					if (next->pre_enable_prev_first) {
-+					if (!next->pre_enable_prev_first) {
- 						next = list_prev_entry(next, chain_node);
- 						limit = next;
- 						break;
- 					}
-+
-+					if (list_is_last(&next->chain_node,
-+							 &encoder->bridge_chain)) {
-+						limit = next;
-+						break;
-+					}
- 				}
- 
- 				/* Call these bridges in reverse order */
-@@ -774,7 +780,7 @@ void drm_atomic_bridge_chain_pre_enable(struct drm_bridge *bridge,
- 					/* Found first bridge that does NOT
- 					 * request prev to be enabled first
- 					 */
--					limit = list_prev_entry(next, chain_node);
-+					limit = next;
- 					break;
- 				}
- 			}
 diff --git a/drivers/gpu/drm/drm_mipi_dsi.c b/drivers/gpu/drm/drm_mipi_dsi.c
-index ef6e416522f..795001bb7ff 100644
+index 9874ff6d471..795001bb7ff 100644
 --- a/drivers/gpu/drm/drm_mipi_dsi.c
 +++ b/drivers/gpu/drm/drm_mipi_dsi.c
 @@ -645,29 +645,56 @@ int mipi_dsi_set_maximum_return_packet_size(struct mipi_dsi_device *dsi,
@@ -4143,7 +4111,7 @@ index ef6e416522f..795001bb7ff 100644
   *
   * Return: 0 on success or a negative error code on failure.
   */
--ssize_t mipi_dsi_compression_mode(struct mipi_dsi_device *dsi, bool enable)
+-int mipi_dsi_compression_mode(struct mipi_dsi_device *dsi, bool enable)
 +int mipi_dsi_compression_mode_ext(struct mipi_dsi_device *dsi, bool enable,
 +				  enum mipi_dsi_compression_algo algo,
 +				  unsigned int pps_selector)
@@ -4190,17 +4158,6 @@ index ef6e416522f..795001bb7ff 100644
  EXPORT_SYMBOL(mipi_dsi_compression_mode);
  
  /**
-@@ -679,8 +706,8 @@ EXPORT_SYMBOL(mipi_dsi_compression_mode);
-  *
-  * Return: 0 on success or a negative error code on failure.
-  */
--ssize_t mipi_dsi_picture_parameter_set(struct mipi_dsi_device *dsi,
--				       const struct drm_dsc_picture_parameter_set *pps)
-+int mipi_dsi_picture_parameter_set(struct mipi_dsi_device *dsi,
-+				   const struct drm_dsc_picture_parameter_set *pps)
- {
- 	struct mipi_dsi_msg msg = {
- 		.channel = dsi->channel,
 diff --git a/drivers/gpu/drm/msm/adreno/a6xx_gpu.c b/drivers/gpu/drm/msm/adreno/a6xx_gpu.c
 index cf0b1de1c07..ff3ff6ab9dd 100644
 --- a/drivers/gpu/drm/msm/adreno/a6xx_gpu.c
@@ -47636,7 +47593,7 @@ index 10129095a4c..6d3016e008e 100644
  
  static const struct of_device_id wled_match_table[] = {
 diff --git a/include/drm/drm_mipi_dsi.h b/include/drm/drm_mipi_dsi.h
-index c0aec0d4d66..82b1cc434ea 100644
+index 3011d33eccb..82b1cc434ea 100644
 --- a/include/drm/drm_mipi_dsi.h
 +++ b/include/drm/drm_mipi_dsi.h
 @@ -226,6 +226,12 @@ static inline int mipi_dsi_pixel_format_to_bpp(enum mipi_dsi_pixel_format fmt)
@@ -47652,22 +47609,16 @@ index c0aec0d4d66..82b1cc434ea 100644
  struct mipi_dsi_device *
  mipi_dsi_device_register_full(struct mipi_dsi_host *host,
  			      const struct mipi_dsi_device_info *info);
-@@ -241,9 +247,12 @@ int mipi_dsi_shutdown_peripheral(struct mipi_dsi_device *dsi);
- int mipi_dsi_turn_on_peripheral(struct mipi_dsi_device *dsi);
+@@ -242,6 +248,9 @@ int mipi_dsi_turn_on_peripheral(struct mipi_dsi_device *dsi);
  int mipi_dsi_set_maximum_return_packet_size(struct mipi_dsi_device *dsi,
  					    u16 value);
--ssize_t mipi_dsi_compression_mode(struct mipi_dsi_device *dsi, bool enable);
--ssize_t mipi_dsi_picture_parameter_set(struct mipi_dsi_device *dsi,
--				       const struct drm_dsc_picture_parameter_set *pps);
-+int mipi_dsi_compression_mode(struct mipi_dsi_device *dsi, bool enable);
+ int mipi_dsi_compression_mode(struct mipi_dsi_device *dsi, bool enable);
 +int mipi_dsi_compression_mode_ext(struct mipi_dsi_device *dsi, bool enable,
 +				  enum mipi_dsi_compression_algo algo,
 +				  unsigned int pps_selector);
-+int mipi_dsi_picture_parameter_set(struct mipi_dsi_device *dsi,
-+				   const struct drm_dsc_picture_parameter_set *pps);
+ int mipi_dsi_picture_parameter_set(struct mipi_dsi_device *dsi,
+ 				   const struct drm_dsc_picture_parameter_set *pps);
  
- ssize_t mipi_dsi_generic_write(struct mipi_dsi_device *dsi, const void *payload,
- 			       size_t size);
 diff --git a/include/dt-bindings/clock/qcom,dispcc-sdm845.h b/include/dt-bindings/clock/qcom,dispcc-sdm845.h
 index 4016fd1d5b4..f3e088b450b 100644
 --- a/include/dt-bindings/clock/qcom,dispcc-sdm845.h
