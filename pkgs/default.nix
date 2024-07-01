@@ -21,6 +21,14 @@ in
   inherit (inputs.nix-gaming.packages.${pkgs.system}) faf-client osu-lazer-bin;
   matrix-appservice-discord = pkgs.callPackage ./matrix-appservice-discord { inherit (pkgs) matrix-appservice-discord; };
 
+  openssh = pkgs.openssh.overrideAttrs (old: rec {
+    version = "9.8p1";
+    src = pkgs.fetchurl {
+      url = "mirror://openbsd/OpenSSH/portable/openssh-${version}.tar.gz";
+      hash = "sha256-3YvQAqN5tdSZ37BQ3R+pr4Ap6ARh9LtsUjxJlz9aOfM=";
+    };
+  });
+
   buffyboard = pkgs.callPackage ./buffyboard { };
   clang-tools_latest = pkgs.clang-tools_16;
   clang_latest = pkgs.clang_16;
