@@ -167,6 +167,17 @@
       "nixpkgs-wayland.cachix.org-1:3lwxaILxMRkVhehr5StQprHdEo4IrE8sRho9R9HOLYA="
     ];
   };
+  nix.buildMachines = [
+    {
+      hostName = "darwin-build-box.nix-community.org";
+      protocol = "ssh-ng";
+      systems = [ "aarch64-darwin" "x86_64-darwin" ];
+      supportedFeatures = inputs.nix-community-infra.darwinConfigurations.darwin01.config.nix.settings.system-features;
+      sshKey = "/secrets/community-builder-key";
+      sshUser = "chayleaf";
+      publicHostKey = "c3NoLWVkMjU1MTkgQUFBQUMzTnphQzFsWkRJMU5URTVBQUFBSUZ6OEZYU1ZFZGY4RnZETWZib3hoQjVWalNlN3kyV2dTYTA5cTFMNHQwOTkgCg==";
+    }
+  ];
   services.udev.packages = [
     pkgs.android-udev-rules
   ];
