@@ -19,6 +19,7 @@ in
 
 {
   inherit (inputs.nix-gaming.packages.${pkgs.system}) faf-client osu-lazer-bin;
+  inherit (inputs.osu-wine.packages.${pkgs.system}) osu-wine;
   matrix-appservice-discord = pkgs.callPackage ./matrix-appservice-discord { inherit (pkgs) matrix-appservice-discord; };
 
   openssh = pkgs.openssh.overrideAttrs (old: rec {
@@ -54,7 +55,6 @@ in
     patches = [ ./looking-glass.patch ];
   });
   mobile-config-firefox = callPackage ./mobile-config-firefox { };
-  osu-wine = callPackage ./osu-wine { };
   ping-exporter = callPackage ./ping-exporter { };
   proton-ge = pkgs.stdenvNoCC.mkDerivation {
     inherit (sources.proton-ge) pname version src;

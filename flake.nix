@@ -17,6 +17,10 @@
       url = "github:chayleaf/mobile-nixos/fix-op6-modem";
       flake = false;
     };
+    osu-wine = {
+      url = "github:chayleaf/osu-wine.nix";
+      inputs.nixpkgs.follows = "nixpkgs";
+    };
     impermanence.url = "github:nix-community/impermanence";
     nur.url = "github:nix-community/NUR";
     rust-overlay = {
