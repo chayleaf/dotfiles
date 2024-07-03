@@ -414,6 +414,21 @@ in {
   };
   */
   # ethernet wan
+  router.tunnels.sittun0 = lib.mkIf (cfg.vpn.tunnel.mode == "sit") {
+    mode = "sit";
+    remote = cfg.vpn.tunnel.ip;
+    local = cfg.vpn.tunnel.localIp;
+    ttl = 255;
+  };
+  router.interfaces.sittun0 = lib.mkIf (cfg.vpn.tunnel.mode == "sit") {
+    dependentServices = [
+      (lib.mkIf cfg.vpn.wireguard.enable { service = "wireguard-${vpn_iface}"; inNetns = false; })
+      (lib.mkIf cfg.vpn.openvpn.enable { service = "openvpn-client"; inNetns = false; })
+    ];
+    ipv6.addresses = [ (router-lib.parseCidr cfg.vpn.tunnel.ifaceAddr) ];
+    ipv6.routes = [ { extraArgs = [ "::/0" "dev" "sittun0" ]; } ];
+    networkNamespace = "wan";
+  };
   router.interfaces.wan = {
     dependentServices = [
       (lib.mkIf cfg.vpn.wireguard.enable { service = "wireguard-${vpn_iface}"; inNetns = false; })
@@ -703,11 +718,13 @@ in {
   };
   router.networkNamespaces.wan = {
     # this is the even more boring nftables config
-    nftables.jsonRules = mkRules {
+    nftables.jsonRules = let
+      wans = [ "wan" ] ++ lib.optional (cfg.vpn.tunnel.mode == "sit") "sittun0";
+    in mkRules {
       selfIp4 = netAddresses.netnsWan4;
       selfIp6 = netAddresses.netnsWan6;
+      inherit wans;
       lans = [ "veth-wan-b" ];
-      wans = [ "wan" ];
       netdevIngressWanRules = with notnft.dsl; with payload; [
         [(is.eq (fib (f: with f; [ saddr mark iif ]) (f: f.oif)) missing) (log "wan oif missing ") drop]
       ];
@@ -718,10 +735,10 @@ in {
             rule4 = rule.target4; rule6 = rule.target6;
           in with notnft.dsl; with payload;
             lib.optionals (rule4 != null) [
-              [ (is.eq meta.iifname "wan") (is.eq ip.protocol protocols) (is.eq th.dport rule.port)
+              [ (is.eq meta.iifname (setIfNeeded wans)) (is.eq ip.protocol protocols) (is.eq th.dport rule.port)
                 (if rule4.port == null then dnat.ip rule4.address else dnat.ip rule4.address rule4.port) ]
             ] ++ lib.optionals (rule6 != null) [
-              [ (is.eq meta.iifname "wan") (is.eq ip6.nexthdr protocols) (is.eq th.dport rule.port)
+              [ (is.eq meta.iifname (setIfNeeded wans)) (is.eq ip6.nexthdr protocols) (is.eq th.dport rule.port)
                 (if rule6.port == null then dnat.ip6 rule6.address else dnat.ip6 rule6.address rule6.port) ]
             ])
           (builtins.filter (x: !x.inVpn && (x.tcp || x.udp)) cfg.dnatRules));
@@ -734,10 +751,10 @@ in {
             rule4 = rule.target4; rule6 = rule.target6;
           in with notnft.dsl; with payload;
             lib.optionals (rule4 != null) [
-              [ (is.eq meta.iifname "wan") (is.eq meta.oifname "veth-wan-b") (is.eq ip.protocol protocols)
+              [ (is.eq meta.iifname (setIfNeeded wans)) (is.eq meta.oifname "veth-wan-b") (is.eq ip.protocol protocols)
                 (is.eq th.dport (if rule4.port != null then rule4.port else rule.port)) (is.eq ip.daddr rule4.address) masquerade ]
             ] ++ lib.optionals (rule6 != null) [
-              [ (is.eq meta.iifname "wan") (is.eq meta.oifname "veth-wan-b") (is.eq ip6.nexthdr protocols)
+              [ (is.eq meta.iifname (setIfNeeded wans)) (is.eq meta.oifname "veth-wan-b") (is.eq ip6.nexthdr protocols)
                 (is.eq th.dport (if rule6.port != null then rule6.port else rule.port)) (is.eq ip6.daddr rule6.address) masquerade ]
             ])
           (builtins.filter (x: !x.inVpn && (x.tcp || x.udp) && dnatRuleMode x == "snat") cfg.dnatRules));
@@ -764,12 +781,13 @@ in {
 
   # vpn socket is in wan namespace, meaning traffic gets sent through the wan namespace
   # vpn interface is in default namespace, meaning it can be used in the default namespace
-  # networking.wireguard.interfaces.${vpn_iface} = cfg.vpn.wireguard.config // {
-  #   socketNamespace = "wan";
-  #   interfaceNamespace = "init";
-  # };
+  networking.wireguard.interfaces.${vpn_iface} = lib.mkIf cfg.vpn.wireguard.enable
+    (cfg.vpn.wireguard.config // {
+      socketNamespace = "wan";
+      interfaceNamespace = "init";
+    });
 
-  systemd.services.vpn-tunnel = {
+  systemd.services.vpn-tunnel = lib.mkIf (cfg.vpn.tunnel.mode == "ssh") {
     description = "VPN Tunnel";
     wantedBy = [
       "multi-user.target"

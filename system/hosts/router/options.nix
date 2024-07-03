@@ -7,7 +7,18 @@
   options.router-settings = {
     vpn = {
       tunnel = {
-        enable = lib.mkEnableOption "VPN tunnel";
+        mode = lib.mkOption {
+          description = "tunnel mode";
+          type = with lib.types; nullOr (enum [ "ssh" "sit" ]);
+        };
+        ifaceAddr = lib.mkOption {
+          description = "interface cidr";
+          type = router-lib.types.cidr;
+        };
+        localIp = lib.mkOption {
+          description = "local ip";
+          type = router-lib.types.ip;
+        };
         localPort = lib.mkOption {
           description = "local port";
           type = lib.types.port;
@@ -18,7 +29,7 @@
         };
         ip = lib.mkOption {
           description = "remote ip";
-          type = router-lib.types.ipv4;
+          type = router-lib.types.ip;
         };
         port = lib.mkOption {
           description = "SSH port";

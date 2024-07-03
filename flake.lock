@@ -510,11 +510,11 @@
         ]
       },
       "locked": {
-        "lastModified": 1718217962,
-        "narHash": "sha256-bVKwJdVeo6wMN6xMOFx3Um3x7ebijyCG5iGCIXAtDXA=",
+        "lastModified": 1720021052,
+        "narHash": "sha256-tu8IQn8Kj7S0xRg0L2ej7S65FzXqSX7LI7M2pbLdQJU=",
         "owner": "chayleaf",
         "repo": "nixos-router",
-        "rev": "f25509e55a06f1dfa089556b28b9402c13e18aa4",
+        "rev": "4c132c4c5fc09b3c3317b960ec1533c4a5ebe41f",
         "type": "github"
       },
       "original": {

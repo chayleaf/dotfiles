@@ -86,7 +86,7 @@
         if dev.${name} or false then
           (if input._type or null == "flake"
           then let inputs = input.inputs // { self = (import /${devPath}/${name}/flake.nix).outputs inputs; };
-          in { __toString = _: "/${devPath}/${name}"; } // inputs.self
+          in { __toString = _: "/${toString devPath}/${name}"; } // inputs.self
           else /${devPath}/${name})
           else input)
       base-inputs;
