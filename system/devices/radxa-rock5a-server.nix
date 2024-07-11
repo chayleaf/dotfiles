@@ -35,8 +35,6 @@ in
     "net.ipv4.tcp_congestion_control" = "bbr";
   };
 
-  networking.useDHCP = true;
-  /*
   # as expected, systemd initrd and networking didn't work well, and i really cba to debug it
   networking.useDHCP = false;
   networking.useNetworkd = true;
@@ -52,8 +50,18 @@ in
     networks."10-dhcp" = {
       DHCP = "yes";
       name = "e*";
+      networkConfig = {
+        IPv6AcceptRA = "yes";
+      };
+      dhcpV4Config = {
+        ClientIdentifier = "mac";
+        DUIDType = "link-layer";
+      };
+      dhcpV6Config = {
+        DUIDType = "link-layer";
+      };
     };
-  };*/
+  };
 
   boot.initrd = {
     /*systemd = {
@@ -79,10 +87,12 @@ in
     preLVMCommands = lib.mkOrder 499 ''
       ip link set end0 address ${router-config.router-settings.serverInitrdMac} || ip link set eth0 address ${router-config.router-settings.serverInitrdMac} || true
     '';
-    postMountCommands = ''
-      ip link set end0 address ${router-config.router-settings.serverMac} || ip link set eth0 address ${router-config.router-settings.serverInitrdMac} || true
-    '';
+    # postMountCommands = ''
+    #   ip link set end0 address ${router-config.router-settings.serverMac} || ip link set eth0 address ${router-config.router-settings.serverMac} || true
+    # '';
     network.enable = true;
+    network.flushBeforeStage2 = true;
+    network.udhcpc.enable = true;
     network.udhcpc.extraArgs = [ "-t100" ];
     network.ssh = {
       enable = true;

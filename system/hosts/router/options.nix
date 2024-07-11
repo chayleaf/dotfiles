@@ -70,6 +70,11 @@
       description = "server's mac address in initrd";
       type = lib.types.str;
     };
+    serverInitrdDuid = lib.mkOption {
+      description = "server's duid in initrd";
+      type = with lib.types; nullOr str;
+      default = null;
+    };
     vacuumMac = lib.mkOption {
       description = "robot vacuum's mac address";
       type = lib.types.str;

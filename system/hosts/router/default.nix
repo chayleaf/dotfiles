@@ -296,6 +296,7 @@ in {
     { ipAddress = lightBulbAddress6;
       macAddress = cfg.lightBulbMac; }
     { ipAddress = serverInitrdAddress6;
+      duid = cfg.serverInitrdDuid;
       macAddress = cfg.serverInitrdMac; }
   ];
 
