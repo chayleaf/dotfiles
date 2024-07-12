@@ -1,8 +1,9 @@
 { config
-, lib
+, pkgs
 , router-config
 , hardware
-, ... }:
+, ...
+}:
 
 let
   uuids.enc = "15945050-df48-418b-b736-827749b9262a";
@@ -60,16 +61,39 @@ in
   };
 
   boot.initrd = {
-    # eth0 on some kernels
-    # end0 on other kernels
-    # sometimes even version dependent
-    preLVMCommands = lib.mkOrder 499 ''
-      ip link set end0 address ${router-config.router-settings.serverInitrdMac} || ip link set eth0 address ${router-config.router-settings.serverInitrdMac} || true
-    '';
-    network.enable = true;
+    systemd = {
+      services.unlock-bcachefs-persist.enable = false;
+      enable = true;
+      network = {
+        enable = true;
+        links."10-mac" = {
+          matchConfig.OriginalName = "e*";
+          linkConfig = {
+            MACAddressPolicy = "none";
+            MACAddress = router-config.router-settings.serverInitrdMac;
+          };
+        };
+        networks."10-dhcp" = {
+          DHCP = "yes";
+          name = "e*";
+          networkConfig = {
+            IPv6AcceptRA = "yes";
+          };
+          dhcpV4Config = {
+            ClientIdentifier = "mac";
+            DUIDType = "link-layer";
+          };
+          dhcpV6Config = {
+            DUIDType = "link-layer";
+          };
+        };
+      };
+    };
+    network.enable = false;
     network.flushBeforeStage2 = true;
-    network.udhcpc.enable = true;
-    network.udhcpc.extraArgs = [ "-t100" ];
+    systemd.initrdBin = [ pkgs.iproute2 pkgs.vim pkgs.bashInteractive pkgs.util-linux ];
+    systemd.storePaths = [ pkgs.vim pkgs.busybox ];
+    systemd.users.root.shell = "/bin/bash";
     network.ssh = {
       enable = true;
       port = 22;
@@ -102,7 +126,13 @@ in
                 options = [ "defaults" "size=2G" "mode=755" ]; };
     "/persist" =
               { device = "UUID=${uuids.bch}"; fsType = "bcachefs"; inherit neededForBoot;
-                options = [ "errors=ro" ]; };
+                options = [
+                  "errors=ro"
+                  "x-systemd.device-timeout=0"
+                  "x-systemd.requires=dev-mapper-bch0.device"
+                  "x-systemd.requires=dev-mapper-bch1.device"
+                  "x-systemd.requires=dev-mapper-bch2.device"
+                ]; };
     "/boot" = { device = parts.boot; fsType = "vfat"; inherit neededForBoot; };
   };
 

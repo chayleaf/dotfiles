@@ -71,6 +71,7 @@
       # mobile-nixos = true;
       # nixos-router = true;
       # notnft = true;
+      # nixpkgs = true;
     };
     # IRL-related stuff I'd rather not put into git
     priv =

@@ -629,11 +629,11 @@
     },
     "nixpkgs_3": {
       "locked": {
-        "lastModified": 1720722856,
-        "narHash": "sha256-vTD9PK8X0rVrOkcRetSpTacRNbH/qZi8YdKBXxAC8GQ=",
+        "lastModified": 1720888318,
+        "narHash": "sha256-s5Pf3Es1reWTvHiz0YNuVknH/0RGo2vu+8MyeKT7VWo=",
         "owner": "chayleaf",
         "repo": "nixpkgs",
-        "rev": "06bfe30652b5d4b56a800a09c29ada61adcede65",
+        "rev": "81b52fd15be6a3331668cc7bbaab4aec7c654472",
         "type": "github"
       },
       "original": {
