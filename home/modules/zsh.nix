@@ -1,7 +1,7 @@
 { config, pkgs, ... }:
 {
   programs.zsh = {
-    enable = true;
+    enable = !config.minimal;
     # zsh-autosuggestions
     autosuggestion.enable = true;
     # zsh-syntax-highlighting

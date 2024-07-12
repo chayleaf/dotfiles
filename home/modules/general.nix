@@ -11,9 +11,9 @@
     ./zsh.nix
     ./fish.nix
   ];
-  manual.json.enable = true;
+  manual.json.enable = !config.minimal;
   services.gpg-agent = {
-    enable = true;
+    enable = !config.minimal;
     enableSshSupport = true;
     maxCacheTtl = 72000;
     maxCacheTtlSsh = 72000;
@@ -65,14 +65,14 @@
       extraPackages = with pkgs; [
         # utils
         gnused mktemp fzf coreutils-full findutils xdg-utils gnupg whois curl
-        file mediainfo unzip gnutar man rclone sshfs trash-cli
+        file mediainfo unzip gnutar man rclone
         # for preview
         # exa - TODO: replace with eza wrapper?
-        bat
-        libarchive atool
-        glow w3m
+        bat libarchive atool glow
         # for opening
-        p7zip unrar-wrapper odt2txt
+        p7zip unrar-wrapper
+      ] ++ lib.optionals (!config.minimal) [
+        odt2txt w3m sshfs trash-cli
       ];
       plugins = {
         src = pluginSrc;
@@ -92,14 +92,14 @@
     home-manager.enable = true;
     # i only use this as a login shell
     bash = {
-      enable = true;
+      enable = !config.minimal;
       initExtra = ''
         bind -x '"\C-r": __atuin_history'
         export ATUIN_NOBIND=true
       '';
     };
     git = {
-      enable = true;
+      enable = !config.minimal;
       package = pkgs.gitAndTools.gitFull;
       delta.enable = true;
       extraConfig = {
@@ -135,7 +135,7 @@
       };
     };
     ssh = {
-      enable = true;
+      enable = !config.minimal;
       compression = true;
     };
     tmux = {
@@ -145,7 +145,7 @@
       keyMode = "vi";
     };
     gpg = {
-      enable = true;
+      enable = !config.minimal;
       homedir = "${config.xdg.dataHome}/gnupg";
       mutableKeys = true;
       mutableTrust = true;
@@ -156,7 +156,7 @@
       variables.show-mode-in-prompt = true;
     };
     nix-index = {
-      enable = true;
+      enable = !config.minimal;
       # don't add pkgs.nix to PATH
       # use the nix that's already in PATH
       # (because I use nix plugins and plugins are nix version-specific)
@@ -168,31 +168,38 @@
     #  vimKeys = true;
     #};
     alot = {
-      enable = true;
+      enable = !config.minimal;
       settings = {
         handle_mouse = true;
         initial_command = "search tag:inbox AND NOT tag:killed";
         prefer_plaintext = true;
       };
     };
-    msmtp.enable = true;
+    msmtp.enable = !config.minimal;
     notmuch = {
-      enable = true;
+      enable = !config.minimal;
       hooks.preNew = ''
         ${config.services.mbsync.package}/bin/mbsync --all || ${pkgs.coreutils}/bin/true
       '';
     };
-    mbsync.enable = true;
+    mbsync.enable = !config.minimal;
   };
   #services.mbsync.enable = true;
   # TODO: see https://github.com/pazz/alot/issues/1632
-  home.file.".mailcap".text = ''
-    text/html;  ${pkgs.w3m}/bin/w3m -dump -o document_charset=%{charset} -o display_link_number=1 '%s'; nametemplate=%s.html; copiousoutput
-  '';
+  home.file.".mailcap" = lib.mkIf (!config.minimal) {
+    text = ''
+      text/html;  ${pkgs.w3m}/bin/w3m -dump -o document_charset=%{charset} -o display_link_number=1 '%s'; nametemplate=%s.html; copiousoutput
+    '';
+  };
 
-  home.file.".cache/nix-index/files".source = assert config.xdg.cacheHome == "${config.home.homeDirectory}/.cache"; inputs.nix-index-database.packages.${pkgs.system}.nix-index-database;
+  home.file.".cache/nix-index/files" = lib.mkIf (!config.minimal) {
+    source =
+      assert config.xdg.cacheHome == "${config.home.homeDirectory}/.cache";
+      inputs.nix-index-database.packages.${pkgs.system}.nix-index-database;
+  };
 
-  systemd.user.tmpfiles.rules = builtins.map (file: "r!  \"/home/${config.home.username}/${file}\"") [
+  systemd.user.tmpfiles.rules = lib.mkIf (!config.minimal)
+  (builtins.map (file: "r!  \"/home/${config.home.username}/${file}\"") [
     ".local/share/clipman.json"
     ".local/state/lesshst" # I don't need less search history to persist across boots...
     ".Xauthority"
@@ -301,12 +308,14 @@
   ] ++ builtins.map (dir: "x  \"/home/${config.home.username}/${dir}/\"") [
     # WHY DOES THIS KEEP PART OF THE CONFIG
     ".cache/keepassxc"
-  ];
+  ]);
 
   home.packages = with pkgs; [
     rclone sshfs fuse
     file jq python3Full killall
-    appimage-run comma nix-output-monitor
+    comma nix-output-monitor
     unzip p7zip unrar-wrapper
+  ] ++ lib.optionals (!config.minimal) [
+    appimage-run
   ];
 }

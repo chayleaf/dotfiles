@@ -231,7 +231,20 @@
 
     # for each hostname, for each user, generate an attribute "${user}@${hostname}"
     homeConfigurations =
-      builtins.listToAttrs (builtins.concatLists
+      {
+        "chayleaf@hysteria" = inputs.home-manager.lib.homeManagerConfiguration {
+          pkgs = mkPkgs {
+            system = "x86_64-linux";
+            overlays = [ overlay ];
+          };
+          extraSpecialArgs = { inherit inputs; };
+          modules = [
+            ./home/hosts/remote.nix 
+            ({ pkgs, ... }: { home.file.hysteria.source = pkgs.hysteria; })
+          ];
+        };
+      }
+      // builtins.listToAttrs (builtins.concatLists
         (lib.flip lib.mapAttrsToList config
           (hostname: { system, home ? {}, ... }:
           let

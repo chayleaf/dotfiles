@@ -1,5 +1,9 @@
 { lib, config, ... }:
 with lib; {
+  options.minimal = mkOption {
+    type = types.bool;
+    default = false;
+  };
   options.phone = {
     enable = mkOption {
       type = types.bool;
