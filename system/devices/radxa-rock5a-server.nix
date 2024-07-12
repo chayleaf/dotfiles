@@ -35,7 +35,7 @@ in
     "net.ipv4.tcp_congestion_control" = "bbr";
   };
 
-  # as expected, systemd initrd and networking didn't work well, and i really cba to debug it
+  # as expected, systemd initrd didn't work well, and i really cba to debug it
   networking.useDHCP = false;
   networking.useNetworkd = true;
   systemd.network = {
@@ -50,46 +50,22 @@ in
     networks."10-dhcp" = {
       DHCP = "yes";
       name = "e*";
-      networkConfig = {
-        IPv6AcceptRA = "yes";
-      };
+      networkConfig.IPv6AcceptRA = "yes";
       dhcpV4Config = {
         ClientIdentifier = "mac";
         DUIDType = "link-layer";
       };
-      dhcpV6Config = {
-        DUIDType = "link-layer";
-      };
+      dhcpV6Config.DUIDType = "link-layer";
     };
   };
 
   boot.initrd = {
-    /*systemd = {
-      enable = true;
-      network = {
-        enable = true;
-        links."10-mac" = {
-          matchConfig.OriginalName = "e*";
-          linkConfig = {
-            MACAddressPolicy = "none";
-            MACAddress = router-config.router-settings.serverInitrdMac;
-          };
-        };
-        networks."10-dhcp" = {
-          DHCP = "yes";
-          name = "e*";
-        };
-      };
-    };*/
     # eth0 on some kernels
     # end0 on other kernels
     # sometimes even version dependent
     preLVMCommands = lib.mkOrder 499 ''
       ip link set end0 address ${router-config.router-settings.serverInitrdMac} || ip link set eth0 address ${router-config.router-settings.serverInitrdMac} || true
     '';
-    # postMountCommands = ''
-    #   ip link set end0 address ${router-config.router-settings.serverMac} || ip link set eth0 address ${router-config.router-settings.serverMac} || true
-    # '';
     network.enable = true;
     network.flushBeforeStage2 = true;
     network.udhcpc.enable = true;
@@ -102,7 +78,6 @@ in
         "/secrets/initrd/ssh_host_rsa_key"
         "/secrets/initrd/ssh_host_ed25519_key"
       ];
-      # shell = "/bin/cryptsetup-askpass";
     };
     luks.devices.cryptroot = {
       device = parts.enc;
