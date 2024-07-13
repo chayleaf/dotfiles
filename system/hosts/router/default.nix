@@ -792,6 +792,19 @@ in {
       interfaceNamespace = "init";
     });
 
+  # see https://pavluk.org/blog/2022/01/26/nixos_router.html
+  # (ipv6 doesn't work without this, for whatever reason)
+  systemd.services.ping-ipv6 = {
+    after = [ "network.target" "netns-wan.service" ];
+    wants = [ "netns-wan.service" ];
+    wantedBy = [ "default.target" ];
+    serviceConfig = {
+      ExecStart = "${pkgs.iputils}/bin/ping -q ${netAddresses.netnsWan6}";
+      Restart = "on-failure";
+      RestartSec = "30s";
+    };
+  };
+
   systemd.services.vpn-tunnel = lib.mkIf (cfg.vpn.tunnel.mode == "ssh") {
     description = "VPN Tunnel";
     wantedBy = [
