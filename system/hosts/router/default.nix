@@ -718,6 +718,10 @@ in {
     ];
   };
   router.networkNamespaces.wan = {
+    sysctl = {
+      "net.ipv4.conf.all.forwarding" = true;
+      "net.ipv6.conf.all.forwarding" = true;
+    };
     # this is the even more boring nftables config
     nftables.jsonRules = let
       wans = [ "wan" ] ++ lib.optional (cfg.vpn.tunnel.mode == "sit") "sittun0";
