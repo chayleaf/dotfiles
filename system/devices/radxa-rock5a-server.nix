@@ -126,7 +126,9 @@ in
                 options = [ "defaults" "size=2G" "mode=755" ]; };
     "/persist" =
               { device = "UUID=${uuids.bch}"; fsType = "bcachefs"; inherit neededForBoot;
+                # TODO: https://github.com/systemd/systemd/pull/33720/files
                 options = [
+                  "degraded"
                   "errors=ro"
                   "x-systemd.device-timeout=0"
                   "x-systemd.requires=dev-mapper-bch0.device"

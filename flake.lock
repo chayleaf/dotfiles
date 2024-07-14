@@ -356,16 +356,15 @@
     "mobile-nixos": {
       "flake": false,
       "locked": {
-        "lastModified": 1702959560,
-        "narHash": "sha256-3EmjKFKBypRGluGEY1oUMkQRBRDO5rZdzUXwTlRbUiY=",
-        "owner": "chayleaf",
+        "lastModified": 1720660935,
+        "narHash": "sha256-GnDGoVaObUjnYdCHUSIYVE1anMElis+Pq+RY30LFlIk=",
+        "owner": "NixOS",
         "repo": "mobile-nixos",
-        "rev": "55ec06035e85fcbda5caa6a73d045a9910fb16a2",
+        "rev": "31704f8a55f5773c9b4e7adb7408a142d142e1f2",
         "type": "github"
       },
       "original": {
-        "owner": "chayleaf",
-        "ref": "fix-op6-modem",
+        "owner": "NixOS",
         "repo": "mobile-nixos",
         "type": "github"
       }
@@ -550,8 +549,8 @@
       },
       "original": {
         "owner": "NixOS",
-        "ref": "nixos-unstable",
         "repo": "nixpkgs",
+        "rev": "c7b821ba2e1e635ba5a76d299af62821cbcb09f3",
         "type": "github"
       }
     },

@@ -2,10 +2,8 @@
   description = "NixOS + Home Manager configuration of chayleaf";
 
   inputs = {
-    #nixpkgs.url = "github:NixOS/nixpkgs/3dc2b4f8166f744c3b3e9ff8224e7c5d74a5424f";
-    # nixpkgs.url = "github:NixOS/nixpkgs/nixos-unstable";
     nix-community-infra.url = "github:nix-community/infra";
-    nixpkgs-kernel.url = "github:NixOS/nixpkgs/nixos-unstable";
+    nixpkgs-kernel.url = "github:NixOS/nixpkgs/c7b821ba2e1e635ba5a76d299af62821cbcb09f3";
     nixpkgs.url = "github:chayleaf/nixpkgs";
     nixos-hardware.url = "github:NixOS/nixos-hardware";
     nix-index-database = {
@@ -13,8 +11,7 @@
       inputs.nixpkgs.follows = "nixpkgs";
     };
     mobile-nixos = {
-      # url = "github:NixOS/mobile-nixos";
-      url = "github:chayleaf/mobile-nixos/fix-op6-modem";
+      url = "github:NixOS/mobile-nixos";
       flake = false;
     };
     osu-wine = {
