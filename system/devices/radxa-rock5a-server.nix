@@ -1,4 +1,5 @@
 { config
+, lib
 , pkgs
 , router-config
 , hardware
@@ -126,14 +127,16 @@ in
                 options = [ "defaults" "size=2G" "mode=755" ]; };
     "/persist" =
               { device = "UUID=${uuids.bch}"; fsType = "bcachefs"; inherit neededForBoot;
-                # TODO: https://github.com/systemd/systemd/pull/33720/files
-                options = [
+                # TODO: remove the if when systemd >= 257
+                options = let
+                  dep = if lib.versionAtLeast config.boot.initrd.systemd.package.version "257" then "wants" else "requires";
+                in [
                   "degraded"
                   "errors=ro"
                   "x-systemd.device-timeout=0"
-                  "x-systemd.requires=dev-mapper-bch0.device"
-                  "x-systemd.requires=dev-mapper-bch1.device"
-                  "x-systemd.requires=dev-mapper-bch2.device"
+                  "x-systemd.${dep}=dev-mapper-bch0.device"
+                  "x-systemd.${dep}=dev-mapper-bch1.device"
+                  "x-systemd.${dep}=dev-mapper-bch2.device"
                 ]; };
     "/boot" = { device = parts.boot; fsType = "vfat"; inherit neededForBoot; };
   };
