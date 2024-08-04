@@ -238,7 +238,11 @@
           extraSpecialArgs = { inherit inputs; };
           modules = [
             ./home/hosts/remote.nix 
-            ({ pkgs, ... }: { home.file.hysteria.source = pkgs.hysteria; })
+            ({ pkgs, ... }: {
+              home.file.hysteria.source = pkgs.hysteria;
+              home.file.shadowsocks-libev.source = pkgs.shadowsocks-libev;
+              home.file.shadowsocks-rust.source = pkgs.shadowsocks-rust;
+            })
           ];
         };
       }

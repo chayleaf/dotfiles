@@ -7,7 +7,7 @@
 {
   imports = [ ./gui.nix ];
 
-  programs.firefox = {
+  programs.librewolf = {
     enable = true;
     package = pkgs.wrapFirefox pkgs.librewolf-unwrapped {
       inherit (pkgs.librewolf-unwrapped) extraPrefsFiles extraPoliciesFiles;
@@ -15,6 +15,17 @@
       libName = "librewolf";
       nativeMessagingHosts = with pkgs; [ keepassxc ];
     };
+    profiles.other.id = 1;
+    profiles.other.bookmarks = [{
+          name = "bookmarklets";
+          toolbar = true;
+          bookmarks = [
+            {
+              name = "example.com";
+              url = "https://example.com";
+            }
+          ];
+        }];
     profiles.chayleaf = lib.mkMerge [
       {
         extensions = (with config.nur.repos.rycee.firefox-addons; [

@@ -172,11 +172,11 @@ commonConfig = {
     names = [ "Noto Sans Mono" "Symbols Nerd Font Mono" ];
     size = 16.0;
   };
-  gaps = {
-    smartBorders = "on";
-    smartGaps = true;
-    inner = 10;
-  };
+  # gaps = {
+  #   smartBorders = "on";
+  #   smartGaps = true;
+  #   inner = 10;
+  # };
   window.hideEdgeBorders = "smart";
   workspaceAutoBackAndForth = true;
 };
@@ -296,6 +296,11 @@ in
           criteria = {
             app_id = "^org.keepassxc.KeePassXC$";
             title = "^KeePassXC - (?:Browser |ブラウザーの)?(?:Access Request|アクセス要求)$";
+          }; }
+        { command = "floating on; border normal";
+          criteria = {
+            class = "ghidra-Ghidra";
+            title = "\\[CodeBrowser.*\\]$";
           }; }
       ]; };
       assigns = {
