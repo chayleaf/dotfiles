@@ -1,0 +1,66 @@
+diff --git a/libs/libkis/Node.cpp b/libs/libkis/Node.cpp
+index 7e15b58c2c..a187c18aad 100644
+--- a/libs/libkis/Node.cpp
++++ b/libs/libkis/Node.cpp
+@@ -863,7 +863,7 @@ QString Node::paintAbility()
+     return "UNPAINTABLE";
+ }
+ 
+-void Node::paintLine(const QPointF pointOne, const QPointF pointTwo, const QString strokeStyle)
++void Node::paintLine(const QPointF pointOne, const QPointF pointTwo, double pressureOne, double pressureTwo, const QString strokeStyle)
+ {
+     if (paintAbility() != "PAINT") {
+         dbgScript << "Script attempted to use Node::paintLine() on an unpaintable node, ignoring.";
+@@ -871,11 +871,11 @@ void Node::paintLine(const QPointF pointOne, const QPointF pointTwo, const QStri
+     }
+ 
+     KisPaintInformation pointOneInfo;
+-    pointOneInfo.setPressure(1.0);
++    pointOneInfo.setPressure(pressureOne);
+     pointOneInfo.setPos(pointOne);
+ 
+     KisPaintInformation pointTwoInfo;
+-    pointTwoInfo.setPressure(1.0);
++    pointTwoInfo.setPressure(pressureTwo);
+     pointTwoInfo.setPos(pointTwo);
+ 
+     KisFigurePaintingToolHelper helper = PaintingResources::createHelper(d->image, strokeStyle);
+diff --git a/libs/libkis/Node.h b/libs/libkis/Node.h
+index ecf9845a22..ce63d3f1bc 100644
+--- a/libs/libkis/Node.h
++++ b/libs/libkis/Node.h
+@@ -576,6 +576,8 @@ public Q_SLOTS:
+      * @brief paint a line on the canvas. Uses current brush preset
+      * @param pointOne starting point
+      * @param pointTwo end point
++     * @param pressureOne starting pressure
++     * @param pressureTwo end pressure
+      * @param strokeStyle appearance of the outline, one of:
+      * <ul>
+      * <li>None - will use Foreground Color, since line would be invisible otherwise
+@@ -583,7 +585,11 @@ public Q_SLOTS:
+      * <li>BackgroundColor</li>
+      * </ul>
+      */
+-    void paintLine(const QPointF pointOne, const QPointF pointTwo, const QString strokeStyle = PaintingResources::defaultStrokeStyle);
++    void paintLine(const QPointF pointOne,
++                   const QPointF pointTwo,
++                   double pressureOne = 1.0,
++                   double pressureTwo = 1.0,
++                   const QString strokeStyle = PaintingResources::defaultStrokeStyle);
+ 
+     /**
+      * @brief paint a rectangle on the canvas. Uses current brush preset
+diff --git a/plugins/extensions/pykrita/sip/krita/Node.sip b/plugins/extensions/pykrita/sip/krita/Node.sip
+index a01a6bce6f..986cc54169 100644
+--- a/plugins/extensions/pykrita/sip/krita/Node.sip
++++ b/plugins/extensions/pykrita/sip/krita/Node.sip
+@@ -82,7 +82,7 @@ public Q_SLOTS:
+     int index() const;
+     QUuid uniqueId() const;
+ 
+-    void paintLine(const QPoint pointOne, const QPoint pointTwo, const QString strokeStyle = "ForegroundColor");
++    void paintLine(const QPoint pointOne, const QPoint pointTwo, double pressureOne = 1.0, double pressureTwo = 1.0, const QString strokeStyle = "ForegroundColor");
+     void paintRectangle(const QRectF &rect, const QString strokeStyle = "ForegroundColor", const QString fillStyle = "None");
+     void paintPolygon(const QList<QPointF> points, const QString strokeStyle = "ForegroundColor", const QString fillStyle = "None");
+     void paintEllipse(const QRectF &rect, const QString strokeStyle = "ForegroundColor", const QString fillStyle = "None");

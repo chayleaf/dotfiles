@@ -1,0 +1,309 @@
+diff --git a/libs/libkis/CMakeLists.txt b/libs/libkis/CMakeLists.txt
+index a337451..66a5166 100644
+--- a/libs/libkis/CMakeLists.txt
++++ b/libs/libkis/CMakeLists.txt
+@@ -10,6 +10,7 @@ set(kritalibkis_LIB_SRCS
+     ManagedColor.cpp
+     Node.cpp
+     Notifier.cpp
++    PaintingResources.cpp
+     PresetChooser.cpp
+     Preset.cpp
+     Palette.cpp
+diff --git a/libs/libkis/Document.h b/libs/libkis/Document.h
+index 998a350..841c319 100644
+--- a/libs/libkis/Document.h
++++ b/libs/libkis/Document.h
+@@ -6,8 +6,6 @@
+ #ifndef LIBKIS_DOCUMENT_H
+ #define LIBKIS_DOCUMENT_H
+ 
+-#include <QObject>
+-
+ #include "kritalibkis_export.h"
+ #include "libkis.h"
+ 
+diff --git a/libs/libkis/Node.cpp b/libs/libkis/Node.cpp
+index 3fd7b5a..84f24d3 100644
+--- a/libs/libkis/Node.cpp
++++ b/libs/libkis/Node.cpp
+@@ -67,6 +67,17 @@
+ #include "LibKisUtils.h"
+ #include <kis_layer_utils.h>
+ 
++#include <KoCanvasResourceProvider.h>
++#include "strokes/KisFreehandStrokeInfo.h"
++#include "kis_resources_snapshot.h"
++#include "kis_canvas_resource_provider.h"
++#include "strokes/freehand_stroke.h"
++#include "kis_painting_information_builder.h"
++#include "KisAsynchronousStrokeUpdateHelper.h"
++#include "kis_stroke_strategy.h"
++#include "PaintingResources.h"
++
++
+ struct Node::Private {
+     Private() {}
+     KisImageWSP image;
+@@ -821,3 +832,50 @@ KisNodeSP Node::node() const
+ {
+     return d->node;
+ }
++
++void Node::paintLine(const QPointF pointOne, const QPointF pointTwo)
++{
++    KisPaintInformation pointOneInfo;
++    pointOneInfo.setPressure(1.0);
++    pointOneInfo.setPos(pointOne);
++
++    KisPaintInformation pointTwoInfo;
++    pointTwoInfo.setPressure(1.0);
++    pointTwoInfo.setPos(pointTwo);
++
++    KisFigurePaintingToolHelper helper = PaintingResources::createHelper(d->image);
++    helper.paintLine(pointOneInfo, pointTwoInfo);
++}
++
++
++void Node::paintRectangle(const QRectF &rect)
++{
++    // reference class where this stuff is being done. Maybe can use the "facade" like that does for setup?
++    // void KisFigurePaintingToolHelper::paintRect(const QRectF &rect)
++
++    KisFigurePaintingToolHelper helper = PaintingResources::createHelper(d->image);
++    helper.paintRect(rect);
++}
++
++
++void Node::paintPolygon(const QList<QPointF> listPoint)
++{
++    // strategy needs points in vPointF format
++    QVector<QPointF> points = points.fromList(listPoint);
++    KisFigurePaintingToolHelper helper = PaintingResources::createHelper(d->image);
++    helper.paintPolygon(points);
++}
++
++
++void Node::paintEllipse(const QRectF &rect)
++{
++    KisFigurePaintingToolHelper helper = PaintingResources::createHelper(d->image);
++    helper.paintEllipse(rect);
++}
++
++
++void Node::paintPath(const QPainterPath &path)
++{
++    KisFigurePaintingToolHelper helper = PaintingResources::createHelper(d->image);
++    helper.paintPainterPath(path);
++}
+diff --git a/libs/libkis/Node.h b/libs/libkis/Node.h
+index 1a40372..10daba4 100644
+--- a/libs/libkis/Node.h
++++ b/libs/libkis/Node.h
+@@ -570,6 +570,36 @@ public Q_SLOTS:
+      */
+     QUuid uniqueId() const;
+ 
++    /**
++     * @brief paint a line on the canvas. Uses current brush preset
++     * @param pointOne starting point
++     * @param pointTwo end point
++     */
++    void paintLine(const QPointF pointOne, const QPointF pointTwo);
++
++    /**
++     * @brief paint a rectangle on the canvas. Uses current brush preset
++     * @param rect QRect with x, y, width, and height
++     */
++    void paintRectangle(const QRectF &rect);
++ 
++    /**
++     * @brief paint a polygon on the canvas. Uses current brush preset
++     * @param list of Qpoints
++     */
++    void paintPolygon(const QList<QPointF> points);
++
++    /**
++     * @brief paint an ellipse on the canvas. Uses current brush preset
++     * @param rect QRect with x, y, width, and height
++     */
++    void paintEllipse(const QRectF &rect);
++
++    /**
++     * @brief paint a custom path on the canvas. Uses current brush preset
++     * @param  path QPainterPath to determine path
++     */
++    void paintPath(const QPainterPath &path);
+ 
+ private:
+ 
+diff --git a/libs/libkis/PaintingResources.cpp b/libs/libkis/PaintingResources.cpp
+new file mode 100644
+index 0000000..62abb26
+--- /dev/null
++++ b/libs/libkis/PaintingResources.cpp
+@@ -0,0 +1,77 @@
++/*
++ *  Copyright (c) 2020 Scott Petrovic <scottpetrovic@gmail.com>
++ *
++ *  This program is free software; you can redistribute it and/or modify
++ *  it under the terms of the GNU Lesser General Public License as published by
++ *  the Free Software Foundation; either version 2 of the License, or
++ *  (at your option) any later version.
++ *
++ *  This program is distributed in the hope that it will be useful,
++ *  but WITHOUT ANY WARRANTY; without even the implied warranty of
++ *  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
++ *  GNU General Public License for more details.
++ *
++ *  You should have received a copy of the GNU Lesser General Public License
++ *  along with this program; if not, write to the Free Software
++ *  Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301, USA.
++ */
++#include "PaintingResources.h"
++
++#include <kis_types.h>
++
++#include "KisView.h"
++#include "kis_types.h"
++
++#include "kis_canvas_resource_provider.h"
++#include "kis_paintop_preset.h"
++
++#include "KisViewManager.h"
++#include "KisGlobalResourcesInterface.h"
++
++#include <KoResourcePaths.h>
++
++#include "Document.h"
++
++#include <KisPart.h>
++#include <KisMainWindow.h>
++
++#include <kis_types.h>
++#include <kis_annotation.h>
++
++
++
++#include "kis_animation_importer.h"
++#include <kis_canvas2.h>
++#include <KoUpdater.h>
++#include <QMessageBox>
++
++
++#include "strokes/KisFreehandStrokeInfo.h"
++#include "kis_resources_snapshot.h"
++#include "kis_canvas_resource_provider.h"
++#include "strokes/freehand_stroke.h"
++#include "kis_painting_information_builder.h"
++#include "KisAsynchronousStrokeUpdateHelper.h"
++#include "kis_stroke_strategy.h"
++
++
++KisFigurePaintingToolHelper PaintingResources::createHelper(KisImageWSP image)
++{
++    // need to grab the resource provider
++    KisView *activeView = KisPart::instance()->currentMainwindow()->activeView();
++    KoCanvasResourceProvider *resourceManager = activeView->viewManager()->canvasResourceProvider()->resourceManager();
++
++    // grab the image and current layer
++    KisNodeSP node = activeView->currentNode();
++
++    const KUndo2MagicString name = kundo2_noi18n("python_stroke");
++    KisFigurePaintingToolHelper helper(
++        name,
++        image,
++        node, resourceManager,
++        KisToolShapeUtils::StrokeStyle::StrokeStyleForeground,
++        KisToolShapeUtils::FillStyle::FillStyleNone
++    );
++
++    return helper;
++}
+diff --git a/libs/libkis/PaintingResources.h b/libs/libkis/PaintingResources.h
+new file mode 100644
+index 0000000..19bb0d4
+--- /dev/null
++++ b/libs/libkis/PaintingResources.h
+@@ -0,0 +1,46 @@
++/*
++ *  Copyright (c) 2020 Scott Petrovic <scottpetrovic@gmail.com>
++ *
++ *  This program is free software; you can redistribute it and/or modify
++ *  it under the terms of the GNU Lesser General Public License as published by
++ *  the Free Software Foundation; either version 2 of the License, or
++ *  (at your option) any later version.
++ *
++ *  This program is distributed in the hope that it will be useful,
++ *  but WITHOUT ANY WARRANTY; without even the implied warranty of
++ *  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
++ *  GNU General Public License for more details.
++ *
++ *  You should have received a copy of the GNU Lesser General Public License
++ *  along with this program; if not, write to the Free Software
++ *  Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301, USA.
++ */
++#ifndef LIBKIS_PAINTINGRESOURCES_H
++#define LIBKIS_PAINTINGRESOURCES_H
++
++#include <QObject>
++#include <QColor>
++#include <kis_types.h>
++
++#include "kritalibkis_export.h"
++#include "KoCanvasResourceProvider.h"
++#include "kis_stroke_strategy.h"
++
++#include <kis_figure_painting_tool_helper.h>
++
++#include "libkis.h"
++
++#include "View.h"
++
++/**
++ * @brief The PaintingResources namespace
++ * Sets up information related to making painting strokes.
++ * Used primarily in the Document class
++ *
++ */
++namespace PaintingResources
++{
++    KisFigurePaintingToolHelper createHelper(KisImageWSP image);
++};
++
++#endif // LIBKIS_PAINTINGRESOURCES_H
+diff --git a/libs/ui/tool/kis_resources_snapshot.cpp b/libs/ui/tool/kis_resources_snapshot.cpp
+index dca6ba5..0c031e0 100644
+--- a/libs/ui/tool/kis_resources_snapshot.cpp
++++ b/libs/ui/tool/kis_resources_snapshot.cpp
+@@ -75,8 +75,11 @@ KisResourcesSnapshot::KisResourcesSnapshot(KisImageSP image, KisNodeSP currentNo
+     m_d->currentBgColor = resourceManager->resource(KoCanvasResource::BackgroundColor).value<KoColor>();
+     m_d->currentPattern = resourceManager->resource(KoCanvasResource::CurrentPattern).value<KoPatternSP>();
+     if (resourceManager->resource(KoCanvasResource::CurrentGradient).value<KoAbstractGradientSP>()) {
+-        m_d->currentGradient = resourceManager->resource(KoCanvasResource::CurrentGradient).value<KoAbstractGradientSP>()
+-                ->cloneAndBakeVariableColors(m_d->globalCanvasResourcesInterface);
++        m_d->currentGradient = resourceManager->resource(KoCanvasResource::CurrentGradient).value<KoAbstractGradientSP>();
++        if(m_d->currentGradient) {
++            m_d->currentGradient = resourceManager->resource(KoCanvasResource::CurrentGradient).value<KoAbstractGradientSP>()
++                    ->cloneAndBakeVariableColors(m_d->globalCanvasResourcesInterface);
++        }
+     }
+ 
+     /**
+diff --git a/plugins/extensions/pykrita/sip/krita/Node.sip b/plugins/extensions/pykrita/sip/krita/Node.sip
+index 3066bfb..cbcef0f 100644
+--- a/plugins/extensions/pykrita/sip/krita/Node.sip
++++ b/plugins/extensions/pykrita/sip/krita/Node.sip
+@@ -69,6 +69,12 @@ public Q_SLOTS:
+     void setLayerStyleFromAsl(const QString &asl);
+     int index() const;
+     QUuid uniqueId() const;
++
++    void paintLine(const QPoint pointOne, const QPoint pointTwo);
++    void paintRectangle(const QRectF &rect);
++    void paintPolygon(const QList<QPointF> points);
++    void paintEllipse(const QRectF &rect);
++    void paintPath(const QPainterPath &path);
+ Q_SIGNALS:
+ private:
+ };

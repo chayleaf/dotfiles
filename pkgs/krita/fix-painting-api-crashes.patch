@@ -1,0 +1,145 @@
+diff --git a/libs/libkis/Node.cpp b/libs/libkis/Node.cpp
+index 84f24d3..0e2370e 100644
+--- a/libs/libkis/Node.cpp
++++ b/libs/libkis/Node.cpp
+@@ -76,6 +76,8 @@
+ #include "KisAsynchronousStrokeUpdateHelper.h"
+ #include "kis_stroke_strategy.h"
+ #include "PaintingResources.h"
++#include "KisMainWindow.h"
++#include "kis_canvas2.h"
+ 
+ 
+ struct Node::Private {
+@@ -833,8 +835,48 @@ KisNodeSP Node::node() const
+     return d->node;
+ }
+ 
++QString Node::paintAbility()
++{
++    // Taken from KisTool:nodePaintAbility().
++    KisMainWindow *mainWindow = KisPart::instance()->currentMainwindow();
++    KisCanvas2 *canvas = mainWindow->activeView()->canvasBase();
++    if (canvas->resourceManager()->resource(KoCanvasResource::CurrentPaintOpPreset).isNull()) {
++        return "UNPAINTABLE";
++    }
++
++    if (!d->node) {
++        return "UNPAINTABLE";
++    }
++
++    if (d->node->inherits("KisShapeLayer")) {
++        return "VECTOR";
++    }
++    if (d->node->inherits("KisCloneLayer")) {
++        return "CLONE";
++    }
++    if (d->node->paintDevice()) {
++
++        KisPaintOpPresetSP currentPaintOpPreset = canvas->resourceManager()->resource(KoCanvasResource::CurrentPaintOpPreset).value<KisPaintOpPresetSP>();
++        if (currentPaintOpPreset->paintOp().id() == "mypaintbrush") {
++            const KoColorSpace *colorSpace = d->node->paintDevice()->colorSpace();
++            if (colorSpace->colorModelId() != RGBAColorModelID) {
++                return "MYPAINTBRUSH_UNPAINTABLE";
++            }
++        }
++
++        return "PAINT";
++    }
++
++    return "UNPAINTABLE";
++}
++
+ void Node::paintLine(const QPointF pointOne, const QPointF pointTwo)
+ {
++    if (paintAbility() != "PAINT") {
++        dbgScript << "Script attempted to use Node::paintLine() on an unpaintable node, ignoring.";
++        return;
++    }
++
+     KisPaintInformation pointOneInfo;
+     pointOneInfo.setPressure(1.0);
+     pointOneInfo.setPos(pointOne);
+@@ -850,6 +892,11 @@ void Node::paintLine(const QPointF pointOne, const QPointF pointTwo)
+ 
+ void Node::paintRectangle(const QRectF &rect)
+ {
++    if (paintAbility() != "PAINT") {
++        dbgScript << "Script attempted to use Node::paintRectangle() on an unpaintable node, ignoring.";
++        return;
++    }
++
+     // reference class where this stuff is being done. Maybe can use the "facade" like that does for setup?
+     // void KisFigurePaintingToolHelper::paintRect(const QRectF &rect)
+ 
+@@ -860,6 +907,11 @@ void Node::paintRectangle(const QRectF &rect)
+ 
+ void Node::paintPolygon(const QList<QPointF> listPoint)
+ {
++    if (paintAbility() != "PAINT") {
++        dbgScript << "Script attempted to use Node::paintPolygon() on an unpaintable node, ignoring.";
++        return;
++    }
++
+     // strategy needs points in vPointF format
+     QVector<QPointF> points = points.fromList(listPoint);
+     KisFigurePaintingToolHelper helper = PaintingResources::createHelper(d->image);
+@@ -869,6 +921,11 @@ void Node::paintPolygon(const QList<QPointF> listPoint)
+ 
+ void Node::paintEllipse(const QRectF &rect)
+ {
++    if (paintAbility() != "PAINT") {
++        dbgScript << "Script attempted to use Node::paintEllipse() on an unpaintable node, ignoring.";
++        return;
++    }
++
+     KisFigurePaintingToolHelper helper = PaintingResources::createHelper(d->image);
+     helper.paintEllipse(rect);
+ }
+@@ -876,6 +933,11 @@ void Node::paintEllipse(const QRectF &rect)
+ 
+ void Node::paintPath(const QPainterPath &path)
+ {
++    if (paintAbility() != "PAINT") {
++        dbgScript << "Script attempted to use Node::paintPath() on an unpaintable node, ignoring.";
++        return;
++    }
++
+     KisFigurePaintingToolHelper helper = PaintingResources::createHelper(d->image);
+     helper.paintPainterPath(path);
+ }
+diff --git a/libs/libkis/Node.h b/libs/libkis/Node.h
+index 10daba4..89a6f40 100644
+--- a/libs/libkis/Node.h
++++ b/libs/libkis/Node.h
+@@ -601,6 +601,18 @@ public Q_SLOTS:
+      */
+     void paintPath(const QPainterPath &path);
+ 
++    /**
++     * @brief paintAbility can be used to determine whether this node can be painted on with the current brush preset.
++     * @return QString, one of the following:
++     * <ul>
++     * <li>VECTOR - This node is vector-based.</li>
++     * <li>CLONE - This node is a Clone Layer.</li>
++     * <li>PAINT - This node is paintable by the current brush preset.</li>
++     * <li>UNPAINTABLE - This node is not paintable, or a null preset is somehow selected./li>
++     * <li>MYPAINTBRUSH_UNPAINTABLE - This node's non-RGBA colorspace cannot be painted on by the currently selected MyPaint brush.</li>
++     */
++    QString paintAbility();
++
+ private:
+ 
+     friend class Filter;
+diff --git a/plugins/extensions/pykrita/sip/krita/Node.sip b/plugins/extensions/pykrita/sip/krita/Node.sip
+index cbcef0f..6270bd9 100644
+--- a/plugins/extensions/pykrita/sip/krita/Node.sip
++++ b/plugins/extensions/pykrita/sip/krita/Node.sip
+@@ -75,6 +75,7 @@ public Q_SLOTS:
+     void paintPolygon(const QList<QPointF> points);
+     void paintEllipse(const QRectF &rect);
+     void paintPath(const QPainterPath &path);
++    QString paintAbility();
+ Q_SIGNALS:
+ private:
+ };

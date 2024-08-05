@@ -1,0 +1,332 @@
+diff --git a/libs/libkis/Node.cpp b/libs/libkis/Node.cpp
+index 0e2370e..3eed4ea 100644
+--- a/libs/libkis/Node.cpp
++++ b/libs/libkis/Node.cpp
+@@ -870,7 +870,7 @@ QString Node::paintAbility()
+     return "UNPAINTABLE";
+ }
+ 
+-void Node::paintLine(const QPointF pointOne, const QPointF pointTwo)
++void Node::paintLine(const QPointF pointOne, const QPointF pointTwo, const QString strokeStyle)
+ {
+     if (paintAbility() != "PAINT") {
+         dbgScript << "Script attempted to use Node::paintLine() on an unpaintable node, ignoring.";
+@@ -885,12 +885,12 @@ void Node::paintLine(const QPointF pointOne, const QPointF pointTwo)
+     pointTwoInfo.setPressure(1.0);
+     pointTwoInfo.setPos(pointTwo);
+ 
+-    KisFigurePaintingToolHelper helper = PaintingResources::createHelper(d->image);
++    KisFigurePaintingToolHelper helper = PaintingResources::createHelper(d->image, strokeStyle);
+     helper.paintLine(pointOneInfo, pointTwoInfo);
+ }
+ 
+ 
+-void Node::paintRectangle(const QRectF &rect)
++void Node::paintRectangle(const QRectF &rect, const QString strokeStyle, const QString fillStyle)
+ {
+     if (paintAbility() != "PAINT") {
+         dbgScript << "Script attempted to use Node::paintRectangle() on an unpaintable node, ignoring.";
+@@ -900,12 +900,12 @@ void Node::paintRectangle(const QRectF &rect)
+     // reference class where this stuff is being done. Maybe can use the "facade" like that does for setup?
+     // void KisFigurePaintingToolHelper::paintRect(const QRectF &rect)
+ 
+-    KisFigurePaintingToolHelper helper = PaintingResources::createHelper(d->image);
++    KisFigurePaintingToolHelper helper = PaintingResources::createHelper(d->image, strokeStyle, fillStyle);
+     helper.paintRect(rect);
+ }
+ 
+ 
+-void Node::paintPolygon(const QList<QPointF> listPoint)
++void Node::paintPolygon(const QList<QPointF> listPoint, const QString strokeStyle, const QString fillStyle)
+ {
+     if (paintAbility() != "PAINT") {
+         dbgScript << "Script attempted to use Node::paintPolygon() on an unpaintable node, ignoring.";
+@@ -914,30 +914,30 @@ void Node::paintPolygon(const QList<QPointF> listPoint)
+ 
+     // strategy needs points in vPointF format
+     QVector<QPointF> points = points.fromList(listPoint);
+-    KisFigurePaintingToolHelper helper = PaintingResources::createHelper(d->image);
++    KisFigurePaintingToolHelper helper = PaintingResources::createHelper(d->image, strokeStyle, fillStyle);
+     helper.paintPolygon(points);
+ }
+ 
+ 
+-void Node::paintEllipse(const QRectF &rect)
++void Node::paintEllipse(const QRectF &rect, const QString strokeStyle, const QString fillStyle)
+ {
+     if (paintAbility() != "PAINT") {
+         dbgScript << "Script attempted to use Node::paintEllipse() on an unpaintable node, ignoring.";
+         return;
+     }
+ 
+-    KisFigurePaintingToolHelper helper = PaintingResources::createHelper(d->image);
++    KisFigurePaintingToolHelper helper = PaintingResources::createHelper(d->image, strokeStyle, fillStyle);
+     helper.paintEllipse(rect);
+ }
+ 
+ 
+-void Node::paintPath(const QPainterPath &path)
++void Node::paintPath(const QPainterPath &path, const QString strokeStyle, const QString fillStyle)
+ {
+     if (paintAbility() != "PAINT") {
+         dbgScript << "Script attempted to use Node::paintPath() on an unpaintable node, ignoring.";
+         return;
+     }
+ 
+-    KisFigurePaintingToolHelper helper = PaintingResources::createHelper(d->image);
++    KisFigurePaintingToolHelper helper = PaintingResources::createHelper(d->image, strokeStyle, fillStyle);
+     helper.paintPainterPath(path);
+ }
+diff --git a/libs/libkis/Node.h b/libs/libkis/Node.h
+index 89a6f40..ecf9845 100644
+--- a/libs/libkis/Node.h
++++ b/libs/libkis/Node.h
+@@ -13,6 +13,8 @@
+ #include "kritalibkis_export.h"
+ #include "libkis.h"
+ 
++#include "PaintingResources.h"
++
+ /**
+  * Node represents a layer or mask in a Krita image's Node hierarchy. Group layers can contain
+  * other layers and masks; layers can contain masks.
+@@ -574,33 +576,101 @@ public Q_SLOTS:
+      * @brief paint a line on the canvas. Uses current brush preset
+      * @param pointOne starting point
+      * @param pointTwo end point
++     * @param strokeStyle appearance of the outline, one of:
++     * <ul>
++     * <li>None - will use Foreground Color, since line would be invisible otherwise
++     * <li>ForegroundColor</li>
++     * <li>BackgroundColor</li>
++     * </ul>
+      */
+-    void paintLine(const QPointF pointOne, const QPointF pointTwo);
++    void paintLine(const QPointF pointOne, const QPointF pointTwo, const QString strokeStyle = PaintingResources::defaultStrokeStyle);
+ 
+     /**
+      * @brief paint a rectangle on the canvas. Uses current brush preset
+      * @param rect QRect with x, y, width, and height
++     * @param strokeStyle appearance of the outline, one of:
++     * <ul>
++     * <li>None
++     * <li>ForegroundColor</li>
++     * <li>BackgroundColor</li>
++     * </ul>
++     * Default is ForegroundColor.
++     * @param fillStyle appearance of the fill, one of:
++     * <ul>
++     * <li>None
++     * <li>ForegroundColor</li>
++     * <li>BackgroundColor</li>
++     * <li>Pattern</li>
++     * </ul>
++     * Default is None.
+      */
+-    void paintRectangle(const QRectF &rect);
++    void paintRectangle(const QRectF &rect,
++                        const QString strokeStyle = PaintingResources::defaultStrokeStyle,
++                        const QString fillStyle = PaintingResources::defaultFillStyle);
+  
+     /**
+      * @brief paint a polygon on the canvas. Uses current brush preset
+      * @param list of Qpoints
++     * <ul>
++     * <li>None
++     * <li>ForegroundColor</li>
++     * <li>BackgroundColor</li>
++     * </ul>
++     * Default is ForegroundColor.
++     * @param fillStyle appearance of the fill, one of:
++     * <ul>
++     * <li>None
++     * <li>ForegroundColor</li>
++     * <li>BackgroundColor</li>
++     * <li>Pattern</li>
++     * </ul>
++     * Default is None.
+      */
+-    void paintPolygon(const QList<QPointF> points);
+-
++    void paintPolygon(const QList<QPointF> points,
++                      const QString strokeStyle = PaintingResources::defaultStrokeStyle,
++                      const QString fillStyle = PaintingResources::defaultFillStyle);
+     /**
+      * @brief paint an ellipse on the canvas. Uses current brush preset
+      * @param rect QRect with x, y, width, and height
++     * <ul>
++     * <li>None
++     * <li>ForegroundColor</li>
++     * <li>BackgroundColor</li>
++     * </ul>
++     * Default is ForegroundColor.
++     * @param fillStyle appearance of the fill, one of:
++     * <ul>
++     * <li>None
++     * <li>ForegroundColor</li>
++     * <li>BackgroundColor</li>
++     * <li>Pattern</li>
++     * </ul>
++     * Default is None.
+      */
+-    void paintEllipse(const QRectF &rect);
+-
++    void paintEllipse(const QRectF &rect,
++                      const QString strokeStyle = PaintingResources::defaultStrokeStyle,
++                      const QString fillStyle = PaintingResources::defaultFillStyle);
+     /**
+      * @brief paint a custom path on the canvas. Uses current brush preset
+      * @param  path QPainterPath to determine path
++     * <ul>
++     * <li>None
++     * <li>ForegroundColor</li>
++     * <li>BackgroundColor</li>
++     * </ul>
++     * Default is ForegroundColor.
++     * @param fillStyle appearance of the fill, one of:
++     * <ul>
++     * <li>None
++     * <li>ForegroundColor</li>
++     * <li>BackgroundColor</li>
++     * <li>Pattern</li>
++     * </ul>
++     * Default is None.
+      */
+-    void paintPath(const QPainterPath &path);
+-
++    void paintPath(const QPainterPath &path,
++                   const QString strokeStyle = PaintingResources::defaultStrokeStyle,
++                   const QString fillStyle = PaintingResources::defaultFillStyle);
+     /**
+      * @brief paintAbility can be used to determine whether this node can be painted on with the current brush preset.
+      * @return QString, one of the following:
+@@ -610,6 +680,7 @@ public Q_SLOTS:
+      * <li>PAINT - This node is paintable by the current brush preset.</li>
+      * <li>UNPAINTABLE - This node is not paintable, or a null preset is somehow selected./li>
+      * <li>MYPAINTBRUSH_UNPAINTABLE - This node's non-RGBA colorspace cannot be painted on by the currently selected MyPaint brush.</li>
++     * </ul>
+      */
+     QString paintAbility();
+ 
+diff --git a/libs/libkis/PaintingResources.cpp b/libs/libkis/PaintingResources.cpp
+index 62abb26..58d67ae 100644
+--- a/libs/libkis/PaintingResources.cpp
++++ b/libs/libkis/PaintingResources.cpp
+@@ -53,9 +53,28 @@
+ #include "kis_painting_information_builder.h"
+ #include "KisAsynchronousStrokeUpdateHelper.h"
+ #include "kis_stroke_strategy.h"
+-
+-
+-KisFigurePaintingToolHelper PaintingResources::createHelper(KisImageWSP image)
++#include "KisViewManager.h"
++#include "KisMainWindow.h"
++#include "kis_image.h"
++#include "KisToolShapeUtils.h"
++
++
++const QStringList StrokeStyle = {
++    "None",             // 0 = KisToolShapeUtils::StrokeStyle::StrokeStyleNone
++    "ForegroundColor",  //     KisToolShapeUtils::StrokeStyle::StrokeStyleForeground
++    "BackgroundColor"   //     KisToolShapeUtils::StrokeStyle::StrokeStyleBackground
++};
++
++const QStringList FillStyle = {
++    "None",             // 0 = KisToolShapeUtils::FillStyle::FillStyleNone
++    "ForegroundColor",  //     KisToolShapeUtils::FillStyle::FillStyleForegroundColor
++    "BackgroundColor",  //     KisToolShapeUtils::FillStyle::FillStyleBackgroundColor
++    "Pattern"           //     KisToolShapeUtils::FillStyle::FillStylePattern
++};
++
++KisFigurePaintingToolHelper PaintingResources::createHelper(KisImageWSP image,
++                                                            const QString strokeStyleString,
++                                                            const QString fillStyleString)
+ {
+     // need to grab the resource provider
+     KisView *activeView = KisPart::instance()->currentMainwindow()->activeView();
+@@ -64,13 +83,35 @@ KisFigurePaintingToolHelper PaintingResources::createHelper(KisImageWSP image)
+     // grab the image and current layer
+     KisNodeSP node = activeView->currentNode();
+ 
+-    const KUndo2MagicString name = kundo2_noi18n("python_stroke");
++    int strokeIndex = StrokeStyle.indexOf(strokeStyleString);
++    if (strokeIndex == -1) {
++        dbgScript << "Script tried to paint with invalid strokeStyle" << strokeStyleString << ", ignoring and using" << defaultStrokeStyle << ".";
++        strokeIndex = StrokeStyle.indexOf(defaultStrokeStyle);
++        if (strokeIndex == -1) {
++            warnScript << "PaintingResources::createHelper(): defaultStrokeStyle" << defaultStrokeStyle << "is invalid!";
++            strokeIndex = 1;
++        }
++    }
++    KisToolShapeUtils::StrokeStyle strokeStyle = (KisToolShapeUtils::StrokeStyle) strokeIndex;
++
++    int fillIndex = FillStyle.indexOf(fillStyleString);
++    if (fillIndex == -1) {
++        dbgScript << "Script tried to paint with invalid fillStyle" << fillStyleString << ", ignoring and using" << defaultFillStyle << ".";
++        fillIndex = FillStyle.indexOf(defaultFillStyle);
++        if (fillIndex == -1) {
++            warnScript << "PaintingResources::createHelper(): defaultFillStyle" << defaultFillStyle << " is invalid!";
++            fillIndex = 0;
++        }
++    }
++    KisToolShapeUtils::FillStyle fillStyle = (KisToolShapeUtils::FillStyle) fillIndex;
++
++    const KUndo2MagicString name = kundo2_i18n("Scripted Brush Stroke");
+     KisFigurePaintingToolHelper helper(
+         name,
+         image,
+         node, resourceManager,
+-        KisToolShapeUtils::StrokeStyle::StrokeStyleForeground,
+-        KisToolShapeUtils::FillStyle::FillStyleNone
++        strokeStyle,
++        fillStyle
+     );
+ 
+     return helper;
+diff --git a/libs/libkis/PaintingResources.h b/libs/libkis/PaintingResources.h
+index 19bb0d4..174057a 100644
+--- a/libs/libkis/PaintingResources.h
++++ b/libs/libkis/PaintingResources.h
+@@ -35,12 +35,19 @@
+ /**
+  * @brief The PaintingResources namespace
+  * Sets up information related to making painting strokes.
+- * Used primarily in the Document class
++ * Used primarily in the Node class
+  *
+  */
+ namespace PaintingResources
+ {
+-    KisFigurePaintingToolHelper createHelper(KisImageWSP image);
++    // These are set in Node.sip
++    const QString defaultStrokeStyle = "ForegroundColor";
++    const QString defaultFillStyle = "None";
++
++    KisFigurePaintingToolHelper createHelper(KisImageWSP image,
++                                             const QString strokeStyle = defaultStrokeStyle,
++                                             const QString fillStyle = defaultFillStyle);
++
+ };
+ 
+ #endif // LIBKIS_PAINTINGRESOURCES_H
+diff --git a/plugins/extensions/pykrita/sip/krita/Node.sip b/plugins/extensions/pykrita/sip/krita/Node.sip
+index 6270bd9..884e615 100644
+--- a/plugins/extensions/pykrita/sip/krita/Node.sip
++++ b/plugins/extensions/pykrita/sip/krita/Node.sip
+@@ -70,11 +70,11 @@ public Q_SLOTS:
+     int index() const;
+     QUuid uniqueId() const;
+ 
+-    void paintLine(const QPoint pointOne, const QPoint pointTwo);
+-    void paintRectangle(const QRectF &rect);
+-    void paintPolygon(const QList<QPointF> points);
+-    void paintEllipse(const QRectF &rect);
+-    void paintPath(const QPainterPath &path);
++    void paintLine(const QPoint pointOne, const QPoint pointTwo, const QString strokeStyle = "ForegroundColor");
++    void paintRectangle(const QRectF &rect, const QString strokeStyle = "ForegroundColor", const QString fillStyle = "None");
++    void paintPolygon(const QList<QPointF> points, const QString strokeStyle = "ForegroundColor", const QString fillStyle = "None");
++    void paintEllipse(const QRectF &rect, const QString strokeStyle = "ForegroundColor", const QString fillStyle = "None");
++    void paintPath(const QPainterPath &path, const QString strokeStyle = "ForegroundColor", const QString fillStyle = "None");
+     QString paintAbility();
+ Q_SIGNALS:
+ private:

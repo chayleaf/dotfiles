@@ -22,6 +22,8 @@ in
   inherit (inputs.osu-wine.packages.${pkgs.system}) osu-wine;
   matrix-appservice-discord = pkgs.callPackage ./matrix-appservice-discord { inherit (pkgs) matrix-appservice-discord; };
 
+  krita = pkgs.callPackage ./krita { inherit (pkgs) krita; };
+
   openssh = pkgs.openssh.overrideAttrs (old: rec {
     version = "9.8p1";
     src = pkgs.fetchurl {
@@ -39,8 +41,12 @@ in
   gimp = callPackage ./gimp { inherit (pkgs) gimp; };
   home-daemon = callPackage ./home-daemon { };
   # pin version
-  looking-glass-client = pkgs.looking-glass-client.overrideAttrs (old: {
+  looking-glass-client = pkgs.looking-glass-client.overrideAttrs (old: rec {
     version = "B6";
+    postUnpack = ''
+      echo ${src.rev} > source/VERSION
+      export sourceRoot="source/client"
+    '';
     src = pkgs.fetchFromGitHub {
       owner = "gnif";
       repo = "LookingGlass";
@@ -50,8 +56,7 @@ in
     };
     patches = [ ];
   });
-  kvmfrOverlay = kvmfr: kvmfr.overrideAttrs (old: {
-    inherit (pkgs'.looking-glass-client) version src;
+  kvmfrOverlay = kvmfr: (kvmfr.override { inherit (pkgs') looking-glass-client; }).overrideAttrs (old: {
     patches = [ ./looking-glass.patch ];
   });
   mobile-config-firefox = callPackage ./mobile-config-firefox { };
