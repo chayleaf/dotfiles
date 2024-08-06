@@ -198,7 +198,7 @@
         } // args.specialArgs or { };
         modules = [
           { _module.args = {
-              pkgs-kernel = import inputs.nixpkgs-kernel { inherit (args) system; overlays = all-overlays; };
+              pkgs-kernel = import inputs.nixpkgs-kernel { inherit (args) system; overlays = all-overlays ++ config.nixpkgs.overlays; };
             }; }
           (getPrivSys hostname)
           { networking.hostName = lib.mkDefault hostname;
@@ -265,7 +265,6 @@
                   ++ [
                     (getPrivUser hostname user)
                     ({ pkgs, lib, ... }: {
-                      nixpkgs.overlays = all-overlays;
                       nix.package = lib.mkDefault pkgs.nixForNixPlugins;
                     })
                   ];
