@@ -230,6 +230,8 @@ MDNS_REJECT_TYPES: list[RdataType]
 MDNS_ACCEPT_TYPES: list[RdataType]
 MDNS_REJECT_NAMES: Optional[re.Pattern]
 MDNS_ACCEPT_NAMES: Optional[re.Pattern]
+REJECT_A: Optional[re.Pattern] = None
+REJECT_AAAA: Optional[re.Pattern] = None
 
 sysbus: pydbus.bus.Bus
 avahi: Any  # pydbus.proxy.ProxyObject
@@ -512,10 +514,26 @@ def build_ipset(ips: list[str]) -> pytricia.PyTricia:
     return pyt
 
 
+IP_Q = pytricia.PyTricia()
+IP_Q_LEN = 0
+
+
 def add_ips(set: str, ipv6: bool, ips: list[str], flush: bool = False):
+    global IP_Q, IP_Q_LEN
+    for ip in ips:
+        try:
+            IP_Q.insert(ip, None)
+        except:
+            with open("/var/lib/unbound/error.log", "at") as f:
+                f.write(f"Warning 2: couldn't insert ip {ip}:\n")
+                traceback.print_exc(file=f)
+    IP_Q_LEN += len(ips)
+    if IP_Q_LEN < 16:
+        return
     # with open('/var/lib/unbound/info.log', 'at') as f:
     # print('set', set, 'ipv6', ipv6, 'ips', ips, file=f)
-    pyt = build_ipset(ips)
+    pyt = IP_Q
+    IP_Q = pytricia.PyTricia()
     ruleset: list[dict] = []
     if flush:
         ruleset.append(
@@ -568,23 +586,33 @@ def add_ips(set: str, ipv6: bool, ips: list[str], flush: bool = False):
     # with open('/var/lib/unbound/info.log', 'at') as f:
     #     print('data', data, file=f)
     try:
-        out = subprocess.run(
-            ["/run/current-system/sw/bin/nft", "-j", "-f", "/dev/stdin"],
-            capture_output=True,
-            input=data,
-        )
-        # with open('/var/lib/unbound/info.log', 'at') as f:
-        #     print('out', out, file=f)
-        if out.returncode != 0:
-            with open("/var/lib/unbound/nftables.log", "wb") as f:
-                f.write(b"Error running nftables ruleset. Ruleset:\n")
-                f.write(data)
-                f.write(b"\n")
-                f.write(b"stdout:\n")
-                f.write(out.stdout)
-                f.write(b"\nstderr:\n")
-                f.write(out.stderr)
-                f.write(b"\n")
+        if flush:
+            out = subprocess.run(
+                ["/run/current-system/sw/bin/nft", "-j", "-f", "/dev/stdin"],
+                capture_output=True,
+                input=data,
+            )
+            # with open('/var/lib/unbound/info.log', 'at') as f:
+            #     print('out', out, file=f)
+            if out.returncode != 0:
+                with open("/var/lib/unbound/nftables.log", "wb") as f:
+                    f.write(b"Error running nftables ruleset. Ruleset:\n")
+                    f.write(data)
+                    f.write(b"\n")
+                    f.write(b"stdout:\n")
+                    f.write(out.stdout)
+                    f.write(b"\nstderr:\n")
+                    f.write(out.stderr)
+                    f.write(b"\n")
+        else:
+            proc = subprocess.Popen(
+                ["/run/current-system/sw/bin/nft", "-j", "-f", "/dev/stdin"],
+                stdin=subprocess.PIPE,
+            )
+            assert proc.stdin is not None
+            proc.stdin.write(data)
+            proc.stdin.write(b"\n")
+            proc.stdin.close()
     except:
         with open("/var/lib/unbound/error.log", "at") as f:
             f.write(f"While adding ips for set {set}:\n")
@@ -595,7 +623,7 @@ def add_split_domain(domains: Domains, split_domain: list[str]):
     if not split_domain:
         return
     split_domain = split_domain[:]
-    if split_domain and split_domain[-1] == '*':
+    if split_domain and split_domain[-1] == "*":
         split_domain.pop()
     if not split_domain:
         return
@@ -644,6 +672,15 @@ def init(*args: Any, **kwargs: Any):
     global MDNS_REJECT_TYPES, MDNS_ACCEPT_TYPES
     global MDNS_REJECT_NAMES, MDNS_ACCEPT_NAMES
     global NFT_QUERIES, NFT_TOKEN, DOMAIN_NAME_OVERRIDES
+    global REJECT_A, REJECT_AAAA
+
+    w = os.environ.get("REJECT_A", None)
+    if w is not None:
+        REJECT_A = re.compile(w)
+
+    w = os.environ.get("REJECT_AAAA", None)
+    if w is not None:
+        REJECT_AAAA = re.compile(w)
 
     domain_name_overrides: str = os.environ.get("DOMAIN_NAME_OVERRIDES", "")
     if domain_name_overrides:
@@ -867,11 +904,11 @@ def operate(id, event, qstate, qdata) -> bool:
                 for i in range(rep.rrset_count):
                     d = rep.rrsets[i].entry.data
                     rk = rep.rrsets[i].rk
+                    # IN
+                    if rk.rrset_class != 256:
+                        continue
                     for j in range(0, d.count + d.rrsig_count):
                         wire = array.array("B", d.rr_data[j]).tobytes()
-                        # IN
-                        if rk.rrset_class != 256:
-                            continue
                         # A, AAAA
                         if (
                             rk.type == 256
@@ -967,6 +1004,57 @@ def operate(id, event, qstate, qdata) -> bool:
         return True
 
     qstate.ext_state[id] = MODULE_FINISHED
+
+    rej_a = REJECT_A and REJECT_A.match(n2)
+    rej_aaaa = REJECT_AAAA and REJECT_AAAA.match(n2)
+    if rej_a or rej_aaaa:
+        if qstate.return_msg and qstate.return_msg.rep:
+            rep = qstate.return_msg.rep
+            have_other = False
+            changed = False
+            msg = DNSMessage(
+                qstate.qinfo.qname_str,
+                qstate.qinfo.qtype,
+                qstate.qinfo.qclass,
+                qstate.query_flags,
+            )
+            for i in range(rep.rrset_count):
+                d = rep.rrsets[i].entry.data
+                rk = rep.rrsets[i].rk
+                if rk.rrset_class == 256 and (
+                    rej_a and rk.type == 256 or rej_aaaa and rk.type == 7168
+                ):
+                    changed = True
+                    continue
+                if rk.rrset_class == 256 and (
+                    rej_aaaa
+                    and not rej_a
+                    and rk.type == 256
+                    or rej_a
+                    and not rej_aaaa
+                    and rk.type == 7168
+                ):
+                    have_other = True
+                # IN
+                for j in range(0, d.count):
+                    if rk.type == 256 and rej_a:
+                        continue
+                    elif rk.type == 7168 and rej_aaaa:
+                        continue
+                    msg.answer.append(
+                        rr2text(
+                            (rk.dname_str, rk.rrset_class, rk.type, d.rr_data[j]), d.ttl
+                        )
+                    )
+            if changed and not have_other:
+                # reject
+                qstate.ext_state[id] = MODULE_ERROR
+                return True
+            elif changed:
+                # replace
+                if not msg.set_return_msg(qstate):
+                    qstate.ext_state[id] = MODULE_ERROR
+                return True
 
     # Only resolve via Avahi if we got NXDOMAIN from the upstream DNS
     # server, or if we could not reach the upstream DNS server. If we

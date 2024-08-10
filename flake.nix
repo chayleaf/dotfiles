@@ -197,9 +197,11 @@
           hardware = inputs.nixos-hardware.nixosModules;
         } // args.specialArgs or { };
         modules = [
-          { _module.args = {
+          ({ config, ... }: {
+            _module.args = {
               pkgs-kernel = import inputs.nixpkgs-kernel { inherit (args) system; overlays = all-overlays ++ config.nixpkgs.overlays; };
-            }; }
+            };
+          })
           (getPrivSys hostname)
           { networking.hostName = lib.mkDefault hostname;
             nixpkgs.overlays = all-overlays; }

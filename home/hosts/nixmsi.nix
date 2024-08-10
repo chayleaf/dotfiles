@@ -81,6 +81,7 @@
     lalrpop
     tio
     tdesktop
+    osu-wine
   ];
   xdg.configFile."looking-glass/client.ini".text = ''
     [app]

@@ -473,8 +473,8 @@ in {
       gateways = [ netAddresses.lan6 ];
       radvdSettings.AdvAutonomous = true;
       coreradSettings.autonomous = true;
-      # don't allocate addresses for most devices
-      keaSettings.pools = [ ];
+      # # don't allocate addresses for most devices
+      # keaSettings.pools = [ ];
       # just assign the reservations
       keaSettings.reservations = map (res:
       (if res.duid != null then { duid = res.duid; } else { hw-address = res.macAddress; }) // {
@@ -597,20 +597,21 @@ in {
           [(is.eq ip.saddr "@block4") (log "block4/s ") drop]
           [(is.eq ip6.saddr "@block6") (log "block6/s ") drop]
           # default to no vpn...
-          [(mangle meta.mark wan_table)]
-          # # default to vpn...
-          # [(mangle meta.mark vpn_table)]
+          # [(mangle meta.mark wan_table)]
+          # default to vpn...
+          [(mangle meta.mark vpn_table)]
+          [(is.eq meta.mark 0)]
+          # ...but unvpn traffic to/from force_unvpn4/force_unvpn6
+          [(is.eq ip.daddr "@force_unvpn4") (mangle meta.mark wan_table)]
+          [(is.eq ip6.daddr "@force_unvpn6") (mangle meta.mark wan_table)]
+          [(is.eq ip.saddr "@force_unvpn4") (mangle meta.mark wan_table)]
+          [(is.eq ip6.saddr "@force_unvpn6") (mangle meta.mark wan_table)]
           # ...force vpn to/from force_vpn4/force_vpn6
           # (disable this if it breaks some sites)
           [(is.eq ip.daddr "@force_vpn4") (mangle meta.mark vpn_table)]
           [(is.eq ip6.daddr "@force_vpn6") (mangle meta.mark vpn_table)]
           [(is.eq ip.saddr "@force_vpn4") (mangle meta.mark vpn_table)]
           [(is.eq ip6.saddr "@force_vpn6") (mangle meta.mark vpn_table)]
-          # ...but unvpn traffic to/from force_unvpn4/force_unvpn6
-          [(is.eq ip.daddr "@force_unvpn4") (mangle meta.mark wan_table)]
-          [(is.eq ip6.daddr "@force_unvpn6") (mangle meta.mark wan_table)]
-          [(is.eq ip.saddr "@force_unvpn4") (mangle meta.mark wan_table)]
-          [(is.eq ip6.saddr "@force_unvpn6") (mangle meta.mark wan_table)]
           # block requests to port 25 from hosts other than the server so they can't send mail pretending to originate from my domain
           # only do this for lans since traffic from other interfaces isn't forwarded to wan
           [(is.eq meta.iifname lanSet) (is.ne ether.saddr cfg.serverMac) (is.eq meta.l4proto (f: f.tcp)) (is.eq tcp.dport 25) (log "smtp ") drop]
