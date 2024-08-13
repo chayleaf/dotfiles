@@ -4,7 +4,8 @@
 , lib
 , router-lib
 , server-config
-, ... }:
+, ...
+}:
 
 let
   cfg = config.router-settings;
@@ -857,7 +858,7 @@ in {
         access-control = [ "${netCidrs.netns4} allow" "${netCidrs.netns6} allow" "${netCidrs.lan4} allow" "${netCidrs.lan6} allow" ];
         aggressive-nsec = true;
         do-ip6 = true;
-        module-config = ''"validator python iterator"'';
+        module-config = ''"validator dynlib python iterator"'';
         local-zone = [
           # incompatible with avahi resolver
           # ''"local." static''
@@ -889,6 +890,7 @@ in {
       # normally it would refer to the flake path, but then the service changes on every flake update
       # instead, write a new file in nix store
       python.python-script = builtins.toFile "avahi-resolver-v2.py" (builtins.readFile ./avahi-resolver-v2.py);
+      dynlib.dynlib-file = "${pkgs.unbound-mod}/lib/libunbound_mod.so";
       remote-control.control-enable = true;
     };
   };
@@ -908,7 +910,7 @@ in {
   networking.hosts."${serverAddress6}" = hosted-domains;
   systemd.services.unbound = lib.mkIf config.services.unbound.enable {
     environment.PYTHONPATH = let
-      unbound-python = pkgs.python3.withPackages (ps: with ps; [ pydbus dnspython requests pytricia nftables ]);
+      unbound-python = pkgs.python3.withPackages (ps: with ps; [ pydbus dnspython ]);
     in
       "${unbound-python}/${unbound-python.sitePackages}";
     # see https://github.com/NixOS/nixpkgs/pull/310514

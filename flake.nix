@@ -52,6 +52,10 @@
       url = "gitlab:simple-nixos-mailserver/nixos-mailserver";
       inputs.nixpkgs.follows = "nixpkgs";
     };
+    unbound-rust-mod = {
+      url = "git+https://git.pavluk.org/chayleaf/unbound-rust-mod.git";
+      inputs.nixpkgs.follows = "nixpkgs";
+    };
     flake-compat = {
       url = "github:edolstra/flake-compat";
       flake = false;
@@ -69,6 +73,7 @@
       # nixos-router = true;
       # notnft = true;
       # nixpkgs = true;
+      # unbound-rust-mod = true;
     };
     # IRL-related stuff I'd rather not put into git
     priv =

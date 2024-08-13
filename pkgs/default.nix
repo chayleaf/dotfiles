@@ -32,6 +32,11 @@ in
     };
   });
 
+  inherit (inputs.unbound-rust-mod.packages.${pkgs.system}) unbound-mod;
+  unbound-full = pkgs.unbound-full.overrideAttrs (old: {
+    configureFlags = old.configureFlags ++ [ "--with-dynlibmodule" ];
+  });
+
   buffyboard = pkgs.callPackage ./buffyboard { };
   clang-tools_latest = pkgs.clang-tools_16;
   clang_latest = pkgs.clang_16;

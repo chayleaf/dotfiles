@@ -143,6 +143,27 @@
         "type": "github"
       }
     },
+    "crane_2": {
+      "inputs": {
+        "nixpkgs": [
+          "unbound-rust-mod",
+          "nixpkgs"
+        ]
+      },
+      "locked": {
+        "lastModified": 1722960479,
+        "narHash": "sha256-NhCkJJQhD5GUib8zN9JrmYGMwt4lCRp6ZVNzIiYCl0Y=",
+        "owner": "ipetkov",
+        "repo": "crane",
+        "rev": "4c6c77920b8d44cd6660c1621dea6b3fc4b4c4f4",
+        "type": "github"
+      },
+      "original": {
+        "owner": "ipetkov",
+        "repo": "crane",
+        "type": "github"
+      }
+    },
     "disko": {
       "inputs": {
         "nixpkgs": [
@@ -757,7 +778,8 @@
         "notnft": "notnft",
         "nur": "nur",
         "osu-wine": "osu-wine",
-        "rust-overlay": "rust-overlay"
+        "rust-overlay": "rust-overlay",
+        "unbound-rust-mod": "unbound-rust-mod"
       }
     },
     "rust-overlay": {
@@ -906,6 +928,27 @@
         "owner": "numtide",
         "repo": "treefmt-nix",
         "type": "github"
+      }
+    },
+    "unbound-rust-mod": {
+      "inputs": {
+        "crane": "crane_2",
+        "nixpkgs": [
+          "nixpkgs"
+        ]
+      },
+      "locked": {
+        "lastModified": 1723517492,
+        "narHash": "sha256-I8+3ZSr/f73TxJmDQbjcbHmZGh7K3PEZRcGqeoXc1fw=",
+        "ref": "refs/heads/master",
+        "rev": "00418b649c67129f828182f81ed72c39f262922a",
+        "revCount": 14,
+        "type": "git",
+        "url": "https://git.pavluk.org/chayleaf/unbound-rust-mod.git"
+      },
+      "original": {
+        "type": "git",
+        "url": "https://git.pavluk.org/chayleaf/unbound-rust-mod.git"
       }
     },
     "utils": {
