@@ -41,8 +41,8 @@ in {
     src = pkgs.fetchFromGitLab {
       owner = "sdm845-mainline";
       repo = "alsa-ucm-conf";
-      rev = "9ed12836b269764c4a853411d38ccb6abb70b383";
-      hash = "sha256-QvGZGLEmqE+sZpd15fHb+9+MmoD5zoGT+pYqyWZLdkM=";
+      rev = "aaa7889f7a6de640b4d78300e118457335ad16c0";
+      hash = "sha256-2P5ZTrI1vCJ99BcZVPlkH4sv1M6IfAlaXR6ZjAdy4HQ=";
     };
     installPhase = ''
       substituteInPlace ucm2/lib/card-init.conf --replace '"/bin' '"/run/current-system/sw/bin'
