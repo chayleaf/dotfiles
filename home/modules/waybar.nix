@@ -19,8 +19,10 @@
         sha256 = "sha256-zH4hbQ8+9TYRVW/XYqmAVsi0vsSPn1LPqXxr0gi0j1E=";
       };
     });*/
-    settings = lib.toList {
-      layer = "top";
+    settings = let
+      layer = if config.phone.enable then "overlay" else "top";
+    in lib.toList {
+      inherit layer;
       position = "top";
       ipc = true;
       height = 40;
@@ -151,7 +153,7 @@
       };
     } ++ lib.optionals config.phone.enable [
       {
-        layer = "top";
+        inherit layer;
         position = "top";
         ipc = true;
         height = 40;
@@ -168,7 +170,7 @@
         modules-right = [ "clock" ];
       }
       {
-        layer = "top";
+        inherit layer;
         position = "bottom";
         ipc = true;
         height = 80;

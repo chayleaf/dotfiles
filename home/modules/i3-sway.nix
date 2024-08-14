@@ -259,15 +259,25 @@ in
   '';
   wayland.windowManager.sway = {
     wrapperFeatures.gtk = true;
-    package = pkgs.sway-unwrapped.overrideAttrs (old: {
-      patches = old.patches or [] ++ [
-        ./sway.patch
-        /*(pkgs.fetchpatch {
-          url = "https://patch-diff.githubusercontent.com/raw/swaywm/sway/pull/6920.patch";
-          sha256 = "sha256-XgkysduhHbmprE334yeL65txpK0HNXeCmgCZMxpwsgU=";
-        })*/
-      ];
-    });
+    package = let
+      cfg = config.wayland.windowManager.sway;
+    in pkgs.sway.override {
+      sway-unwrapped = pkgs.sway-unwrapped.overrideAttrs (old: {
+        patches = old.patches or [] ++ [
+          ../../pkgs/sway/allow-other.patch
+          /*(pkgs.fetchpatch {
+            url = "https://patch-diff.githubusercontent.com/raw/swaywm/sway/pull/6920.patch";
+            sha256 = "sha256-XgkysduhHbmprE334yeL65txpK0HNXeCmgCZMxpwsgU=";
+          })*/
+        ] ++ lib.optionals config.phone.enable
+          (map
+            (x: ../../pkgs/sway/${x})
+            (builtins.filter (lib.hasInfix "-mobile-") (builtins.attrNames (builtins.readDir ../../pkgs/sway))));
+      });
+      inherit (cfg) extraSessionCommands extraOptions;
+      withBaseWrapper = cfg.wrapperFeatures.base;
+      withGtkWrapper = cfg.wrapperFeatures.gtk;
+    };
     extraConfig = ''
       title_align center
     '';

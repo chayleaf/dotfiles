@@ -29,7 +29,7 @@
       inputs.nixpkgs.follows = "nixpkgs";
     };
     home-manager = {
-      url = "github:chayleaf/home-manager/librewolf";
+      url = "github:chayleaf/home-manager";
       inputs.nixpkgs.follows = "nixpkgs";
     };
     nix-gaming = {

@@ -1,0 +1,27 @@
+From 466d750b96184b793d276d9d0e30d37af4477fea Mon Sep 17 00:00:00 2001
+From: chayleaf <chayleaf-git@pavluk.org>
+Date: Wed, 14 Aug 2024 08:17:44 +0700
+Subject: [PATCH 2/2] mobile: don't idle_notify for volume keys
+
+---
+ sway/input/keyboard.c | 4 +++-
+ 1 file changed, 3 insertions(+), 1 deletion(-)
+
+diff --git a/sway/input/keyboard.c b/sway/input/keyboard.c
+index 8927287f..d42f62b0 100644
+--- a/sway/input/keyboard.c
++++ b/sway/input/keyboard.c
+@@ -404,7 +404,9 @@ static void handle_key_event(struct sway_keyboard *keyboard,
+ 		keyboard->seat_device->input_device->wlr_device;
+ 	char *device_identifier = input_device_get_identifier(wlr_device);
+ 	bool exact_identifier = keyboard->wlr->group != NULL;
+-	seat_idle_notify_activity(seat, IDLE_SOURCE_KEYBOARD);
++	if (event->keycode != XKB_KEY_XF86AudioLowerVolume && event->keycode != XKB_KEY_XF86AudioRaiseVolume) {
++		seat_idle_notify_activity(seat, IDLE_SOURCE_KEYBOARD);
++	}
+ 	bool input_inhibited = seat->exclusive_client != NULL ||
+ 		server.session_lock.locked;
+ 	struct sway_keyboard_shortcuts_inhibitor *sway_inhibitor =
+-- 
+2.44.1
+
