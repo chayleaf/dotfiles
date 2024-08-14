@@ -1,7 +1,7 @@
-From 466d750b96184b793d276d9d0e30d37af4477fea Mon Sep 17 00:00:00 2001
+From c4690b1496ca34c416869d2932abfa112a93f188 Mon Sep 17 00:00:00 2001
 From: chayleaf <chayleaf-git@pavluk.org>
 Date: Wed, 14 Aug 2024 08:17:44 +0700
-Subject: [PATCH 2/2] mobile: don't idle_notify for volume keys
+Subject: [PATCH 1/2] mobile: don't idle_notify for volume keys
 
 ---
  sway/input/keyboard.c | 4 +++-

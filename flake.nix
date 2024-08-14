@@ -12,7 +12,7 @@
       inputs.nixpkgs.follows = "nixpkgs";
     };
     mobile-nixos = {
-      url = "github:chayleaf/mobile-nixos/update";
+      url = "github:chayleaf/mobile-nixos/sdm845";
       flake = false;
     };
     osu-wine = {
