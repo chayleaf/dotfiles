@@ -37,7 +37,6 @@ in
     "net.ipv4.tcp_congestion_control" = "bbr";
   };
 
-  # as expected, systemd initrd didn't work well, and i really cba to debug it
   networking.useDHCP = false;
   networking.useNetworkd = true;
   systemd.network = {

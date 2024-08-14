@@ -205,6 +205,18 @@ in {
     security.rtkit.enable = true;
     services.dbus.enable = true;
     programs.dconf.enable = true;
+
+    nix.settings = {
+      netrc-file = "/secrets/netrc";
+      substituters = [
+        "https://binarycache.pavluk.org"
+        "https://cache.nixos.org/"
+      ];
+      trusted-public-keys = [
+        "binarycache.pavluk.org:Vk0ms/vSqoOV2JXeNVOroc8EfilgVxCCUtpCShGIKsQ="
+        "cache.nixos.org-1:6NCHdD59X431o0gWypbMrAURkbJ16ZPMQFGspcDShjY="
+      ];
+    };
   })
 
   ];
