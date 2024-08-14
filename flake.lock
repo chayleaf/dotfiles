@@ -575,22 +575,6 @@
         "type": "github"
       }
     },
-    "nixpkgs-kernel2": {
-      "locked": {
-        "lastModified": 1723362943,
-        "narHash": "sha256-dFZRVSgmJkyM0bkPpaYRtG/kRMRTorUIDj8BxoOt1T4=",
-        "owner": "NixOS",
-        "repo": "nixpkgs",
-        "rev": "a58bc8ad779655e790115244571758e8de055e3d",
-        "type": "github"
-      },
-      "original": {
-        "owner": "NixOS",
-        "ref": "nixos-unstable",
-        "repo": "nixpkgs",
-        "type": "github"
-      }
-    },
     "nixpkgs-lib": {
       "locked": {
         "lastModified": 1717284937,
@@ -790,7 +774,6 @@
         "nixos-router": "nixos-router",
         "nixpkgs": "nixpkgs_3",
         "nixpkgs-kernel": "nixpkgs-kernel",
-        "nixpkgs-kernel2": "nixpkgs-kernel2",
         "notlua": "notlua",
         "notnft": "notnft",
         "nur": "nur",
