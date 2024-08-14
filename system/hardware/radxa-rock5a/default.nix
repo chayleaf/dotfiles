@@ -1,4 +1,4 @@
-{ pkgs
+{ pkgs-kernel2
 , config
 , ... }:
 
@@ -8,7 +8,7 @@
     "phy-rockchip-naneng-combphy"
   ];
 
-  boot.kernelPackages = pkgs.linuxPackagesFor pkgs.linux_latest;
+  boot.kernelPackages = pkgs-kernel2.linuxPackagesFor pkgs-kernel2.linux_latest;
 
   boot.kernelParams = [ "dtb=/${config.hardware.deviceTree.name}" ];
   hardware.deviceTree.enable = true;

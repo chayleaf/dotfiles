@@ -4,6 +4,7 @@
   inputs = {
     nix-community-infra.url = "github:nix-community/infra";
     nixpkgs-kernel.url = "github:NixOS/nixpkgs/c7b821ba2e1e635ba5a76d299af62821cbcb09f3";
+    nixpkgs-kernel2.url = "github:NixOS/nixpkgs/nixos-unstable";
     nixpkgs.url = "github:chayleaf/nixpkgs";
     nixos-hardware.url = "github:NixOS/nixos-hardware";
     nix-index-database = {
@@ -205,6 +206,7 @@
           ({ config, ... }: {
             _module.args = {
               pkgs-kernel = import inputs.nixpkgs-kernel { inherit (args) system; overlays = all-overlays ++ config.nixpkgs.overlays; };
+              pkgs-kernel2 = import inputs.nixpkgs-kernel2 { inherit (args) system; overlays = all-overlays ++ config.nixpkgs.overlays; };
             };
           })
           (getPrivSys hostname)
