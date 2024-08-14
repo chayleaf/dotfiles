@@ -112,6 +112,7 @@ in {
     "https://git.sr.ht/"
     "https://api.github.com/repos/"
     "https://github.com/"
+    "https://git.pavluk.org/"
     # for nginx CF-Connecting-IP config generation
     "https://www.cloudflare.com/ips-v4"
     "https://www.cloudflare.com/ips-v6"

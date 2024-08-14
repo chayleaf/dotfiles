@@ -937,17 +937,17 @@
         ]
       },
       "locked": {
-        "lastModified": 1723550937,
-        "narHash": "sha256-5gEXPy9qIrNi0nPk3D1ctVxh5Ndfrhyu+02R6BIcnHQ=",
-        "ref": "refs/heads/master",
-        "rev": "e0f642180056f351fd712f2b4f3149fd9f02367f",
-        "revCount": 24,
-        "type": "git",
-        "url": "https://git.pavluk.org/chayleaf/unbound-rust-mod.git"
+        "lastModified": 1723583256,
+        "narHash": "sha256-EhgdkSGgEFZJsPhlq3tG9LvWBaix/ZoLUeqcAUPDWlk=",
+        "owner": "chayleaf",
+        "repo": "unbound-rust-mod",
+        "rev": "8a99f2ed1290addee2eabeb5963e6bfc4f825295",
+        "type": "github"
       },
       "original": {
-        "type": "git",
-        "url": "https://git.pavluk.org/chayleaf/unbound-rust-mod.git"
+        "owner": "chayleaf",
+        "repo": "unbound-rust-mod",
+        "type": "github"
       }
     },
     "utils": {

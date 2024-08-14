@@ -53,7 +53,7 @@
       inputs.nixpkgs.follows = "nixpkgs";
     };
     unbound-rust-mod = {
-      url = "git+https://git.pavluk.org/chayleaf/unbound-rust-mod.git";
+      url = "github:chayleaf/unbound-rust-mod";
       inputs.nixpkgs.follows = "nixpkgs";
     };
     flake-compat = {
