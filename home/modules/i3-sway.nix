@@ -103,6 +103,9 @@ commonConfig = {
   inherit modifier;
   startup = [
     { command = toString (pkgs.writeShellScript "init-wm" ''
+      ${lib.getBin pkgs.dbus}/bin/dbus-update-activation-environment --systemd DISPLAY WAYLAND_DISPLAY SWAYSOCK XDG_CURRENT_DESKTOP XDG_SESSION_TYPE NIXOS_OZONE_WL XCURSOR_THEME XCURSOR_SIZE || true
+      /run/current-system/sw/bin/systemctl --user import-environment DISPLAY WAYLAND_DISPLAY SWAYSOCK XDG_CURRENT_DESKTOP XDG_SESSION_TYPE NIXOS_OZONE_WL XCURSOR_THEME XCURSOR_SIZE || true
+      /run/current-system/sw/bin/systemctl --user start xdg-desktop-portal-gtk.service || true
       ${lib.optionalString config.phone.enable ''
         ${pkgs.procps}/bin/pkill -x wvkbd-mobintl
         ${pkgs.wvkbd}/bin/wvkbd-mobintl --hidden -l full,special,cyrillic,emoji&
@@ -285,7 +288,15 @@ in
     config = commonConfig // {
       bars = [
         {
-          command = "${config.programs.waybar.package}/bin/waybar";
+          command = toString (pkgs.writeShellScript "run-waybar" ''
+            ${lib.getBin pkgs.dbus}/bin/dbus-update-activation-environment --systemd DISPLAY WAYLAND_DISPLAY SWAYSOCK XDG_CURRENT_DESKTOP XDG_SESSION_TYPE NIXOS_OZONE_WL XCURSOR_THEME XCURSOR_SIZE || true
+            /run/current-system/sw/bin/systemctl --user import-environment DISPLAY WAYLAND_DISPLAY SWAYSOCK XDG_CURRENT_DESKTOP XDG_SESSION_TYPE NIXOS_OZONE_WL XCURSOR_THEME XCURSOR_SIZE || true
+            /run/current-system/sw/bin/systemctl --user start xdg-desktop-portal-gtk.service || true
+            while true; do
+              ${config.programs.waybar.package}/bin/waybar > ~/var/waybar.log 2>&1
+              sleep 5 || true
+            done
+          ''); 
           mode = "dock";
           position = "top";
           hiddenState = "hide";
@@ -390,7 +401,7 @@ in
       startup = [
         {
           always = true;
-          command = "systemctl --user import-environment DISPLAY WAYLAND_DISPLAY SWAYSOCK XDG_CURRENT_DESKTOP";
+          command = "${lib.getBin pkgs.dbus}/bin/dbus-update-activation-environment --systemd DISPLAY WAYLAND_DISPLAY SWAYSOCK XDG_CURRENT_DESKTOP XDG_SESSION_TYPE NIXOS_OZONE_WL XCURSOR_THEME XCURSOR_SIZE; /run/current-system/sw/bin/systemctl --user import-environment DISPLAY WAYLAND_DISPLAY SWAYSOCK XDG_CURRENT_DESKTOP; /run/current-system/sw/bin/systemctl --user reset-failed && /run/current-system/sw/bin/systemctl --user start sway-session.target && ${pkgs.sway}/bin/swaymsg -mt subscribe '[]' || true && /run/current-system/sw/bin/systemctl --user stop sway-session.target";
         }
         {
           command = "${pkgs.wl-clipboard}/bin/wl-paste -t text --watch ${pkgs.clipman}/bin/clipman store --no-persist";
@@ -487,7 +498,7 @@ in
   home.packages = lib.mkIf config.wayland.windowManager.sway.enable (with pkgs; [
     wl-clipboard
     xdg-desktop-portal
-    xdg-desktop-portal-wlr
+    # xdg-desktop-portal-wlr
     xdg-desktop-portal-gtk
   ]);
   programs.rofi = {

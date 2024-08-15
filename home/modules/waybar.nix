@@ -21,7 +21,25 @@
     });*/
     settings = let
       layer = if config.phone.enable then "overlay" else "top";
-    in lib.toList {
+    in lib.optionals config.phone.enable [
+      {
+        inherit layer;
+        position = "top";
+        ipc = true;
+        height = 40;
+        clock = {
+          interval = 5;
+          format = "{:%Y-%m-%d %H:%M:%S}";
+        };
+        cpu = {
+          # format = "{usage}% ";
+          format = "{icon0}{icon1}{icon2}{icon3}{icon4}{icon5}{icon6}{icon7}{icon8}{icon9}{icon10}{icon11}{icon12}{icon13}{icon14}{icon15}";
+          format-icons = ["▁" "▂" "▃" "▄" "▅" "▆" "▇" "█"];
+        };
+        modules-left = [ "cpu" ];
+        modules-right = [ "clock" ];
+      }
+    ] ++ lib.toList {
       inherit layer;
       position = "top";
       ipc = true;
@@ -152,23 +170,6 @@
         min-length = 2;
       };
     } ++ lib.optionals config.phone.enable [
-      {
-        inherit layer;
-        position = "top";
-        ipc = true;
-        height = 40;
-        clock = {
-          interval = 5;
-          format = "{:%Y-%m-%d %H:%M:%S}";
-        };
-        cpu = {
-          # format = "{usage}% ";
-          format = "{icon0}{icon1}{icon2}{icon3}{icon4}{icon5}{icon6}{icon7}{icon8}{icon9}{icon10}{icon11}{icon12}{icon13}{icon14}{icon15}";
-          format-icons = ["▁" "▂" "▃" "▄" "▅" "▆" "▇" "█"];
-        };
-        modules-left = [ "cpu" ];
-        modules-right = [ "clock" ];
-      }
       {
         inherit layer;
         position = "bottom";
