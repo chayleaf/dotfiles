@@ -187,10 +187,11 @@
       input-default-bindings = false;
     };
     # profiles = { };
-    package = pkgs.wrapMpv (pkgs.mpv-unwrapped.override {
-      # many features aren't supported by normal ffmpeg
-      ffmpeg = pkgs.ffmpeg-full;
-    }) {
+    package = pkgs.mpv-unwrapped.wrapper {
+      mpv = pkgs.mpv-unwrapped.override {
+        # many features aren't supported by normal ffmpeg
+        ffmpeg = pkgs.ffmpeg-full;
+      };
       scripts = with pkgs.mpvScripts; [
         thumbnail
         mpris

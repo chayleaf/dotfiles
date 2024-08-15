@@ -528,6 +528,10 @@ in {
       lans = [ "br0" "wg1" ];
       wans = [ vpn_iface "veth-wan-a" ];
       logPrefix = "lan ";
+      # I'll leave this here in case i get weird ipv6 issues again
+      # inetSnatRules = with notnft.dsl; with payload; [
+      #   [(is.eq meta.protocol (f: f.ip6)) (is.eq meta.iifname "br0") (is.eq meta.oifname "br0") masquerade]
+      # ];
       netdevIngressWanRules = with notnft.dsl; with payload; [
         # check oif only from vpn
         # dont check it from veth-wan-a because of dnat fuckery and because we already check packets coming from wan there

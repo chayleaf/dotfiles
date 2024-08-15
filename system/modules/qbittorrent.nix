@@ -10,7 +10,7 @@ in {
   options.services.qbittorrent-nox = {
     enable = lib.mkEnableOption "qbittorrent-nox";
 
-    package = lib.mkPackageOptionMD pkgs "qbittorrent-nox" { };
+    package = lib.mkPackageOption pkgs "qbittorrent-nox" { };
 
     ui.addToFirewall = lib.mkOption {
       description = "Add the web UI port to firewall";

@@ -15,7 +15,6 @@
     linkConfig.MACAddress = config.phone.mac;
   };
 
-  sound.enable = true;
   services.logind.powerKey = "ignore";
   services.logind.powerKeyLongPress = "poweroff";
   hardware.sensor.iio.enable = true;
@@ -62,6 +61,7 @@
   programs.sway.enable = true;
   xdg.portal = {
     enable = true;
+    wlr.enable = lib.mkForce false;
     extraPortals = with pkgs; [ xdg-desktop-portal-gtk ];
   };
   # services.xserver.desktopManager.phosh = {

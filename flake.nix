@@ -3,8 +3,8 @@
 
   inputs = {
     nix-community-infra.url = "github:nix-community/infra";
-    nixpkgs-kernel.url = "github:NixOS/nixpkgs/c7b821ba2e1e635ba5a76d299af62821cbcb09f3";
-    nixpkgs.url = "github:chayleaf/nixpkgs";
+    nixpkgs-kernel.url = "github:NixOS/nixpkgs/a58bc8ad779655e790115244571758e8de055e3d";
+    nixpkgs.url = "github:chayleaf/nixpkgs/ci";
     nixos-hardware.url = "github:NixOS/nixos-hardware";
     nix-index-database = {
       url = "github:nix-community/nix-index-database";
@@ -51,6 +51,7 @@
     nixos-mailserver = {
       url = "gitlab:simple-nixos-mailserver/nixos-mailserver";
       inputs.nixpkgs.follows = "nixpkgs";
+      inputs.nixpkgs-24_05.follows = "nixpkgs";
     };
     unbound-rust-mod = {
       url = "github:chayleaf/unbound-rust-mod";

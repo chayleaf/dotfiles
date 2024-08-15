@@ -20,9 +20,15 @@
       };
     });*/
     settings = let
-      layer = if config.phone.enable then "overlay" else "top";
+      layer = "bottom";
     in lib.optionals config.phone.enable [
       {
+        modes.dock = {
+          inherit layer;
+          exclusive = true;
+          passthrough = false;
+          visible = true;
+        };
         inherit layer;
         position = "top";
         ipc = true;
@@ -40,6 +46,12 @@
         modules-right = [ "clock" ];
       }
     ] ++ lib.toList {
+      modes.dock = {
+        inherit layer;
+        exclusive = true;
+        passthrough = false;
+        visible = true;
+      };
       inherit layer;
       position = "top";
       ipc = true;
@@ -171,7 +183,13 @@
       };
     } ++ lib.optionals config.phone.enable [
       {
-        inherit layer;
+        modes.dock = {
+          layer = "overlay";
+          exclusive = true;
+          passthrough = false;
+          visible = true;
+        };
+        layer = "overlay";
         position = "bottom";
         ipc = true;
         height = 80;

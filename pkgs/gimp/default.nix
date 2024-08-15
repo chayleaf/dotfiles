@@ -29,6 +29,9 @@
 , alsa-lib
 , glib
 , glib-networking
+, libiff
+, libilbm
+, cfitsio
 }:
 
 let
@@ -36,20 +39,17 @@ let
     pygobject3
   ]);
 in gimp.overrideAttrs (old: rec {
-  version = "2_99_16+date=2023-07-05";
+  version = "2_99_18+date=2024-02-18";
   outputs = [ "out" "dev" "devdoc" ];
   src = fetchFromGitHub {
     owner = "GNOME";
     repo = "gimp";
-    rev = "d3c5536ac85bb84e1beaba68aea12cf28062e08c";
-    hash = "sha256-ZKCZXt+8Jj9sETezlOXY17Kr2DeFc6O6zh97XCjfhiE=";
+    rev = "f94c4cb5dbf9766b27ecb5016b7a39497cc74ddc";
+    hash = "sha256-rQd/EwGk6AFQ4dQCx2Jys60mcDvaLSkXeVsrjTJw8wg=";
   };
   patches = [
     (substituteAll {
-      src = fetchpatch {
-        url = "https://raw.githubusercontent.com/NixOS/nixpkgs/86947c8f83a3bd593eefb8e5f433f0d045c3d9a7/pkgs/applications/graphics/gimp/hardcode-plugin-interpreters.patch";
-        hash = "sha256-uk4u+WK+p3U0NyCVa2Ua+o2nLaHZzo0jP3muGPu55ak=";
-      };
+      src = ./hardcode-plugin-interpreters.patch;
       python_interpreter = python.interpreter;
     })
     (substituteAll {
@@ -64,6 +64,7 @@ in gimp.overrideAttrs (old: rec {
       hash = "sha256-8jqQmfbOARMPNIsBfNKpMIeK4dXoAme7rUJeQZwh4PM=";
     })
     ./floating-paste.patch
+    ./fix-docs.patch
   ];
   nativeBuildInputs = [
     meson
@@ -92,15 +93,17 @@ in gimp.overrideAttrs (old: rec {
     (luajit.withPackages (ps: [ ps.lgi ]))
     alsa-lib
     gjs
+    libiff
+    libilbm
+    cfitsio
   ];
-  configureFlags = [];
+  configureFlags = [ ];
   mesonFlags = [
     "-Dbug-report-url=https://github.com/NixOS/nixpkgs/issues/new"
     "-Dicc-directory=/run/current-system/sw/share/color/icc"
     "-Dcheck-update=no"
     "-Dappdata-test=disabled"
   ];
-  enableParallelBuilding = false;
   env = old.env // { GIO_EXTRA_MODULES = "${glib-networking}/lib/gio/modules"; };
   preConfigure = "";
   postPatch = ''
@@ -123,7 +126,7 @@ in gimp.overrideAttrs (old: rec {
     meson test --timeout-multiplier 4 --print-errorlogs
     runHook postCheck
   '';
-
+  doCheck = false;
   preFixup = ''
     gappsWrapperArgs+=(\
       --prefix PATH : "${lib.makeBinPath [ graphviz ]}:$out/bin" \

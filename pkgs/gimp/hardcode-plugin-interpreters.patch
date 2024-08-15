@@ -1,0 +1,10 @@
+diff --git a/plug-ins/python/pygimp.interp.in b/plug-ins/python/pygimp.interp.in
+index 28cccf0..3a89862 100644
+--- a/plug-ins/python/pygimp.interp.in
++++ b/plug-ins/python/pygimp.interp.in
+@@ -2,4 +2,4 @@ python=@PYTHON_PATH@python.exe
+ python3=@PYTHON_PATH@python.exe
+ /usr/bin/python=@PYTHON_PATH@python.exe
+ /usr/bin/python3=@PYTHON_PATH@python.exe
+-:Python:E::py::python3:
++:Python:E::py::@python_interpreter@:

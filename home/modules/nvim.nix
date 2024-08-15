@@ -16,10 +16,8 @@
   programs.neovim = let
     notlua-nvim = notlua.neovim { inherit (config.programs.neovim) plugins extraLuaPackages; };
     inherit (notlua.keywords)
-      AND APPLY CALL DEFUN
-      ELSE EQ GE IDX IF
-      LE LET LETREC OR
-      PROP RETURN SET;
+      AND APPLY CALL DEFUN ELSE EQ GE IDX IF
+      LE LET LETREC MERGE OR PROP RETURN SET;
     inherit (notlua.utils) compile;
     inherit (notlua-nvim.stdlib) vim string require print;
     inherit (notlua-nvim.keywords) REQ REQ';
@@ -51,10 +49,17 @@
         k != "keys" && k != "lhs" && k != "rhs" && k != "desc"
         # defaults to false
         && ((k != "silent" && k != "noremap") || (builtins.isBool v && v))) opts'';
-      in (lib.mapAttrsToList (k: {rhs, desc}: keymapSetSingle (opts' // {
+    in (lib.mapAttrsToList (k: {rhs, desc}: keymapSetSingle (opts' // {
         lhs = k; inherit rhs;
       })) keys) ++ [
-        (which-key.register (lib.mapAttrs (k: v: [v.rhs v.desc]) keys) opts')
+        (which-key.add (MERGE
+          ({
+            inherit mode;
+            remap = !noremap;
+          } // builtins.removeAttrs opts ["keys" "noremap"])
+          (lib.mapAttrsToList (k: v: (MERGE [ k v.rhs ] { inherit (v) desc; })) keys)
+        ) null)
+        # (which-key.register (lib.mapAttrs (k: v: [v.rhs v.desc]) keys) opts')
       ];
     keymapSetNs = args: keymapSetMulti (args // { mode = "n"; });
     kmSetNs = keys: keymapSetNs { inherit keys; };
@@ -159,7 +164,7 @@
       ps.vim-svelte
       # vim-nix isn't necessary for syntax highlighting, but it improves overall editing experience
       ps.vim-nix
-      { plugin = pkgs.vimUtils.buildVimPluginFrom2Nix {
+      { plugin = pkgs.vimUtils.buildVimPlugin {
           pname = "vscode-nvim";
           version = "2023-02-10";
           src = pkgs.fetchFromGitHub {

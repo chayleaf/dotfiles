@@ -37,6 +37,10 @@ in
       ];
       hardware.enableRedistributableFirmware = true;
       mobile.quirks.qualcomm.sdm845-modem.enable = true;
+      specialisation.nomodem.configuration = {
+        mobile.quirks.qualcomm.sdm845-modem.enable = lib.mkForce false;
+        systemd.services.q6voiced.enable = false;
+      };
       mobile.quirks.audio.alsa-ucm-meld = true;
       environment.systemPackages = [ hw.alsa-ucm-conf ];
       systemd.services.q6voiced = {
@@ -71,7 +75,7 @@ in
         criticalPowerAction = "PowerOff";
       };
       hardware.firmware = lib.mkAfter [ hw.firmware ];
-      boot.kernelPackages = lib.mkForce (pkgs-kernel.linuxPackagesFor hw-kernel.linux_ccache);
+      boot.kernelPackages = lib.mkForce (pkgs-kernel.linuxPackagesFor hw-kernel.linux);
       hardware.deviceTree.enable = true;
       hardware.deviceTree.name = "qcom/sdm845-oneplus-enchilada.dtb";
       # loglevel=7 console=ttyMSM0,115200 is a way to delay boot

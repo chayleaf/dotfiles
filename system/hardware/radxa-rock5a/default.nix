@@ -1,6 +1,7 @@
 { pkgs
 , config
-, ... }:
+, ...
+}:
 
 {
   boot.initrd.availableKernelModules = [

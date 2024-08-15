@@ -172,7 +172,8 @@ in {
     users.defaultUserShell = lib.mkIf cfg.minimal (mkForceDefault pkgs.fish);
 
     programs.vim = {
-      defaultEditor = lib.mkDefault true;
+      enable = lib.mkDefault true;
+      defaultEditor = lib.mkDefault config.programs.vim.enable;
       package = pkgs.vim-full.customize {
         vimrcConfig.customRC = ''
           syntax on

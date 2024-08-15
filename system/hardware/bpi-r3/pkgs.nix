@@ -308,7 +308,8 @@ in rec {
       # keys that are unused in this case
       # used because i got bitten by config keys changing once
       SND_AC97_POWER_SAVE_DEFAULT.optional = lib.mkForce true; SND_HDA_POWER_SAVE_DEFAULT.optional = lib.mkForce true;
-      SND_USB_AUDIO_MIDI_V2.tristate = lib.mkForce null;
+      SND_USB_AUDIO_MIDI_V2.tristate = lib.mkForce null; SND_HDA_CODEC_CS8409.tristate = lib.mkForce null;
+      DRM_DISPLAY_DP_AUX_CEC.tristate = lib.mkForce null; DRM_DISPLAY_DP_AUX_CHARDEV.tristate = lib.mkForce null;
       DRM_ACCEL.tristate = lib.mkForce null; DRM_AMD_ACP.tristate = lib.mkForce null; DRM_AMD_SECURE_DISPLAY.tristate = lib.mkForce null;
       DRM_DP_CEC.tristate = lib.mkForce null; DRM_NOUVEAU_SVM.tristate = lib.mkForce null; MEM_SOFT_DIRTY.tristate = lib.mkForce null;
       PM_TRACE.tristate = lib.mkForce null; RAS_CEC.tristate = lib.mkForce null; SND_AC97_POWER_SAVE_DEFAULT.tristate = lib.mkForce null;

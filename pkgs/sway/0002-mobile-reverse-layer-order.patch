@@ -1,15 +1,15 @@
-From 0d352dff09bab4536d2e182538641af1c6d2a1ef Mon Sep 17 00:00:00 2001
+From ffec4e61168224d5b57241ae863a6970ce969a47 Mon Sep 17 00:00:00 2001
 From: chayleaf <chayleaf-git@pavluk.org>
 Date: Wed, 14 Aug 2024 07:32:11 +0700
-Subject: [PATCH 2/2] mobile: reverse layer order
+Subject: [PATCH 2/4] mobile: reverse layer order
 
 This makes exclusive anchored layers that were added first be first
 ---
- sway/desktop/layer_shell.c | 12 ++++++------
- 1 file changed, 6 insertions(+), 6 deletions(-)
+ sway/desktop/layer_shell.c | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
 diff --git a/sway/desktop/layer_shell.c b/sway/desktop/layer_shell.c
-index 8c6cedfe..4afca0b7 100644
+index 8c6cedfe..41a638ee 100644
 --- a/sway/desktop/layer_shell.c
 +++ b/sway/desktop/layer_shell.c
 @@ -129,7 +129,7 @@ static void arrange_layer(struct sway_output *output, struct wl_list *list,
@@ -21,26 +21,6 @@ index 8c6cedfe..4afca0b7 100644
  		struct wlr_layer_surface_v1 *layer = sway_layer->layer_surface;
  		struct wlr_layer_surface_v1_state *state = &layer->current;
  		if (exclusive != (state->exclusive_zone > 0)) {
-@@ -214,14 +214,14 @@ void arrange_layers(struct sway_output *output) {
- 	wlr_output_effective_resolution(output->wlr_output,
- 			&usable_area.width, &usable_area.height);
- 
--	// Arrange exclusive surfaces from top->bottom
--	arrange_layer(output, &output->layers[ZWLR_LAYER_SHELL_V1_LAYER_OVERLAY],
--			&usable_area, true);
--	arrange_layer(output, &output->layers[ZWLR_LAYER_SHELL_V1_LAYER_TOP],
-+	// Arrange exclusive surfaces from bottom->top
-+	arrange_layer(output, &output->layers[ZWLR_LAYER_SHELL_V1_LAYER_BACKGROUND],
- 			&usable_area, true);
- 	arrange_layer(output, &output->layers[ZWLR_LAYER_SHELL_V1_LAYER_BOTTOM],
- 			&usable_area, true);
--	arrange_layer(output, &output->layers[ZWLR_LAYER_SHELL_V1_LAYER_BACKGROUND],
-+	arrange_layer(output, &output->layers[ZWLR_LAYER_SHELL_V1_LAYER_TOP],
-+			&usable_area, true);
-+	arrange_layer(output, &output->layers[ZWLR_LAYER_SHELL_V1_LAYER_OVERLAY],
- 			&usable_area, true);
- 
- 	if (memcmp(&usable_area, &output->usable_area,
 -- 
-2.44.1
+2.45.2
 

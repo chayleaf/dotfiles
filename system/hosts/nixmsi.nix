@@ -39,8 +39,8 @@
       "vm.dirty_background_ratio" = 2;
       "vm.swappiness" = 40;
     };
-    # TODO: uncomment when iwlwifi gets fixed, whenever that will be (broken in 6.5.5)
-    # kernelPackages = lib.mkDefault pkgs.linuxPackages_latest;
+    # TODO: switch back to latest
+    kernelPackages = lib.mkDefault pkgs.linuxPackages_testing;
     /*kernelPackages = zenKernelPackages "6.1.9" "0fsmcjsawxr32fxhpp6sgwfwwj8kqymy0rc6vh4qli42fqmwdjgv";*/
   };
 
@@ -138,7 +138,7 @@
   programs.sway.enable = true;
   xdg.portal = {
     enable = true;
-    extraPortals = with pkgs; [ xdg-desktop-portal-gtk xdg-desktop-portal-wlr ];
+    extraPortals = with pkgs; [ xdg-desktop-portal-gtk ];
   };
 
   programs.ccache.enable = true;

@@ -116,7 +116,7 @@ commonConfig = {
       ${pkgs.procps}/bin/pkill -x home-daemon
       ${pkgs.home-daemon}/bin/home-daemon system76-scheduler ${lib.optionalString (!config.phone.enable) "empty-sound"}&
       ${pkgs.procps}/bin/pkill -x keepassxc
-      ${pkgs.gnome.zenity}/bin/zenity --password | (${pkgs.keepassxc}/bin/keepassxc --pw-stdin ~/var/local.kdbx &)
+      ${pkgs.zenity}/bin/zenity --password | (${pkgs.keepassxc}/bin/keepassxc --pw-stdin ~/var/local.kdbx &)
       # sleep to give keepassxc time to take the input
       sleep 1
       # nextcloud and nheko need secret service access
@@ -292,8 +292,9 @@ in
             ${lib.getBin pkgs.dbus}/bin/dbus-update-activation-environment --systemd DISPLAY WAYLAND_DISPLAY SWAYSOCK XDG_CURRENT_DESKTOP XDG_SESSION_TYPE NIXOS_OZONE_WL XCURSOR_THEME XCURSOR_SIZE || true
             /run/current-system/sw/bin/systemctl --user import-environment DISPLAY WAYLAND_DISPLAY SWAYSOCK XDG_CURRENT_DESKTOP XDG_SESSION_TYPE NIXOS_OZONE_WL XCURSOR_THEME XCURSOR_SIZE || true
             /run/current-system/sw/bin/systemctl --user start xdg-desktop-portal-gtk.service || true
+            ${pkgs.procps}/bin/pgrep -f run-waybar | ${pkgs.gnugrep}/bin/grep -v "$$" | xargs kill
             while true; do
-              ${config.programs.waybar.package}/bin/waybar > ~/var/waybar.log 2>&1
+              ${config.programs.waybar.package}/bin/waybar "$@" > ~/var/waybar.log 2>&1
               sleep 5 || true
             done
           ''); 

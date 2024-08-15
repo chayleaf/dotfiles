@@ -119,17 +119,28 @@ in {
     meta.license = lib.licenses.unfreeRedistributableFirmware;
   };
 
-  linux = pkgs.linux_latest.override {
+  linux = pkgs.linux_6_9.override {
     # TODO: uncomment
     # ignoreConfigErrors = false;
     kernelPatches = [
+      # {
+      #   name = "linux_6_11";
+      #   patch = pkgs.fetchpatch {
+      #     url = "https://github.com/chayleaf/linux-sdm845/compare/v6.11-rc2...8914f1483d0784bf1133577f3c161a3f83a12653.diff";
+      #     hash = "sha256-orBQDGHAXOAy1PVLwNIBk3FgiMslziW1xddQyIwbnCs=";
+      #   };
+      # }
       {
         name = "linux_6_9";
-        patch = ./linux_6_9.patch;
+        patch = pkgs.fetchpatch {
+          url = "https://github.com/chayleaf/linux-sdm845/compare/v6.9.12...1ffe541f384cdfee347bf92773a740677de1b824.diff";
+          hash = "sha256-6TMiXaZy8YEB2vmrpXwAKklHYhvlA/TklCQv95iyMNY=";
+        };
       }
       {
         name = "config_fixes";
         patch = ./config_fixes.patch;
+        # patch = ./config_fixes_611.patch;
       }
     ];
 
@@ -141,9 +152,8 @@ in {
       # fix build
       LENOVO_YOGA_C630_EC = no;
       RPMSG_QCOM_GLINK_SMEM = yes;
-      # useless lines, remove on update
-      DM_MIRROR = no;
-      DM_ZERO = no;
+      # TOUCHSCREEN_STM_FTS_DOWNSTREAM = no;
+      # TOUCHSCREEN_FTM4 = no;
       # for adb and stuff (doesn't have to be built-in, but it's easier that way)
       USB_FUNCTIONFS = yes;
       USB_LIBCOMPOSITE = yes;
@@ -162,8 +172,12 @@ in {
       USB_F_HID = yes;
       USB_CONFIGFS = yes;
       USB_CONFIGFS_F_HID = yes;
+      REGULATOR_QCOM_USB_VBUS = module;
+      LEDS_TRIGGER_ONESHOT = yes;
+      LEDS_TRIGGER_BACKLIGHT = yes;
+      LEDS_TRIGGER_ACTIVITY = yes;
 
-      # adapted from https://gitlab.com/sdm845-mainline/linux/-/blob/caf9d678d34f70173bf236584dfb819164283833/arch/arm64/configs/sdm845.config
+      # adapted from https://gitlab.com/sdm845-mainline/linux/-/blob/3e9f7c18a3f681b52b7ea87765be267cd1e8b870/arch/arm64/configs/sdm845.config
       # enchilada-specific
       DRM_PANEL_SAMSUNG_SOFEF00 = yes;
       BATTERY_BQ27XXX = module;
@@ -196,6 +210,7 @@ in {
       LEDS_TRIGGER_PATTERN = yes;
       LEDS_CLASS_MULTICOLOR = module;
       LEDS_QCOM_LPG = module;
+      I2C_QCOM_GENI = yes;
       LEDS_QCOM_FLASH = module;
       SLIMBUS = yes;
       SLIM_QCOM_CTRL = yes;
@@ -206,6 +221,7 @@ in {
       QCOM_SPMI_RRADC = module;
       DRM = yes;
       DRM_MSM = yes;
+      VIDEO_VIVID = module;
       REGULATOR_QCOM_LABIBB = yes;
       BACKLIGHT_QCOM_WLED = yes;
       INPUT_QCOM_SPMI_HAPTICS = module;
@@ -216,11 +232,13 @@ in {
       DMABUF_HEAPS_CMA = yes;
       DMABUF_HEAPS_SYSTEM = yes;
       HZ_1000 = yes;
+      UCLAMP_TASK = yes;
+      UCLAMP_TASK_GROUP = yes;
       RPMSG_CHAR = yes;
       QCOM_Q6V5_ADSP = module;
-      BT_RFCOMM = yes;
+      BT_RFCOMM = module;
       BT_RFCOMM_TTY = yes;
-      BT_BNEP = yes;
+      BT_BNEP = module;
       BT_BNEP_MC_FILTER = yes;
       BT_BNEP_PROTO_FILTER = yes;
       BT_HS = yes;
@@ -261,6 +279,10 @@ in {
       USB_ONBOARD_HUB = no; # breaks USB on qualcomm rb2... which i don't need, but i guess this won't hurt either way
       INTERCONNECT_QCOM_QCM2290 = yes;
       BRIDGE_NETFILTER = module;
+      NEW_LEDS = yes;
+      LEDS_CLASS = yes;
+      CMA = yes;
+      CMA_SIZE_MBYTES = lib.mkForce (freeform "256");
       # CONFIG END (essentially)
 
       # the rest of the config is just disabling unneeded stuff, feel free to ignore this
@@ -542,12 +564,6 @@ in {
       HISI_PMU = no;
       INTERCONNECT_QCOM_MSM8996 = no;
       INTERCONNECT_QCOM_QCS404 = no;
-      INTERCONNECT_QCOM_SC7180 = no;
-      INTERCONNECT_QCOM_SM8150 = no;
-      INTERCONNECT_QCOM_SM8350 = no;
-      INTERCONNECT_QCOM_SM8450 = no;
-      INTERCONNECT_QCOM_SM8550 = no;
-      INTERCONNECT_QCOM_SC8280XP = no;
       ARCH_NPCM = no;
       PINCTRL_SC8280XP = no;
       BCM_SBA_RAID = no;
@@ -560,25 +576,12 @@ in {
       SND_SOC_SC7280 = no;
       SND_SOC_WCD938X_SDW = no;
       MMC_SDHCI_OF_DWCMSHC = no;
-      SC_GCC_8180X = no;
       IOMMU_IO_PGTABLE_DART = no;
-      INTERCONNECT_QCOM_SC8180X = no;
       MEMORY_HOTPLUG = lib.mkForce no;
       MELLANOX_PLATFORM = no;
-      CHROME_PLATFORMS = lib.mkForce no;
-      PINCTRL_SM8150 = no;
-      SM_GCC_8150 = no;
       SM_VIDEOCC_8150 = no;
-      SM_GPUCC_8150 = no;
       SM_GPUCC_8350 = no;
       SM_VIDEOCC_8350 = no;
-      PINCTRL_SM8350 = no;
-      SM_GCC_8350 = no;
-      SM_DISPCC_8450 = no;
-      PINCTRL_SM8550 = no;
-      PINCTRL_SM8550_LPASS_LPI = no;
-      SM_DISPCC_8550 = no;
-      SM_TCSRCC_8550 = no;
 
       # keys that are unused in this case
       # (builtin aarch64-linux config is unused too, but i cant disable it)

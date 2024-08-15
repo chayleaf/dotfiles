@@ -23,10 +23,10 @@
     };
     "rikaitan" = buildFirefoxXpiAddon {
       pname = "rikaitan";
-      version = "24.5.21.0";
+      version = "24.7.31.0";
       addonId = "tatsu@autistici.org";
-      url = "https://addons.mozilla.org/firefox/downloads/file/4291845/rikaitan-24.5.21.0.xpi";
-      sha256 = "a2a94d88af04023f14daaafda1f6ca7a7197f2ab92ada08ee2e9e4292d57a391";
+      url = "https://addons.mozilla.org/firefox/downloads/file/4337076/rikaitan-24.7.31.0.xpi";
+      sha256 = "be4b8484221aa8eb4348d1880de988d6f19f3b9ca53deda3fca657dfa2ce3108";
       meta = with lib;
       {
         homepage = "https://github.com/Ajatt-Tools/rikaitan";
@@ -38,6 +38,7 @@
           "unlimitedStorage"
           "declarativeNetRequest"
           "scripting"
+          "contextMenus"
           "http://*/*"
           "https://*/*"
           "file://*/*"
