@@ -52,9 +52,15 @@ dpms-on = pkgs.writeShellScript "sway-dpms-on" ''
 lock-script = pkgs.writeShellScript "lock-start" ''
   ${swaylock-start}
   ${lib.optionalString config.phone.enable
-  # suspend if nothing is playing
+  # suspend if nothing is playing and no ssh sessions are active
   ''
-    ${pkgs.playerctl}/bin/playerctl -a status | ${pkgs.gnugrep}/bin/grep Playing >/dev/null || /run/current-system/sw/bin/systemctl suspend
+    if ${pkgs.playerctl}/bin/playerctl -a status | ${pkgs.gnugrep}/bin/grep Playing >/dev/null; then
+      exit
+    fi
+    if ${pkgs.coreutils}/bin/who -u | ${pkgs.gnugrep}/bin/grep "pts.*(" >/dev/null; then
+      exit
+    fi
+    /run/current-system/sw/bin/systemctl suspend
   ''}
 '';
 barConfig = {
@@ -443,7 +449,7 @@ in
     '';
   };
   services.swayidle = {
-    enable = config.wayland.windowManager.sway.enable && !config.phone.enable;
+    enable = config.wayland.windowManager.sway.enable;
     events = [
       { event = "before-sleep"; command = toString swaylock-start; }
       # after-resume, lock, unlock
