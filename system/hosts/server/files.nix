@@ -62,7 +62,22 @@ in {
         DISABLE_REGISTRATION = true;
         REGISTER_EMAIL_CONFIRM = true;
       };
+      cache = {
+        ADAPTER = "redis";
+        HOST = "redis+socket://${config.services.redis.servers.forgejo.unixSocket}";
+      };
     };
+  };
+
+  systemd.services.forgejo = {
+    wants = [ "redis-forgejo.service" ];
+    after = [ "redis-forgejo.service" ];
+  };
+
+  users.users.forgejo.extraGroups = [ config.services.redis.servers.forgejo.user ];
+
+  services.redis.servers.forgejo = {
+    enable = true;
   };
 
   services.nginx.virtualHosts."cloud.${cfg.domainName}" = {
@@ -82,6 +97,7 @@ in {
       dbtype = "pgsql";
       dbhost = "/run/postgresql";
     };
+    phpOptions."opcache.interned_strings_buffer" = "16";
     settings.overwriteprotocol = "https";
     hostName = "cloud.${cfg.domainName}";
     https = true;

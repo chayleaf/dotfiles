@@ -27,6 +27,11 @@ in {
     hostName = "mail.${cfg.domainName}";
     maxAttachmentSize = 100;
     plugins = [ "persistent_login" ];
+    extraConfig = ''
+      $config['smtp_server'] = "tls://${config.mailserver.fqdn}";
+      $config['smtp_user'] = "%u";
+      $config['smtp_pass'] = "%p";
+    '';
   };
   mailserver = {
     enable = true;

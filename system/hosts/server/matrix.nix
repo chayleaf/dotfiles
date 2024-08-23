@@ -71,6 +71,8 @@ in {
     };
   };
 
+  environment.systemPackages = with pkgs; [ matrix-synapse-tools.rust-synapse-compress-state ];
+
   services.matrix-synapse = {
     enable = true;
     extraConfigFiles = [ "/var/lib/matrix-synapse/config.yaml" ];

@@ -133,9 +133,12 @@ in {
         { directory = /var/lib/${config.services.prometheus.stateDir}; user = "prometheus"; group = "prometheus"; mode = "0755"; }
       ] ++ lib.optionals (config.services.qbittorrent-nox.enable or false) [
         { directory = /var/lib/qbittorrent-nox; mode = "0755"; }
-      ] ++ lib.optionals (config.services.redis.servers.rspamd.enable or false) [
-        { directory = /var/lib/redis-rspamd; user = "redis-rspamd"; group = "redis-rspamd"; mode = "0700"; }
-      ] ++ lib.optionals config.services.roundcube.enable [
+      ] ++ (lib.mapAttrsToList
+        (k: v: let
+            name = if k == "" then "redis" else "redis-${k}";
+          in { directory = /var/lib/${name}; inherit (v) user; group = v.user; mode = "0700"; })
+        (lib.filterAttrs (k: v: v.enable or false) config.services.redis.servers))
+      ++ lib.optionals config.services.roundcube.enable [
         { directory = /var/lib/roundcube; user = "roundcube"; group = "roundcube"; mode = "0700"; }
       ] ++ lib.optionals config.services.rspamd.enable [
         { directory = /var/lib/rspamd; user = "rspamd"; group = "rspamd"; mode = "0700"; }
