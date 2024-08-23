@@ -162,7 +162,7 @@
     config = {
       osc = "no";
       hwdec = "vaapi";
-      vo = "gpu-next,gpu,dmabuf-wayland,wlshm,vdpau,xv,x11,sdl,drm,";
+      vo = "gpu,dmabuf-wayland,wlshm,vdpau,xv,x11,sdl,drm,";
       alang = "jpn,en,ru";
       slang = "jpn,en,ru";
       vlang = "jpn,en,ru";
