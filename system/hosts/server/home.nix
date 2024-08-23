@@ -281,7 +281,13 @@ in {
         job_name = "local_medium_freq";
         scrape_interval = "15m";
         static_configs = [ {
-          targets = [ "127.0.0.1:9548" "127.0.0.1:9198" "127.0.0.1:9173" ];
+          targets = [
+            "127.0.0.1:9548"
+            "127.0.0.1:9198"
+            (let cfg = config.services.matrix-appservice-discord.settings.metrics;
+              in "${lib.quoteListenAddr cfg.host}:${toString cfg.port}")
+            config.services.matrix-sliding-sync.settings.SYNCV3_PROM
+          ];
           labels.machine = "server";
         } ];
       }
@@ -362,6 +368,9 @@ in {
     enable = true;
     host = "127.0.0.1";
     port = 9173;
+  };
+  services.matrix-sliding-sync = {
+    settings.SYNCV3_PROM = "[::]:8011";
   };
   services.matrix-synapse.settings = {
     enable_metrics = true;

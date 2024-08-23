@@ -11,6 +11,7 @@ let
   matrixClientJson = {
     "m.homeserver".base_url = "https://matrix.${cfg.domainName}";
     "m.identity_server".base_url = "https://vector.im";
+    "org.matrix.msc3575.proxy".url = "https://matrix.${cfg.domainName}";
   };
   matrixServerConfigResponse = ''
     add_header Content-Type application/json;
@@ -41,7 +42,8 @@ in {
     locations = {
       "= /.well-known/matrix/server".extraConfig = matrixServerConfigResponse;
       "= /.well-known/matrix/client".extraConfig = matrixClientConfigResponse;
-      "/".proxyPass = "http://${lib.quoteListenAddr matrixAddr}:${toString matrixPort}";
+      "~ ^/(_matrix|_synapse/client|$)".proxyPass = "http://${lib.quoteListenAddr matrixAddr}:${toString matrixPort}";
+      "~ ^/(client/|_matrix/client/unstable/org.matrix.msc3575/)".proxyPass = "http://${config.services.matrix-sliding-sync.settings.SYNCV3_BINDADDR}";
     };
   };
 
@@ -109,6 +111,15 @@ in {
           compress = false;
         }];
       }];
+    };
+  };
+
+  services.matrix-sliding-sync = {
+    enable = true;
+    environmentFile = "/secrets/sliding-sync/env";
+    settings = {
+      SYNCV3_BINDADDR = "[::]:8010";
+      SYNCV3_SERVER = "https://matrix.pavluk.org";
     };
   };
 }
