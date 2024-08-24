@@ -151,7 +151,7 @@ in {
           '')
           cfg.lookingGlass.ivshmem));
     hardware = {
-      opengl.enable = true;
+      graphics.enable = true;
     } // lib.optionalAttrs (cfg.enable && !cfg.nvidiaGpu && options?hardware.amdgpu.loadInInitrd) {
       # disable early KMS so GPU can be properly unbound
       # can't use mkif because the option may not even exist

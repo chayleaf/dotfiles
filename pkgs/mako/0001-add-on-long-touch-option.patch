@@ -1,0 +1,210 @@
+From 85bbcf7e18136f788cf76bb6f345ade84a5e536e Mon Sep 17 00:00:00 2001
+From: chayleaf <chayleaf-git@pavluk.org>
+Date: Sat, 24 Aug 2024 10:49:21 +0700
+Subject: [PATCH 1/5] add on-long-touch option
+
+---
+ config.c               | 21 +++++++++++++++++++++
+ doc/mako.5.scd         | 15 ++++++++++++++-
+ include/config.h       |  7 ++++---
+ include/notification.h |  2 +-
+ include/wayland.h      |  1 +
+ notification.c         |  8 ++++++--
+ wayland.c              |  3 ++-
+ 7 files changed, 49 insertions(+), 8 deletions(-)
+
+diff --git a/config.c b/config.c
+index 70be717..87db932 100644
+--- a/config.c
++++ b/config.c
+@@ -129,6 +129,9 @@ void init_default_style(struct mako_style *style) {
+ 	style->button_bindings.right.action = MAKO_BINDING_DISMISS;
+ 	style->button_bindings.middle.action = MAKO_BINDING_NONE;
+ 	style->touch_binding.action = MAKO_BINDING_DISMISS;
++	style->long_touch_binding.action = MAKO_BINDING_INVOKE_ACTION;
++	style->long_touch_binding.action_name = strdup(DEFAULT_ACTION_KEY);
++	style->long_press_duration = 500;
+ 
+ 	// Everything in the default config is explicitly specified.
+ 	memset(&style->spec, true, sizeof(struct mako_style_spec));
+@@ -148,6 +151,7 @@ void finish_style(struct mako_style *style) {
+ 	finish_binding(&style->button_bindings.middle);
+ 	finish_binding(&style->button_bindings.right);
+ 	finish_binding(&style->touch_binding);
++	finish_binding(&style->long_touch_binding);
+ 	finish_binding(&style->notify_binding);
+ 	free(style->icon_path);
+ 	free(style->font);
+@@ -385,6 +389,16 @@ bool apply_style(struct mako_style *target, const struct mako_style *style) {
+ 		target->spec.touch_binding = true;
+ 	}
+ 
++	if (style->spec.long_touch_binding) {
++		copy_binding(&target->long_touch_binding, &style->long_touch_binding);
++		target->spec.long_touch_binding = true;
++	}
++
++	if (style->spec.long_press_duration) {
++		target->long_press_duration = style->long_press_duration;
++		target->spec.long_press_duration = true;
++	}
++
+ 	if (style->spec.notify_binding) {
+ 		copy_binding(&target->notify_binding, &style->notify_binding);
+ 		target->spec.notify_binding = true;
+@@ -660,6 +674,8 @@ static bool apply_style_option(struct mako_style *style, const char *name,
+ 		return true;
+ 	} else if (strcmp(name, "anchor") == 0) {
+ 		return spec->anchor = parse_anchor(value, &style->anchor);
++	} else if (strcmp(name, "long-press-duration") == 0) {
++		return spec->long_press_duration = parse_int_ge(value, &style->long_press_duration, 0);
+ 	} else if (has_prefix(name, "on-")) {
+ 		struct mako_binding binding = {0};
+ 		if (strcmp(value, "none") == 0) {
+@@ -697,6 +713,9 @@ static bool apply_style_option(struct mako_style *style, const char *name,
+ 		} else if (strcmp(name, "on-touch") == 0) {
+ 			copy_binding(&style->touch_binding, &binding);
+ 			style->spec.touch_binding = true;
++		} else if (strcmp(name, "on-long-touch") == 0) {
++			copy_binding(&style->long_touch_binding, &binding);
++			style->spec.long_touch_binding = true;
+ 		} else if (strcmp(name, "on-notify") == 0) {
+ 			copy_binding(&style->notify_binding, &binding);
+ 			style->spec.notify_binding = true;
+@@ -886,6 +905,8 @@ int parse_config_arguments(struct mako_config *config, int argc, char **argv) {
+ 		{"on-button-right", required_argument, 0, 0},
+ 		{"on-button-middle", required_argument, 0, 0},
+ 		{"on-touch", required_argument, 0, 0},
++		{"on-long-touch", required_argument, 0, 0},
++		{"long-press-duration", required_argument, 0, 0},
+ 		{0},
+ 	};
+ 
+diff --git a/doc/mako.5.scd b/doc/mako.5.scd
+index 91378ba..fff19ed 100644
+--- a/doc/mako.5.scd
++++ b/doc/mako.5.scd
+@@ -57,10 +57,23 @@ Supported options:
+ 	Default: dismiss
+ 
+ *on-touch*=_action_
+-	Performs the action when tapped via a touch device.
++	Performs the action when tapped via a touch device if the tap
++	duration is less than *long-press-duration*.
+ 
+ 	Default: dismiss
+ 
++*on-long-touch*=_action_
++	Performs the action when tapped via a touch device if the press
++	duration is greater or equal to *long-press-duration*.
++
++	Default: invoke-default-action
++
++*long-press-duration*=_time_
++	Specifies the cutoff time (in milliseconds) for a press to be
++	considered a long press.
++
++	Default: 500
++
+ *on-notify*=_action_
+ 	Performs the action when the notification is opened.
+ 
+diff --git a/include/config.h b/include/config.h
+index 013923a..5ff541c 100644
+--- a/include/config.h
++++ b/include/config.h
+@@ -42,14 +42,14 @@ struct mako_style_spec {
+ 	bool width, height, outer_margin, margin, padding, border_size, border_radius, font,
+ 		markup, format, text_alignment, actions, default_timeout, ignore_timeout,
+ 		icons, max_icon_size, icon_path, group_criteria_spec, invisible, history,
+-		icon_location, max_visible, layer, output, anchor;
++		icon_location, max_visible, layer, output, anchor, long_press_duration;
+ 	struct {
+ 		bool background, text, border, progress;
+ 	} colors;
+ 	struct {
+ 		bool left, right, middle;
+ 	} button_bindings;
+-	bool touch_binding, notify_binding;
++	bool touch_binding, long_touch_binding, notify_binding;
+ };
+ 
+ 
+@@ -98,7 +98,8 @@ struct mako_style {
+ 	struct {
+ 		struct mako_binding left, right, middle;
+ 	} button_bindings;
+-	struct mako_binding touch_binding, notify_binding;
++	struct mako_binding touch_binding, long_touch_binding, notify_binding;
++	int32_t long_press_duration;
+ };
+ 
+ struct mako_config {
+diff --git a/include/notification.h b/include/notification.h
+index 9a395ba..a02d855 100644
+--- a/include/notification.h
++++ b/include/notification.h
+@@ -101,7 +101,7 @@ size_t format_notification(struct mako_notification *notif, const char *format,
+ void notification_handle_button(struct mako_notification *notif, uint32_t button,
+ 	enum wl_pointer_button_state state, const struct mako_binding_context *ctx);
+ void notification_handle_touch(struct mako_notification *notif,
+-	const struct mako_binding_context *ctx);
++	const struct mako_binding_context *ctx, int32_t duration_ms);
+ void notification_execute_binding(struct mako_notification *notif,
+ 	const struct mako_binding *binding, const struct mako_binding_context *ctx);
+ void insert_notification(struct mako_state *state, struct mako_notification *notif);
+diff --git a/include/wayland.h b/include/wayland.h
+index cc00500..c8767be 100644
+--- a/include/wayland.h
++++ b/include/wayland.h
+@@ -35,6 +35,7 @@ struct mako_seat {
+ 		struct wl_touch *wl_touch;
+ 		struct {
+ 			int32_t x, y;
++			uint32_t time;
+ 			struct mako_surface *surface;
+ 		} pts[MAX_TOUCHPOINTS];
+ 	} touch;
+diff --git a/notification.c b/notification.c
+index 8c0c8a7..7d3db2f 100644
+--- a/notification.c
++++ b/notification.c
+@@ -446,8 +446,12 @@ void notification_handle_button(struct mako_notification *notif, uint32_t button
+ }
+ 
+ void notification_handle_touch(struct mako_notification *notif,
+-		const struct mako_binding_context *ctx) {
+-	notification_execute_binding(notif, &notif->style.touch_binding, ctx);
++		const struct mako_binding_context *ctx, int32_t duration_ms) {
++	if (duration_ms >= notif->style.long_press_duration) {
++		notification_execute_binding(notif, &notif->style.long_touch_binding, ctx);
++	} else {
++		notification_execute_binding(notif, &notif->style.touch_binding, ctx);
++	}
+ }
+ 
+ /*
+diff --git a/wayland.c b/wayland.c
+index eeefb30..d247779 100644
+--- a/wayland.c
++++ b/wayland.c
+@@ -122,6 +122,7 @@ static void touch_handle_down(void *data, struct wl_touch *wl_touch,
+ 	}
+ 	seat->touch.pts[id].x = wl_fixed_to_int(surface_x);
+ 	seat->touch.pts[id].y = wl_fixed_to_int(surface_y);
++	seat->touch.pts[id].time = time;
+ 	seat->touch.pts[id].surface = get_surface(seat->state, wl_surface);
+ }
+ 
+@@ -144,7 +145,7 @@ static void touch_handle_up(void *data, struct wl_touch *wl_touch,
+ 	wl_list_for_each(notif, &state->notifications, link) {
+ 		if (hotspot_at(&notif->hotspot, seat->touch.pts[id].x, seat->touch.pts[id].y)) {
+ 			struct mako_surface *surface = notif->surface;
+-			notification_handle_touch(notif, &ctx);
++			notification_handle_touch(notif, &ctx, time - seat->touch.pts[id].time);
+ 			set_dirty(surface);
+ 			break;
+ 		}
+-- 
+2.45.2
+

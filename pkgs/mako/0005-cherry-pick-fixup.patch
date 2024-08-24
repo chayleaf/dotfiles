@@ -1,0 +1,64 @@
+From cf4c99d9fa92e397b3860a71d293957741abc7c2 Mon Sep 17 00:00:00 2001
+From: chayleaf <chayleaf-git@pavluk.org>
+Date: Sat, 24 Aug 2024 14:22:23 +0700
+Subject: [PATCH 5/5] cherry-pick fixup
+
+---
+ criteria.c         | 4 ++--
+ include/criteria.h | 3 +++
+ notification.c     | 6 +++++-
+ 3 files changed, 10 insertions(+), 3 deletions(-)
+
+diff --git a/criteria.c b/criteria.c
+index 523a467..2514da9 100644
+--- a/criteria.c
++++ b/criteria.c
+@@ -418,14 +418,14 @@ struct mako_criteria *global_criteria(struct mako_config *config) {
+ 	return criteria;
+ }
+ 
+-static void timespec_from_ms(struct timespec *t, long time_ms) {
++void timespec_from_ms(struct timespec *t, long time_ms) {
+ 	static const long ms = 1000000;
+ 
+ 	t->tv_sec = time_ms / 1000;
+ 	t->tv_nsec = (time_ms % 1000) * ms;
+ }
+ 
+-static void timespec_add(struct timespec *t, struct timespec *u) {
++void timespec_add(struct timespec *t, struct timespec *u) {
+ 	static const long s = 1000000000;
+ 
+ 	t->tv_sec += u->tv_sec;
+diff --git a/include/criteria.h b/include/criteria.h
+index 58c36ef..48f256d 100644
+--- a/include/criteria.h
++++ b/include/criteria.h
+@@ -60,4 +60,7 @@ struct mako_criteria *create_criteria_from_notification(
+ 
+ bool validate_criteria(struct mako_criteria *criteria);
+ 
++void timespec_add(struct timespec *t, struct timespec *u);
++void timespec_from_ms(struct timespec *t, long time_ms);
++
+ #endif
+diff --git a/notification.c b/notification.c
+index ce0bafd..730176f 100644
+--- a/notification.c
++++ b/notification.c
+@@ -475,7 +475,11 @@ void notification_handle_touch_start(struct mako_notification *notif,
+ 		return;
+ 	}
+ 	notif->long_press_ctx = *ctx;
+-	notif->long_press_timer = add_event_loop_timer(&notif->state->event_loop, 500,
++	struct timespec at, delta;
++	clock_gettime(CLOCK_MONOTONIC, &at);
++	timespec_from_ms(&delta, 500);
++	timespec_add(&at, &delta);
++	notif->long_press_timer = add_event_loop_timer(&notif->state->event_loop, &at,
+ 			handle_notification_touch_timer, notif);
+ }
+ 
+-- 
+2.45.2
+

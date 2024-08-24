@@ -1,0 +1,24 @@
+From 3d02857ec8ab68ae243e651874203e88e6788ae7 Mon Sep 17 00:00:00 2001
+From: chayleaf <chayleaf-git@pavluk.org>
+Date: Sat, 24 Aug 2024 13:22:34 +0700
+Subject: [PATCH 2/3] still scroll after the tap moves outside the rofi window
+
+---
+ source/wayland/display.c | 1 -
+ 1 file changed, 1 deletion(-)
+
+diff --git a/source/wayland/display.c b/source/wayland/display.c
+index 381c402d..5154589a 100644
+--- a/source/wayland/display.c
++++ b/source/wayland/display.c
+@@ -593,7 +593,6 @@ static void wayland_touch_motion(void *data, struct wl_touch *wl_touch,
+   int cur_pos = y_offset_to_line_offset(y - self->touches[id].start_y);
+ 
+   if (cur_pos != last_pos) {
+-    rofi_view_handle_mouse_motion(state, x, y, FALSE);
+     nk_bindings_seat_handle_scroll(wayland->bindings_seat, NULL,
+                                    NK_BINDINGS_SCROLL_AXIS_VERTICAL,
+                                    cur_pos - last_pos);
+-- 
+2.45.2
+

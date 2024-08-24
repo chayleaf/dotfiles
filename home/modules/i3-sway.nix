@@ -34,6 +34,7 @@ audioPrev = pkgs.writeShellScript "playerctl-prev" ''
     ${pkgs.playerctl}/bin/playerctl play
   fi
 '';
+# TODO: only unidle mako when unlocked
 swaylock =
   if config.phone.enable
   then "${pkgs.schlock}/bin/schlock -fp /secrets/schlock.pin"
@@ -44,10 +45,12 @@ swaylock-start = pkgs.writeShellScript "swaylock-start" ''
 dpms-off = pkgs.writeShellScript "sway-dpms-off" ''
   ${config.wayland.windowManager.sway.package}/bin/swaymsg output "*" power off
   ${config.wayland.windowManager.sway.package}/bin/swaymsg input type:touch events disabled
+  ${config.services.mako.package}/bin/makoctl mode -a idle
 '';
 dpms-on = pkgs.writeShellScript "sway-dpms-on" ''
   ${config.wayland.windowManager.sway.package}/bin/swaymsg output "*" power on
   ${config.wayland.windowManager.sway.package}/bin/swaymsg input type:touch events enabled
+  ${config.services.mako.package}/bin/makoctl mode -r idle
 '';
 lock-script = pkgs.writeShellScript "lock-start" ''
   ${swaylock-start}
@@ -229,9 +232,17 @@ in
   };
   services.mako = {
     enable = lib.mkDefault config.wayland.windowManager.sway.enable;
-    # ms
-    defaultTimeout = 7500;
+    package = pkgs.mako.overrideAttrs (old: {
+      patches = old.patches or []
+          ++ (lib.mapAttrsToList (k: v: ../../pkgs/mako/${k}) (builtins.readDir ../../pkgs/mako));
+    });
+    defaultTimeout = 10000;
     font = "Noto Sans Mono 12";
+    extraConfig = ''
+      max-history=50
+      [mode=idle]
+      freeze=1
+    '';
   };
   xsession.windowManager.i3 = {
     config = let i3Config = {
@@ -279,9 +290,9 @@ in
             sha256 = "sha256-XgkysduhHbmprE334yeL65txpK0HNXeCmgCZMxpwsgU=";
           })*/
         ] ++ lib.optionals config.phone.enable
-          (map
-            (x: ../../pkgs/sway/${x})
-            (builtins.filter (lib.hasInfix "-mobile-") (builtins.attrNames (builtins.readDir ../../pkgs/sway))));
+          (lib.mapAttrsToList
+            (k: v: ../../pkgs/sway/${k})
+            (lib.filterAttrs (k: v: lib.hasInfix "-mobile-" k) (builtins.readDir ../../pkgs/sway)));
       });
       inherit (cfg) extraSessionCommands extraOptions;
       withBaseWrapper = cfg.wrapperFeatures.base;
@@ -511,7 +522,12 @@ in
   programs.rofi = {
     enable = true;
     font = "Noto Sans Mono 16";
-    package = lib.mkIf config.wayland.windowManager.sway.enable pkgs.rofi-wayland;
+    package = lib.mkIf config.wayland.windowManager.sway.enable (pkgs.rofi-wayland.override {
+      rofi-unwrapped = pkgs.rofi-wayland-unwrapped.overrideAttrs (old: {
+        patches = old.patches or []
+          ++ (lib.mapAttrsToList (k: v: ../../pkgs/rofi-wayland/${k}) (builtins.readDir ../../pkgs/rofi-wayland));
+      });
+    });
     plugins = with pkgs; [
       rofi-calc
     ];

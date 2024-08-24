@@ -1,0 +1,284 @@
+From 0b53bc7fb9494bc7a804a1d088c6b4137d6eef6d Mon Sep 17 00:00:00 2001
+From: chayleaf <chayleaf-git@pavluk.org>
+Date: Sat, 24 Aug 2024 08:47:49 +0700
+Subject: [PATCH 3/5] dynamic timeouts
+
+Compute notification timeouts on every config change, rather than only
+on notification creation.
+---
+ criteria.c             | 50 ++++++++++++++++++++++++++++++++++++++----
+ dbus/mako.c            |  2 +-
+ dbus/xdg.c             | 21 +-----------------
+ event-loop.c           | 22 +++----------------
+ include/criteria.h     |  4 ++--
+ include/event-loop.h   |  2 +-
+ include/notification.h |  1 +
+ notification.c         |  2 ++
+ render.c               |  4 ++--
+ 9 files changed, 59 insertions(+), 49 deletions(-)
+
+diff --git a/criteria.c b/criteria.c
+index 9db3966..3108a38 100644
+--- a/criteria.c
++++ b/criteria.c
+@@ -418,15 +418,38 @@ struct mako_criteria *global_criteria(struct mako_config *config) {
+ 	return criteria;
+ }
+ 
+-// Iterate through `criteria_list`, applying the style from each matching
++static void timespec_add(struct timespec *t, int delta_ms) {
++	static const long ms = 1000000, s = 1000000000;
++
++	int delta_ms_low = delta_ms % 1000;
++	int delta_s_high = delta_ms / 1000;
++
++	t->tv_sec += delta_s_high;
++
++	t->tv_nsec += (long)delta_ms_low * ms;
++	if (t->tv_nsec >= s) {
++		t->tv_nsec -= s;
++		++t->tv_sec;
++	}
++}
++
++static void handle_notification_timer(void *data) {
++	struct mako_notification *notif = data;
++	struct mako_surface *surface = notif->surface;
++	notif->timer = NULL;
++
++	close_notification(notif, MAKO_NOTIFICATION_CLOSE_EXPIRED, true);
++	set_dirty(surface);
++}
++
++// Iterate through the criteria list, applying the style from each matching
+ // criteria to `notif`. Returns the number of criteria that matched, or -1 if
+ // a failure occurs.
+-ssize_t apply_each_criteria(struct wl_list *criteria_list,
+-		struct mako_notification *notif) {
++ssize_t apply_each_criteria(struct mako_state *state, struct mako_notification *notif) {
+ 	ssize_t match_count = 0;
+ 
+ 	struct mako_criteria *criteria;
+-	wl_list_for_each(criteria, criteria_list, link) {
++	wl_list_for_each(criteria, &state->config.criteria, link) {
+ 		if (!match_criteria(criteria, notif)) {
+ 			continue;
+ 		}
+@@ -447,6 +470,25 @@ ssize_t apply_each_criteria(struct wl_list *criteria_list,
+ 		}
+ 	}
+ 
++	int32_t expire_timeout = notif->requested_timeout;
++	if (expire_timeout < 0 || notif->style.ignore_timeout) {
++		expire_timeout = notif->style.default_timeout;
++	}
++
++	if (expire_timeout > 0) {
++		struct timespec at = notif->at;
++		timespec_add(&at, expire_timeout);
++		if (notif->timer) {
++			notif->timer->at = at;
++		} else {
++			notif->timer = add_event_loop_timer(&state->event_loop, &at,
++				handle_notification_timer, notif);
++		}
++	} else if (notif->timer) {
++		destroy_timer(notif->timer);
++		notif->timer = NULL;
++	}
++
+ 	if (!notif->surface) {
+ 		notif->surface = create_surface(notif->state, notif->style.output,
+ 			notif->style.layer, notif->style.anchor);
+diff --git a/dbus/mako.c b/dbus/mako.c
+index 4c95881..8f3c874 100644
+--- a/dbus/mako.c
++++ b/dbus/mako.c
+@@ -305,7 +305,7 @@ static void reapply_config(struct mako_state *state) {
+ 
+ 		finish_style(&notif->style);
+ 		init_empty_style(&notif->style);
+-		apply_each_criteria(&state->config.criteria, notif);
++		apply_each_criteria(state, notif);
+ 
+ 		// Having to do this for every single notification really hurts... but
+ 		// it does do The Right Thing (tm).
+diff --git a/dbus/xdg.c b/dbus/xdg.c
+index 1f91431..650dff7 100644
+--- a/dbus/xdg.c
++++ b/dbus/xdg.c
+@@ -81,15 +81,6 @@ static int handle_get_capabilities(sd_bus_message *msg, void *data,
+ 	return 0;
+ }
+ 
+-static void handle_notification_timer(void *data) {
+-	struct mako_notification *notif = data;
+-	struct mako_surface *surface = notif->surface;
+-	notif->timer = NULL;
+-
+-	close_notification(notif, MAKO_NOTIFICATION_CLOSE_EXPIRED, true);
+-	set_dirty(surface);
+-}
+-
+ static int handle_notify(sd_bus_message *msg, void *data,
+ 		sd_bus_error *ret_error) {
+ 	struct mako_state *state = data;
+@@ -382,7 +373,7 @@ static int handle_notify(sd_bus_message *msg, void *data,
+ 		insert_notification(state, notif);
+ 	}
+ 
+-	int match_count = apply_each_criteria(&state->config.criteria, notif);
++	int match_count = apply_each_criteria(state, notif);
+ 	if (match_count == -1) {
+ 		// We encountered an allocation failure or similar while applying
+ 		// criteria. The notification may be partially matched, but the worst
+@@ -398,16 +389,6 @@ static int handle_notify(sd_bus_message *msg, void *data,
+ 		return -1;
+ 	}
+ 
+-	int32_t expire_timeout = notif->requested_timeout;
+-	if (expire_timeout < 0 || notif->style.ignore_timeout) {
+-		expire_timeout = notif->style.default_timeout;
+-	}
+-
+-	if (expire_timeout > 0) {
+-		notif->timer = add_event_loop_timer(&state->event_loop, expire_timeout,
+-			handle_notification_timer, notif);
+-	}
+-
+ 	if (notif->style.icons) {
+ 		notif->icon = create_icon(notif);
+ 	}
+diff --git a/event-loop.c b/event-loop.c
+index 99c1f4a..92c627a 100644
+--- a/event-loop.c
++++ b/event-loop.c
+@@ -74,21 +74,6 @@ void finish_event_loop(struct mako_event_loop *loop) {
+ 	}
+ }
+ 
+-static void timespec_add(struct timespec *t, int delta_ms) {
+-	static const long ms = 1000000, s = 1000000000;
+-
+-	int delta_ms_low = delta_ms % 1000;
+-	int delta_s_high = delta_ms / 1000;
+-
+-	t->tv_sec += delta_s_high;
+-
+-	t->tv_nsec += (long)delta_ms_low * ms;
+-	if (t->tv_nsec >= s) {
+-		t->tv_nsec -= s;
+-		++t->tv_sec;
+-	}
+-}
+-
+ static bool timespec_less(struct timespec *t1, struct timespec *t2) {
+ 	if (t1->tv_sec != t2->tv_sec) {
+ 		return t1->tv_sec < t2->tv_sec;
+@@ -124,7 +109,7 @@ static void update_event_loop_timer(struct mako_event_loop *loop) {
+ }
+ 
+ struct mako_timer *add_event_loop_timer(struct mako_event_loop *loop,
+-		int delay_ms, mako_event_loop_timer_func_t func, void *data) {
++		struct timespec *at, mako_event_loop_timer_func_t func, void *data) {
+ 	struct mako_timer *timer = calloc(1, sizeof(struct mako_timer));
+ 	if (timer == NULL) {
+ 		fprintf(stderr, "allocation failed\n");
+@@ -133,10 +118,9 @@ struct mako_timer *add_event_loop_timer(struct mako_event_loop *loop,
+ 	timer->event_loop = loop;
+ 	timer->func = func;
+ 	timer->user_data = data;
+-	wl_list_insert(&loop->timers, &timer->link);
++	timer->at = *at;
+ 
+-	clock_gettime(CLOCK_MONOTONIC, &timer->at);
+-	timespec_add(&timer->at, delay_ms);
++	wl_list_insert(&loop->timers, &timer->link);
+ 
+ 	update_event_loop_timer(loop);
+ 	return timer;
+diff --git a/include/criteria.h b/include/criteria.h
+index 2f03514..58c36ef 100644
+--- a/include/criteria.h
++++ b/include/criteria.h
+@@ -7,6 +7,7 @@
+ #include <wayland-client.h>
+ #include "config.h"
+ #include "types.h"
++#include "mako.h"
+ 
+ struct mako_config;
+ struct mako_notification;
+@@ -53,8 +54,7 @@ bool parse_criteria(const char *string, struct mako_criteria *criteria);
+ bool apply_criteria_field(struct mako_criteria *criteria, char *token);
+ 
+ struct mako_criteria *global_criteria(struct mako_config *config);
+-ssize_t apply_each_criteria(struct wl_list *criteria_list,
+-		struct mako_notification *notif);
++ssize_t apply_each_criteria(struct mako_state *state, struct mako_notification *notif);
+ struct mako_criteria *create_criteria_from_notification(
+ 		struct mako_notification *notif, struct mako_criteria_spec *spec);
+ 
+diff --git a/include/event-loop.h b/include/event-loop.h
+index 95c8d36..cd63e98 100644
+--- a/include/event-loop.h
++++ b/include/event-loop.h
+@@ -47,7 +47,7 @@ bool init_event_loop(struct mako_event_loop *loop, sd_bus *bus,
+ void finish_event_loop(struct mako_event_loop *loop);
+ int run_event_loop(struct mako_event_loop *loop);
+ struct mako_timer *add_event_loop_timer(struct mako_event_loop *loop,
+-	int delay_ms, mako_event_loop_timer_func_t func, void *data);
++	struct timespec *at, mako_event_loop_timer_func_t func, void *data);
+ 
+ void destroy_timer(struct mako_timer *timer);
+ 
+diff --git a/include/notification.h b/include/notification.h
+index b1482ec..2775d88 100644
+--- a/include/notification.h
++++ b/include/notification.h
+@@ -56,6 +56,7 @@ struct mako_notification {
+ 
+ 	struct mako_hotspot hotspot;
+ 	struct mako_timer *timer;
++	struct timespec at;
+ };
+ 
+ struct mako_action {
+diff --git a/notification.c b/notification.c
+index 32e7f7b..b78bd09 100644
+--- a/notification.c
++++ b/notification.c
+@@ -68,6 +68,8 @@ void reset_notification(struct mako_notification *notif) {
+ 
+ 	destroy_icon(notif->icon);
+ 	notif->icon = NULL;
++
++	clock_gettime(CLOCK_MONOTONIC, &notif->at);
+ }
+ 
+ struct mako_notification *create_notification(struct mako_state *state) {
+diff --git a/render.c b/render.c
+index 5b68632..44b78a0 100644
+--- a/render.c
++++ b/render.c
+@@ -355,7 +355,7 @@ void render(struct mako_surface *surface, struct pool_buffer *buffer, int scale,
+ 		// Immediately before rendering we need to re-match all of the criteria
+ 		// so that matches against the anchor and output work even if the
+ 		// output was automatically assigned by the compositor.
+-		int rematch_count = apply_each_criteria(&state->config.criteria, notif);
++		int rematch_count = apply_each_criteria(state, notif);
+ 		if (rematch_count == -1) {
+ 			// We encountered an allocation failure or similar while applying
+ 			// criteria. The notification may be partially matched, but the
+@@ -427,7 +427,7 @@ void render(struct mako_surface *surface, struct pool_buffer *buffer, int scale,
+ 		struct mako_notification *hidden_notif = create_notification(state);
+ 		hidden_notif->surface = surface;
+ 		hidden_notif->hidden = true;
+-		apply_each_criteria(&state->config.criteria, hidden_notif);
++		apply_each_criteria(state, hidden_notif);
+ 
+ 		struct mako_style *style = &hidden_notif->style;
+ 
+-- 
+2.45.2
+

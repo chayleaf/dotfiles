@@ -1,0 +1,192 @@
+From e2cb0d80c643b03a61f69f85454c9ed06eda5c3e Mon Sep 17 00:00:00 2001
+From: chayleaf <chayleaf-git@pavluk.org>
+Date: Sat, 24 Aug 2024 09:19:34 +0700
+Subject: [PATCH 4/5] implement notification time freezing
+
+---
+ config.c               |  8 +++++++
+ criteria.c             | 49 +++++++++++++++++++++++++++++++++++-------
+ doc/mako.5.scd         |  6 ++++++
+ include/config.h       |  4 +++-
+ include/notification.h |  2 ++
+ notification.c         |  1 +
+ 6 files changed, 61 insertions(+), 9 deletions(-)
+
+diff --git a/config.c b/config.c
+index 87db932..79dc58a 100644
+--- a/config.c
++++ b/config.c
+@@ -105,6 +105,7 @@ void init_default_style(struct mako_style *style) {
+ 	style->actions = true;
+ 	style->default_timeout = 0;
+ 	style->ignore_timeout = false;
++	style->freeze = false;
+ 
+ 	style->colors.background = 0x285577FF;
+ 	style->colors.text = 0xFFFFFFFF;
+@@ -305,6 +306,11 @@ bool apply_style(struct mako_style *target, const struct mako_style *style) {
+ 		target->spec.ignore_timeout = true;
+ 	}
+ 
++	if (style->spec.freeze) {
++		target->freeze = style->freeze;
++		target->spec.freeze = true;
++	}
++
+ 	if (style->spec.colors.background) {
+ 		target->colors.background = style->colors.background;
+ 		target->spec.colors.background = true;
+@@ -637,6 +643,8 @@ static bool apply_style_option(struct mako_style *style, const char *name,
+ 	} else if (strcmp(name, "ignore-timeout") == 0) {
+ 		return spec->ignore_timeout =
+ 			parse_boolean(value, &style->ignore_timeout);
++	} else if (strcmp(name, "freeze") == 0) {
++		return spec->freeze = parse_boolean(value, &style->freeze);
+ 	} else if (strcmp(name, "group-by") == 0) {
+ 		return spec->group_criteria_spec =
+ 			parse_criteria_spec(value, &style->group_criteria_spec);
+diff --git a/criteria.c b/criteria.c
+index 3108a38..523a467 100644
+--- a/criteria.c
++++ b/criteria.c
+@@ -418,21 +418,39 @@ struct mako_criteria *global_criteria(struct mako_config *config) {
+ 	return criteria;
+ }
+ 
+-static void timespec_add(struct timespec *t, int delta_ms) {
+-	static const long ms = 1000000, s = 1000000000;
++static void timespec_from_ms(struct timespec *t, long time_ms) {
++	static const long ms = 1000000;
+ 
+-	int delta_ms_low = delta_ms % 1000;
+-	int delta_s_high = delta_ms / 1000;
++	t->tv_sec = time_ms / 1000;
++	t->tv_nsec = (time_ms % 1000) * ms;
++}
++
++static void timespec_add(struct timespec *t, struct timespec *u) {
++	static const long s = 1000000000;
+ 
+-	t->tv_sec += delta_s_high;
++	t->tv_sec += u->tv_sec;
++	t->tv_nsec += u->tv_nsec;
+ 
+-	t->tv_nsec += (long)delta_ms_low * ms;
+ 	if (t->tv_nsec >= s) {
+ 		t->tv_nsec -= s;
+ 		++t->tv_sec;
+ 	}
+ }
+ 
++static void timespec_sub(struct timespec *t, struct timespec *u) {
++	static const long s = 1000000000;
++
++	t->tv_sec -= u->tv_sec;
++	t->tv_nsec += s;
++	t->tv_nsec -= u->tv_nsec;
++
++	if (t->tv_nsec >= s) {
++		t->tv_nsec -= s;
++	} else {
++		--t->tv_sec;
++	}
++}
++
+ static void handle_notification_timer(void *data) {
+ 	struct mako_notification *notif = data;
+ 	struct mako_surface *surface = notif->surface;
+@@ -474,10 +492,25 @@ ssize_t apply_each_criteria(struct mako_state *state, struct mako_notification *
+ 	if (expire_timeout < 0 || notif->style.ignore_timeout) {
+ 		expire_timeout = notif->style.default_timeout;
+ 	}
++	if (notif->frozen != notif->style.freeze) {
++		struct timespec now;
++		clock_gettime(CLOCK_MONOTONIC, &now);
++		if (notif->style.freeze) {
++			notif->froze_at = now;
++		} else {
++			timespec_sub(&now, &notif->froze_at);
++			timespec_add(&notif->at, &now);
++		}
++		notif->frozen = notif->style.freeze;
++	}
++	if (notif->frozen) {
++		expire_timeout = 0;
++	}
+ 
+ 	if (expire_timeout > 0) {
+-		struct timespec at = notif->at;
+-		timespec_add(&at, expire_timeout);
++		struct timespec at = notif->at, delta;
++		timespec_from_ms(&delta, expire_timeout);
++		timespec_add(&at, &delta);
+ 		if (notif->timer) {
+ 			notif->timer->at = at;
+ 		} else {
+diff --git a/doc/mako.5.scd b/doc/mako.5.scd
+index fff19ed..c0be528 100644
+--- a/doc/mako.5.scd
++++ b/doc/mako.5.scd
+@@ -421,6 +421,12 @@ associated command-line option.
+ 
+ 	Default: 0
+ 
++*freeze*=0|1
++	Whether to freeze this notification's active timeout, stopping it from
++	progressing. This can be used for pausing notifications while you're away.
++
++	Default: 0
++
+ # COLORS
+ 
+ Colors can be specified as _#RRGGBB_ or _#RRGGBBAA_.
+diff --git a/include/config.h b/include/config.h
+index 5ff541c..53116e1 100644
+--- a/include/config.h
++++ b/include/config.h
+@@ -42,7 +42,8 @@ struct mako_style_spec {
+ 	bool width, height, outer_margin, margin, padding, border_size, border_radius, font,
+ 		markup, format, text_alignment, actions, default_timeout, ignore_timeout,
+ 		icons, max_icon_size, icon_path, group_criteria_spec, invisible, history,
+-		icon_location, max_visible, layer, output, anchor, long_press_duration;
++		icon_location, max_visible, layer, output, anchor, long_press_duration,
++		freeze;
+ 	struct {
+ 		bool background, text, border, progress;
+ 	} colors;
+@@ -76,6 +77,7 @@ struct mako_style {
+ 	bool actions;
+ 	int default_timeout; // in ms
+ 	bool ignore_timeout;
++	bool freeze;
+ 
+ 	struct {
+ 		uint32_t background;
+diff --git a/include/notification.h b/include/notification.h
+index 2775d88..a631b49 100644
+--- a/include/notification.h
++++ b/include/notification.h
+@@ -57,6 +57,8 @@ struct mako_notification {
+ 	struct mako_hotspot hotspot;
+ 	struct mako_timer *timer;
+ 	struct timespec at;
++	struct timespec froze_at;
++	bool frozen;
+ };
+ 
+ struct mako_action {
+diff --git a/notification.c b/notification.c
+index b78bd09..ce0bafd 100644
+--- a/notification.c
++++ b/notification.c
+@@ -70,6 +70,7 @@ void reset_notification(struct mako_notification *notif) {
+ 	notif->icon = NULL;
+ 
+ 	clock_gettime(CLOCK_MONOTONIC, &notif->at);
++	notif->frozen = false;
+ }
+ 
+ struct mako_notification *create_notification(struct mako_state *state) {
+-- 
+2.45.2
+

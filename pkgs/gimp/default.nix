@@ -25,7 +25,7 @@
 , xorg
 , xvfb-run
 , dbus
-, gnome
+, adwaita-icon-theme
 , alsa-lib
 , glib
 , glib-networking
@@ -89,7 +89,7 @@ in gimp.overrideAttrs (old: rec {
     json-glib
     python
     xorg.libXmu
-    gnome.adwaita-icon-theme
+    adwaita-icon-theme
     (luajit.withPackages (ps: [ ps.lgi ]))
     alsa-lib
     gjs
@@ -130,7 +130,7 @@ in gimp.overrideAttrs (old: rec {
   preFixup = ''
     gappsWrapperArgs+=(\
       --prefix PATH : "${lib.makeBinPath [ graphviz ]}:$out/bin" \
-      --suffix XDG_DATA_DIRS : "${gnome.adwaita-icon-theme}/share" \
+      --suffix XDG_DATA_DIRS : "${adwaita-icon-theme}/share" \
     )
   '';
   postFixup = ''

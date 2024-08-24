@@ -55,9 +55,9 @@
   hardware = {
     opentabletdriver.enable = true;
     steam-hardware.enable = true;
-    opengl.driSupport32Bit = true;
+    graphics.enable32Bit = true;
     # needed for sway WLR_RENDERER=vulkan
-    opengl.extraPackages = with pkgs; [ vulkan-validation-layers ];
+    graphics.extraPackages = with pkgs; [ vulkan-validation-layers ];
   };
 
   # see modules/vfio.nix
@@ -143,7 +143,7 @@
 
   programs.ccache.enable = true;
   services.sshd.enable = true;
-  boot.binfmt.emulatedSystems = [ "aarch64-linux" ];
+  # boot.binfmt.emulatedSystems = [ "aarch64-linux" ];
   users.users.hydra-builder = {
     uid = 1001;
     isNormalUser = true;
