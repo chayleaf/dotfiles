@@ -9,7 +9,7 @@ in {
   services.nginx.virtualHosts."matrix.${cfg.domainName}".locations = let
     inherit (config.services.maubot) settings;
   in {
-    "/_matrix/maubot/" = {
+    "^~ /_matrix/maubot/" = {
       proxyPass = "http://${lib.quoteListenAddr settings.server.hostname}:${toString settings.server.port}";
       proxyWebsockets = true;
     };

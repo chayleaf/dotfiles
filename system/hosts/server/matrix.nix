@@ -42,7 +42,7 @@ in {
     locations = {
       "= /.well-known/matrix/server".extraConfig = matrixServerConfigResponse;
       "= /.well-known/matrix/client".extraConfig = matrixClientConfigResponse;
-      "~ ^/(_matrix|_synapse/client|$)".proxyPass = "http://${lib.quoteListenAddr matrixAddr}:${toString matrixPort}";
+      "~ ^/(_matrix(?!/maubot)|_synapse/client|$)".proxyPass = "http://${lib.quoteListenAddr matrixAddr}:${toString matrixPort}";
       "~ ^/(client/|_matrix/client/unstable/org.matrix.msc3575/)".proxyPass = "http://${config.services.matrix-sliding-sync.settings.SYNCV3_BINDADDR}";
     };
   };
@@ -78,6 +78,7 @@ in {
   services.matrix-synapse = {
     enable = true;
     extraConfigFiles = [ "/var/lib/matrix-synapse/config.yaml" ];
+    log.root.level = "WARNING";
     settings = {
       app_service_config_files = [
         "/var/lib/heisenbridge/registration.yml"
