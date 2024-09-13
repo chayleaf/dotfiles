@@ -92,4 +92,5 @@
     rawMouse=yes
     escapeKey=KEY_RIGHTALT
   '';
+  programs.mpv.config.hwdec = lib.mkForce "vdpau";
 }
