@@ -417,10 +417,14 @@ in
         ''}";
       });
       startup = [
-        {
+        /*{
           always = true;
-          command = "${lib.getBin pkgs.dbus}/bin/dbus-update-activation-environment --systemd DISPLAY WAYLAND_DISPLAY SWAYSOCK XDG_CURRENT_DESKTOP XDG_SESSION_TYPE NIXOS_OZONE_WL XCURSOR_THEME XCURSOR_SIZE; /run/current-system/sw/bin/systemctl --user import-environment DISPLAY WAYLAND_DISPLAY SWAYSOCK XDG_CURRENT_DESKTOP; /run/current-system/sw/bin/systemctl --user reset-failed && /run/current-system/sw/bin/systemctl --user start sway-session.target && ${pkgs.sway}/bin/swaymsg -mt subscribe '[]' || true && /run/current-system/sw/bin/systemctl --user stop sway-session.target";
-        }
+          command = pkgs.writeShellScript "dbus-upd.sh" ''
+            ${lib.getBin pkgs.dbus}/bin/dbus-update-activation-environment --systemd DISPLAY WAYLAND_DISPLAY SWAYSOCK XDG_CURRENT_DESKTOP XDG_SESSION_TYPE NIXOS_OZONE_WL XCURSOR_THEME XCURSOR_SIZE
+            /run/current-system/sw/bin/systemctl --user import-environment DISPLAY WAYLAND_DISPLAY SWAYSOCK XDG_CURRENT_DESKTOP
+            /run/current-system/sw/bin/systemctl --user reset-failed";
+          '';
+        }*/
         {
           command = "${pkgs.wl-clipboard}/bin/wl-paste -t text --watch ${pkgs.clipman}/bin/clipman store --no-persist";
         }
