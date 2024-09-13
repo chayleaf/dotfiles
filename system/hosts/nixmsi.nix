@@ -40,7 +40,7 @@
       "vm.swappiness" = 40;
     };
     # TODO: switch back to latest
-    kernelPackages = lib.mkDefault pkgs.linuxPackages_testing;
+    kernelPackages = lib.mkDefault pkgs.linuxPackages_latest;
     /*kernelPackages = zenKernelPackages "6.1.9" "0fsmcjsawxr32fxhpp6sgwfwwj8kqymy0rc6vh4qli42fqmwdjgv";*/
   };
 
@@ -143,7 +143,7 @@
 
   programs.ccache.enable = true;
   services.sshd.enable = true;
-  # boot.binfmt.emulatedSystems = [ "aarch64-linux" ];
+  boot.binfmt.emulatedSystems = [ "aarch64-linux" ];
   users.users.hydra-builder = {
     uid = 1001;
     isNormalUser = true;
