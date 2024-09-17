@@ -119,28 +119,28 @@ in {
     meta.license = lib.licenses.unfreeRedistributableFirmware;
   };
 
-  linux = pkgs.linux_6_9.override {
+  linux = pkgs.linux_testing.override {
     # TODO: uncomment
     # ignoreConfigErrors = false;
     kernelPatches = [
+      {
+        name = "linux_6_11";
+        patch = pkgs.fetchpatch {
+          url = "https://github.com/chayleaf/linux-sdm845/compare/v6.11-rc2...7223c2b9c8917c0e315ee7ec53cee27cc1054b16.diff";
+          hash = "sha256-BxRBmB89wxXXD09FP6dZi1bsn7/fCihQRbnAUOJwEvc=";
+        };
+      }
       # {
-      #   name = "linux_6_11";
+      #   name = "linux_6_9";
       #   patch = pkgs.fetchpatch {
-      #     url = "https://github.com/chayleaf/linux-sdm845/compare/v6.11-rc2...8914f1483d0784bf1133577f3c161a3f83a12653.diff";
-      #     hash = "sha256-orBQDGHAXOAy1PVLwNIBk3FgiMslziW1xddQyIwbnCs=";
+      #     url = "https://github.com/chayleaf/linux-sdm845/compare/v6.9.12...1ffe541f384cdfee347bf92773a740677de1b824.diff";
+      #     hash = "sha256-6TMiXaZy8YEB2vmrpXwAKklHYhvlA/TklCQv95iyMNY=";
       #   };
       # }
       {
-        name = "linux_6_9";
-        patch = pkgs.fetchpatch {
-          url = "https://github.com/chayleaf/linux-sdm845/compare/v6.9.12...1ffe541f384cdfee347bf92773a740677de1b824.diff";
-          hash = "sha256-6TMiXaZy8YEB2vmrpXwAKklHYhvlA/TklCQv95iyMNY=";
-        };
-      }
-      {
         name = "config_fixes";
-        patch = ./config_fixes.patch;
-        # patch = ./config_fixes_611.patch;
+        # patch = ./config_fixes.patch;
+        patch = ./config_fixes_611.patch;
       }
     ];
 
@@ -152,8 +152,8 @@ in {
       # fix build
       LENOVO_YOGA_C630_EC = no;
       RPMSG_QCOM_GLINK_SMEM = yes;
-      # TOUCHSCREEN_STM_FTS_DOWNSTREAM = no;
-      # TOUCHSCREEN_FTM4 = no;
+      TOUCHSCREEN_STM_FTS_DOWNSTREAM = no;
+      TOUCHSCREEN_FTM4 = no;
       # for adb and stuff (doesn't have to be built-in, but it's easier that way)
       USB_FUNCTIONFS = yes;
       USB_LIBCOMPOSITE = yes;

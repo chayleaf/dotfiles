@@ -5,7 +5,7 @@
 let
   uuids.enc = "e2abdea5-71dc-4a9e-aff3-242117342d60";
   uuids.boot = "9DA3-28AC";
-  uuids.bch = "ac343ffb-407c-4966-87bf-a0ef1075e93d";
+  uuids.root = "5fadc23c-f374-442d-8b05-fb76611c9eb7";
   parts = builtins.mapAttrs (k: v: "/dev/disk/by-uuid/${v}") uuids;
 in
 
@@ -32,16 +32,14 @@ in
     };
   };
 
-  boot.supportedFilesystems = [ "bcachefs" ];
-
   fileSystems = let
     neededForBoot = true;
   in {
     "/" =     { device = "none"; fsType = "tmpfs"; inherit neededForBoot;
                 options = [ "defaults" "size=2G" "mode=755" ]; };
     "/persist" =
-              { device = "UUID=${uuids.bch}"; fsType = "bcachefs"; inherit neededForBoot;
-                options = [ "errors=ro" ]; };
+              { device = parts.root; fsType = "btrfs"; inherit neededForBoot;
+                options = [ "discard=async" "compress=zstd:15" ]; };
     "/boot" = { device = parts.boot; fsType = "vfat"; inherit neededForBoot; };
   };
 
