@@ -19,9 +19,6 @@ in
 
   options.phone = {
     adb.enable = lib.mkEnableOption "adb";
-    rndis.enable = lib.mkEnableOption "rndis" // {
-      default = true;
-    };
   };
 
   config = lib.mkMerge [
@@ -51,11 +48,11 @@ in
       # https://gitlab.com/postmarketOS/pmaports/-/tree/master/device/community/soc-qcom-sdm845/
       /*systemd.user.services.wireplumber.environment.WIREPLUMBER_CONFIG_DIR = pkgs.runCommand "wireplumber-config" {} ''
         cp -a "${pkgs.wireplumber}/share/wireplumber" "$out"
-        chmod +w "$out" "$out/main.lua.d"
+        chmod +w "$out" "$out/wireplumber.conf.d"
         ln -s ${pkgs.fetchurl {
-          url = "https://gitlab.com/postmarketOS/pmaports/-/raw/0aa9524204e9c9c002c860b87c972bc2ebf025f3/device/community/soc-qcom-sdm845/51-qcom-sdm845.lua";
-          hash = "sha256-56oNJJyuZZe1Iig1xskDuyazw3PbRZtmU/YRFUTqjwk=";
-        }} "$out/main.lua.d/51-qcom-sdm845.lua"
+          url = "https://gitlab.com/postmarketOS/pmaports/-/raw/a82d8636562805d71e16e93f7571cc1f6ddbeb45/device/community/soc-qcom-sdm845/51-qcom-sdm845.conf";
+          hash = "sha256-EM2I9hwTYnK5FepB4RBI5t8sIFQ/uqN5AuTwGepzjB0=";
+        }} "$out/wireplumber.conf.d/51-qcom-sdm845.conf"
       '';
       systemd.services.wireplumber.environment.WIREPLUMBER_CONFIG_DIR = config.systemd.user.services.wireplumber.environment.WIREPLUMBER_CONFIG_DIR;*/
       networking.modemmanager.enable = !config.networking.networkmanager.enable;
@@ -74,6 +71,7 @@ in
       boot.kernelPackages = lib.mkForce (pkgs-kernel.linuxPackagesFor hw-kernel.linux);
       hardware.deviceTree.enable = true;
       hardware.deviceTree.name = "qcom/sdm845-oneplus-enchilada.dtb";
+      systemd.services.ModemManager.serviceConfig.ExecStart = [ "" "${pkgs.modemmanager}/bin/ModemManager --test-quick-suspend-resume" ];
       # loglevel=7 console=ttyMSM0,115200 is a way to delay boot
       # see https://gitlab.freedesktop.org/drm/msm/-/issues/46
       boot.consoleLogLevel = 7;
@@ -107,47 +105,6 @@ in
     }
     (lib.mkIf cfg.buffyboard.enable {
       common.gettyAutologin = true;
-    })
-    (lib.mkIf cfg.rndis.enable {
-      boot.initrd.kernelModules = [ "configfs" "libcomposite" ];
-
-      boot.specialFileSystems = {
-        "/sys/kernel/config" = {
-          device = "configfs";
-          fsType = "configfs";
-          options = [ "nosuid" "noexec" "nodev" ];
-        };
-      };
-
-      boot.initrd.preLVMCommands = ''
-        mkdir -p /sys/kernel/config/usb_gadget/g1/strings/0x409
-        cd /sys/kernel/config/usb_gadget/g1
-        echo 0x18D1 > idVendor
-        echo 0xD001 > idProduct
-        echo oneplus-enchilada > strings/0x409/product
-        echo NixOS > strings/0x409/manufacturer
-        echo 0123456789 > strings/0x409/serialnumber
-
-        mkdir -p configs/c.1/strings/0x409
-        echo "USB network" > configs/c.1/strings/0x409/configuration
-
-        mkdir -p functions/ncm.usb0 || mkdir -p functions/rndis.usb0
-        ln -s functions/ncm.usb0 configs/c.1/ || ln -s functions/rndis.usb0 configs/c.1/
-
-        ls /sys/class/udc/ | head -n1 > UDC
-        cd /
-
-        ifconfig rndis0 172.16.42.1 || ifconfig usb0 172.16.42.1 || ifconfig eth0 172.16.42.1
-      '';
-
-      boot.initrd.network.enable = true;
-      boot.initrd.network.udhcpc.enable = false;
-      boot.initrd.network.ssh = {
-        enable = true;
-        port = 22;
-        authorizedKeys = config.users.users.root.openssh.authorizedKeys.keys;
-        hostKeys = [ "/secrets/initrd/ssh_host_ed25519_key" "/secrets/initrd/ssh_host_rsa_key" ];
-      };
     })
     (lib.mkIf cfg.adb.enable {
       boot.initrd.kernelModules = [ "configfs" "libcomposite" "g_ffs" ];

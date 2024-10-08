@@ -64,15 +64,16 @@
       });
       extraPackages = with pkgs; [
         # utils
-        gnused mktemp fzf coreutils-full findutils xdg-utils gnupg whois curl
-        file mediainfo unzip gnutar man rclone
+        gnused mktemp fzf coreutils-full findutils xdg-utils whois curl
+        file unzip gnutar man
         # for preview
         # exa - TODO: replace with eza wrapper?
-        bat libarchive atool glow
+        libarchive atool
         # for opening
-        p7zip unrar-wrapper
+        p7zip
       ] ++ lib.optionals (!config.minimal) [
-        odt2txt w3m sshfs trash-cli
+        gnupg odt2txt w3m sshfs trash-cli unrar-wrapper
+        mediainfo rclone bat glow
       ];
       plugins = {
         src = pluginSrc;
@@ -117,7 +118,7 @@
       lfs.enable = true;
     };
     bat = {
-      enable = true;
+      enable = !config.minimal;
     };
     bottom = {
       enable = true;
@@ -314,8 +315,8 @@
     rclone sshfs fuse
     file jq python3Full killall
     comma nix-output-monitor
-    unzip p7zip unrar-wrapper
+    unzip p7zip
   ] ++ lib.optionals (!config.minimal) [
-    appimage-run
+    appimage-run unrar-wrapper
   ];
 }

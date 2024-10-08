@@ -40,7 +40,7 @@
       "vm.swappiness" = 40;
     };
     # TODO: switch back to latest
-    kernelPackages = lib.mkDefault pkgs.linuxPackages_latest;
+    kernelPackages = pkgs.linuxPackages_latest;
     /*kernelPackages = zenKernelPackages "6.1.9" "0fsmcjsawxr32fxhpp6sgwfwwj8kqymy0rc6vh4qli42fqmwdjgv";*/
   };
 

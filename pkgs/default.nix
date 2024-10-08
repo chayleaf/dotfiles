@@ -116,4 +116,7 @@ in
   # hardware stuff
   hw.bpi-r3 = import ../system/hardware/bpi-r3/pkgs.nix { inherit pkgs pkgs' lib sources; };
   hw.oneplus-enchilada = import ../system/hardware/oneplus-enchilada/pkgs.nix { inherit inputs pkgs pkgs' lib sources; };
+  hw.kobo-clara = import ../system/hardware/kobo-clara/pkgs.nix { inherit pkgs pkgs' lib sources; }; 
+  # wlroots = throw "a";
+  # sway-unwrapped = throw "a";
 }

@@ -29,6 +29,7 @@ stdenv.mkDerivation {
     ninja
     pkg-config
     scdoc
+    wayland
   ];
 
   buildInputs = [
@@ -36,8 +37,8 @@ stdenv.mkDerivation {
     gdk-pixbuf
     libsodium
     libxkbcommon
-    wayland
     wayland-protocols
+    wayland
   ];
 
   mesonFlags = [

@@ -1,14 +1,12 @@
 { pkgs
-, inputs,
-...
+, inputs
+, ...
 }:
 
 {
   imports = [
     ../modules/general.nix
-    ../modules/firefox.nix
     ../modules/i3-sway.nix
-    ../modules/nvim.nix
     inputs.nur.nixosModules.nur
   ];
 
@@ -24,16 +22,22 @@
   };
 
   phone.enable = true;
-  phone.suspend = false;
+  minimal = true;
   home.stateVersion = "23.11";
   home.username = "user";
   home.homeDirectory = "/home/user";
-  terminals = [ "foot" "kitty" ];
+  terminals = [ "foot" ];
   wayland.windowManager.sway.enable = true;
-  services.kdeconnect.enable = true;
+  # terminals = [ "kitty" ];
+  # xsession.windowManager.i3.enable = true;
+
+  # services.kdeconnect.enable = true;
   home.packages = with pkgs; [
-    squeekboard
-    techmino
-    tdesktop
+    # TODO fix
+    koreader
+    (calibre.override {
+      speechSupport = false;
+    })
+    wvkbd
   ];
 }

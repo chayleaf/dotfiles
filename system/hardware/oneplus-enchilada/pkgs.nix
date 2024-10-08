@@ -7,142 +7,10 @@
 let
   inherit (inputs) mobile-nixos;
   mobile-pkgs = import "${mobile-nixos}/overlay/overlay.nix" pkgs' pkgs;
-in {
-  inherit (mobile-pkgs) mkbootimg qrtr;
-  pd-mapper = pkgs'.callPackage "${mobile-nixos}/overlay/qrtr/pd-mapper.nix" { };
-  tqftpserv = pkgs'.callPackage "${mobile-nixos}/overlay/qrtr/tqftpserv.nix" { };
-  rmtfs = pkgs'.callPackage "${mobile-nixos}/overlay/qrtr/rmtfs.nix" {
-    inherit (mobile-pkgs) qmic;
-  };
-  adbd = pkgs'.callPackage "${mobile-nixos}/overlay/adbd" {
-    libhybris = pkgs'.callPackage "${mobile-nixos}/overlay/libhybris" {
-      inherit (mobile-pkgs) android-headers;
-    };
-  };
-  q6voiced = pkgs.stdenv.mkDerivation {
-    pname = "q6voiced";
-    version = "unstable-2022-07-08";
-    src = pkgs.fetchFromGitLab {
-      owner = "postmarketOS";
-      repo = "q6voiced";
-      rev = "736138bfc9f7b455a96679e2d67fd922a8f16464";
-      hash = "sha256-7k5saedIALHlsFHalStqzKrqAyFKx0ZN9FhLTdxAmf4=";
-    };
-    buildInputs = with pkgs; [ dbus tinyalsa ];
-    nativeBuildInputs = with pkgs; [ pkg-config ];
-    buildPhase = ''cc $(pkg-config --cflags --libs dbus-1) -ltinyalsa -o q6voiced q6voiced.c'';
-    installPhase = ''install -m555 -Dt "$out/bin" q6voiced'';
-    meta.license = lib.licenses.mit;
-  };
-
-  alsa-ucm-conf = pkgs.stdenvNoCC.mkDerivation {
-    pname = "alsa-ucm-conf-enchilada";
-    version = "unstable-2022-12-08";
-    src = pkgs.fetchFromGitLab {
-      owner = "sdm845-mainline";
-      repo = "alsa-ucm-conf";
-      rev = "aaa7889f7a6de640b4d78300e118457335ad16c0";
-      hash = "sha256-2P5ZTrI1vCJ99BcZVPlkH4sv1M6IfAlaXR6ZjAdy4HQ=";
-    };
-    installPhase = ''
-      substituteInPlace ucm2/lib/card-init.conf --replace '"/bin' '"/run/current-system/sw/bin'
-      mkdir -p "$out"/share/alsa/ucm2/{OnePlus,conf.d/sdm845,lib}
-      mv ucm2/lib/card-init.conf "$out/share/alsa/ucm2/lib/"
-      mv ucm2/OnePlus/enchilada "$out/share/alsa/ucm2/OnePlus/"
-      ln -s ../../OnePlus/enchilada/enchilada.conf "$out/share/alsa/ucm2/conf.d/sdm845/oneplus-OnePlus6-Unknown.conf"
-    '';
-    # to overwrite card-init.conf
-    meta.priority = -10;
-  };
-
-  uboot = pkgs.buildUBoot {
-    defconfig = "qcom_defconfig";
-    version = "unstable-2023-12-11";
-    src = pkgs.fetchFromGitLab {
-      owner = "sdm845-mainline";
-      repo = "u-boot";
-      rev = "977b9279c610b862f9ef84fb3addbebb7c42166a";
-      hash = "sha256-ksI7qxozIjJ5E8uAJkX8ZuaaOHdv76XOzITaA8Vp/QA=";
-    };
-    makeFlags = [ "DEVICE_TREE=sdm845-oneplus-enchilada" ];
-    extraConfig = ''
-      CONFIG_BOOTDELAY=5
-    '';
-    extraMeta.platforms = [ "aarch64-linux" ];
-    patches = [ ];
-    filesToInstall = [ "u-boot-nodtb.bin" "u-boot-dtb.bin" "u-boot.dtb" ];
-  };
-
-  ubootImage = pkgs.stdenvNoCC.mkDerivation {
-    name = "u-boot-enchilada.img";
-    nativeBuildInputs = [
-      # available from mobile-nixos's overlay
-      pkgs'.mkbootimg
-      pkgs'.gzip
-    ];
-    src = pkgs'.ubootEnchilada;
-    dontBuild = true;
-    dontFixup = true;
-    installPhase = ''
-      gzip u-boot-nodtb.bin
-      cat u-boot.dtb >> u-boot-nodtb.bin.gz
-      mkbootimg \
-        --base 0x0 \
-        --kernel_offset 0x8000 \
-        --ramdisk_offset 0x01000000 \
-        --tags_offset 0x100 \
-        --pagesize 4096 \
-        --kernel u-boot-nodtb.bin.gz \
-        -o "$out"
-    '';
-  };
-
-  firmware = pkgs.stdenvNoCC.mkDerivation {
-    name = "firmware-oneplus-sdm845";
-    src = pkgs.fetchFromGitLab {
-      owner = "sdm845-mainline";
-      repo = "firmware-oneplus-sdm845";
-      rev = "176ca713448c5237a983fb1f158cf3a5c251d775";
-      hash = "sha256-ZrBvYO+MY0tlamJngdwhCsI1qpA/2FXoyEys5FAYLj4=";
-    };
-    installPhase = ''
-      cp -a . "$out"
-      cd "$out/lib/firmware/postmarketos"
-      find . -type f,l | xargs -i bash -c 'mkdir -p "$(dirname "../$1")" && mv "$1" "../$1"' -- {}
-      cd "$out/usr"
-      find . -type f,l | xargs -i bash -c 'mkdir -p "$(dirname "../$1")" && mv "$1" "../$1"' -- {}
-      cd ..
-      find "$out/lib/firmware/postmarketos" "$out/usr" | tac | xargs rmdir
-    '';
-    dontStrip = true;
-    # not actually redistributable, but who cares
-    meta.license = lib.licenses.unfreeRedistributableFirmware;
-  };
-
-  linux = pkgs.linux_testing.override {
+  mkLinux = { linux, kernelPatches, structuredExtraConfig }: linux.override {
     # TODO: uncomment
     # ignoreConfigErrors = false;
-    kernelPatches = [
-      {
-        name = "linux_6_11";
-        patch = pkgs.fetchpatch {
-          url = "https://github.com/chayleaf/linux-sdm845/compare/v6.11-rc2...7223c2b9c8917c0e315ee7ec53cee27cc1054b16.diff";
-          hash = "sha256-BxRBmB89wxXXD09FP6dZi1bsn7/fCihQRbnAUOJwEvc=";
-        };
-      }
-      # {
-      #   name = "linux_6_9";
-      #   patch = pkgs.fetchpatch {
-      #     url = "https://github.com/chayleaf/linux-sdm845/compare/v6.9.12...1ffe541f384cdfee347bf92773a740677de1b824.diff";
-      #     hash = "sha256-6TMiXaZy8YEB2vmrpXwAKklHYhvlA/TklCQv95iyMNY=";
-      #   };
-      # }
-      {
-        name = "config_fixes";
-        # patch = ./config_fixes.patch;
-        patch = ./config_fixes_611.patch;
-      }
-    ];
+    inherit kernelPatches;
 
     stdenv = lib.recursiveUpdate pkgs.stdenv {
       hostPlatform.linux-kernel.extraConfig = "";
@@ -152,8 +20,6 @@ in {
       # fix build
       LENOVO_YOGA_C630_EC = no;
       RPMSG_QCOM_GLINK_SMEM = yes;
-      TOUCHSCREEN_STM_FTS_DOWNSTREAM = no;
-      TOUCHSCREEN_FTM4 = no;
       # for adb and stuff (doesn't have to be built-in, but it's easier that way)
       USB_FUNCTIONFS = yes;
       USB_LIBCOMPOSITE = yes;
@@ -628,7 +494,148 @@ in {
       XEN_BALLOON_MEMORY_HOTPLUG.tristate = lib.mkForce null; XEN_DOM0.tristate = lib.mkForce null; XEN_EFI.tristate = lib.mkForce null;
       XEN_HAVE_PVMMU.tristate = lib.mkForce null; XEN_MCE_LOG.tristate = lib.mkForce null; XEN_PVH.tristate = lib.mkForce null;
       XEN_PVHVM.tristate = lib.mkForce null; XEN_SAVE_RESTORE.tristate = lib.mkForce null; XEN_SYS_HYPERVISOR.tristate = lib.mkForce null;
+    } // structuredExtraConfig;
+  };
+in {
+  inherit (mobile-pkgs) mkbootimg qrtr;
+  pd-mapper = pkgs'.callPackage "${mobile-nixos}/overlay/qrtr/pd-mapper.nix" { };
+  tqftpserv = pkgs'.callPackage "${mobile-nixos}/overlay/qrtr/tqftpserv.nix" { };
+  rmtfs = pkgs'.callPackage "${mobile-nixos}/overlay/qrtr/rmtfs.nix" {
+    inherit (mobile-pkgs) qmic;
+  };
+  adbd = pkgs'.callPackage "${mobile-nixos}/overlay/adbd" {
+    libhybris = pkgs'.callPackage "${mobile-nixos}/overlay/libhybris" {
+      inherit (mobile-pkgs) android-headers;
     };
+  };
+  q6voiced = pkgs.stdenv.mkDerivation {
+    pname = "q6voiced";
+    version = "unstable-2022-07-08";
+    src = pkgs.fetchFromGitLab {
+      owner = "postmarketOS";
+      repo = "q6voiced";
+      rev = "736138bfc9f7b455a96679e2d67fd922a8f16464";
+      hash = "sha256-7k5saedIALHlsFHalStqzKrqAyFKx0ZN9FhLTdxAmf4=";
+    };
+    buildInputs = with pkgs; [ dbus tinyalsa ];
+    nativeBuildInputs = with pkgs; [ pkg-config ];
+    buildPhase = ''cc $(pkg-config --cflags --libs dbus-1) -ltinyalsa -o q6voiced q6voiced.c'';
+    installPhase = ''install -m555 -Dt "$out/bin" q6voiced'';
+    meta.license = lib.licenses.mit;
+  };
+
+  alsa-ucm-conf = pkgs.stdenvNoCC.mkDerivation {
+    pname = "alsa-ucm-conf-enchilada";
+    version = "unstable-2022-12-08";
+    src = pkgs.fetchFromGitLab {
+      owner = "sdm845-mainline";
+      repo = "alsa-ucm-conf";
+      rev = "aaa7889f7a6de640b4d78300e118457335ad16c0";
+      hash = "sha256-2P5ZTrI1vCJ99BcZVPlkH4sv1M6IfAlaXR6ZjAdy4HQ=";
+    };
+    installPhase = ''
+      substituteInPlace ucm2/lib/card-init.conf --replace '"/bin' '"/run/current-system/sw/bin'
+      mkdir -p "$out"/share/alsa/ucm2/{OnePlus,conf.d/sdm845,lib}
+      mv ucm2/lib/card-init.conf "$out/share/alsa/ucm2/lib/"
+      mv ucm2/OnePlus/enchilada "$out/share/alsa/ucm2/OnePlus/"
+      ln -s ../../OnePlus/enchilada/enchilada.conf "$out/share/alsa/ucm2/conf.d/sdm845/oneplus-OnePlus6-Unknown.conf"
+    '';
+    # to overwrite card-init.conf
+    meta.priority = -10;
+  };
+
+  uboot = pkgs.buildUBoot {
+    defconfig = "qcom_defconfig";
+    version = "unstable-2023-12-11";
+    src = pkgs.fetchFromGitLab {
+      owner = "sdm845-mainline";
+      repo = "u-boot";
+      rev = "977b9279c610b862f9ef84fb3addbebb7c42166a";
+      hash = "sha256-ksI7qxozIjJ5E8uAJkX8ZuaaOHdv76XOzITaA8Vp/QA=";
+    };
+    makeFlags = [ "DEVICE_TREE=sdm845-oneplus-enchilada" ];
+    extraConfig = ''
+      CONFIG_BOOTDELAY=5
+    '';
+    extraMeta.platforms = [ "aarch64-linux" ];
+    patches = [ ];
+    filesToInstall = [ "u-boot-nodtb.bin" "u-boot-dtb.bin" "u-boot.dtb" ];
+  };
+
+  ubootImage = pkgs.stdenvNoCC.mkDerivation {
+    name = "u-boot-enchilada.img";
+    nativeBuildInputs = [
+      # available from mobile-nixos's overlay
+      pkgs'.mkbootimg
+      pkgs'.gzip
+    ];
+    src = pkgs'.ubootEnchilada;
+    dontBuild = true;
+    dontFixup = true;
+    installPhase = ''
+      gzip u-boot-nodtb.bin
+      cat u-boot.dtb >> u-boot-nodtb.bin.gz
+      mkbootimg \
+        --base 0x0 \
+        --kernel_offset 0x8000 \
+        --ramdisk_offset 0x01000000 \
+        --tags_offset 0x100 \
+        --pagesize 4096 \
+        --kernel u-boot-nodtb.bin.gz \
+        -o "$out"
+    '';
+  };
+
+  firmware = pkgs.stdenvNoCC.mkDerivation {
+    name = "firmware-oneplus-sdm845";
+    src = pkgs.fetchFromGitLab {
+      owner = "sdm845-mainline";
+      repo = "firmware-oneplus-sdm845";
+      rev = "176ca713448c5237a983fb1f158cf3a5c251d775";
+      hash = "sha256-ZrBvYO+MY0tlamJngdwhCsI1qpA/2FXoyEys5FAYLj4=";
+    };
+    installPhase = ''
+      cp -a . "$out"
+      cd "$out/lib/firmware/postmarketos"
+      find . -type f,l | xargs -i bash -c 'mkdir -p "$(dirname "../$1")" && mv "$1" "../$1"' -- {}
+      cd "$out/usr"
+      find . -type f,l | xargs -i bash -c 'mkdir -p "$(dirname "../$1")" && mv "$1" "../$1"' -- {}
+      cd ..
+      find "$out/lib/firmware/postmarketos" "$out/usr" | tac | xargs rmdir
+    '';
+    dontStrip = true;
+    # not actually redistributable, but who cares
+    meta.license = lib.licenses.unfreeRedistributableFirmware;
+  };
+
+  linux = mkLinux {
+    linux = pkgs.linux_testing;
+    kernelPatches = [
+      { name = "linux_6_11";
+        patch = pkgs.fetchpatch {
+          url = "https://github.com/chayleaf/linux-sdm845/compare/v6.11-rc2...7223c2b9c8917c0e315ee7ec53cee27cc1054b16.diff";
+          hash = "sha256-BxRBmB89wxXXD09FP6dZi1bsn7/fCihQRbnAUOJwEvc=";
+        }; }
+      { name = "config_fixes";
+        patch = ./config_fixes_611.patch; }
+    ];
+    structuredExtraConfig = with lib.kernel; {
+      TOUCHSCREEN_STM_FTS_DOWNSTREAM = no;
+      TOUCHSCREEN_FTM4 = no;
+    };
+  };
+  linux_6_9 = mkLinux {
+    linux = pkgs.linux_6_9;
+    kernelPatches = [
+      { name = "linux_6_9";
+        patch = pkgs.fetchpatch {
+          url = "https://github.com/chayleaf/linux-sdm845/compare/v6.9.12...1ffe541f384cdfee347bf92773a740677de1b824.diff";
+          hash = "sha256-6TMiXaZy8YEB2vmrpXwAKklHYhvlA/TklCQv95iyMNY=";
+        }; }
+      { name = "config_fixes";
+        patch = ./config_fixes.patch; }
+    ];
+    structuredExtraConfig = { };
   };
   linux_ccache = pkgs'.ccachePkgs.buildLinuxWithCcache pkgs'.hw.oneplus-enchilada.linux;
 }

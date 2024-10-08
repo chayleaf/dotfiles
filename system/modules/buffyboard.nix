@@ -4,14 +4,14 @@
 , ...
 }:
 
+let
+  cfg = config.phone;
+in
 {
   options.phone.buffyboard = {
-    enable = lib.mkOption {
-      type = lib.types.bool;
-      default = true;
-    };
+    enable = lib.mkEnableOption "buffyboard";
   };
-  config = {
+  config = lib.mkIf cfg.buffyboard.enable {
     boot.initrd.kernelModules = [ "uinput" "evdev" ];
     boot.initrd.extraUtilsCommands = ''
       copy_bin_and_libs ${pkgs.buffyboard}/bin/buffyboard

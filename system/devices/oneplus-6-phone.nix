@@ -30,6 +30,12 @@ in
       device = parts.enc;
       allowDiscards = true;
     };
+    network.ssh = {
+      enable = true;
+      port = 22;
+      authorizedKeys = config.users.users.root.openssh.authorizedKeys.keys;
+      hostKeys = [ "/secrets/initrd/ssh_host_ed25519_key" "/secrets/initrd/ssh_host_rsa_key" ];
+    };
   };
 
   fileSystems = let

@@ -4,7 +4,15 @@
 , ...
 }:
 
+let
+  pkgs' = pkgs.hw.kobo-clara;
+in
 {
+  options = {
+    ereader.epdc-firmware = lib.mkOption {
+      type = lib.types.path;
+    };
+  };
   config = lib.mkMerge [
     {
       boot.loader = {
@@ -12,23 +20,43 @@
         generic-extlinux-compatible.enable = true;
       };
 
-      boot.kernelPackages = pkgs.linuxPackagesFor (pkgs.buildLinuxWithCcache pkgs.linux_koboClara);
+      boot.kernelPackages = pkgs.linuxPackagesFor pkgs'.linux;
 
+      boot.initrd.preLVMCommands = ''
+        echo 0 > /sys/class/graphics/fbcon/cursor_blink
+        (cd /sys/bus/platform/devices && echo *epdc >/sys/bus/platform/drivers/mxc_epdc/bind)
+      '';
+      boot.consoleLogLevel = 7;
       hardware.deviceTree.enable = true;
       hardware.deviceTree.filter = "imx6sll-kobo-clarahd.dtb";
+      hardware.firmware = [
+        (pkgs.runCommand "epdc-firmware" { } ''
+          mkdir -p $out/lib/firmware/imx/epdc
+          cp ${config.ereader.epdc-firmware} $out/lib/firmware/imx/epdc/epdc.fw
+        '')
+      ];
+      # boot.initrd.extraFiles."lib/firmware/imx/epdc/epdc.fw".source = pkgs.copyPathToStore config.ereader.epdc-firmware;
+      nixpkgs.overlays = [
+        (self: super: {
+          makeModulesClosure = args: (super.makeModulesClosure args).overrideAttrs (old: {
+            builder = pkgs.writeShellScript "builder.sh" ''
+              source ${old.builder}
+              cd "$firmware"
+              mkdir -p "$out/lib/firmware/imx"
+              cp --no-preserve=mode -vrL lib/firmware/imx/* "$out/lib/firmware/imx/"
+            '';
+          });
+        })
+      ];
+
       hardware.enableRedistributableFirmware = true;
 
-      boot.initrd.availableKernelModules = [ "mmc_block" "dm_mod" "tps6518x_hwmon" "tps6518x_regulator" "mxc_epdc_drm" ];
-      boot.kernelParams = [ "console=ttymxc0,115200" ];
+      boot.initrd.kernelModules = [ "tps6518x_hwmon" "tps6518x_regulator" "mxc_epdc_drm" ];
+      boot.initrd.availableKernelModules = [ "mmc_block" "dm_mod" ];
+      boot.kernelParams = [ "console=ttymxc0,115200" "detect_clara_rev" ];
       # "dtb=/${config.hardware.deviceTree.name}"
 
       boot.initrd.compressor = "zstd";
-
-      system.build.rootfsImage = pkgs.callPackage "${pkgs.path}/nixos/lib/make-ext4-fs.nix" {
-        storePaths = config.system.build.toplevel;
-        compressImage = false;
-        volumeLabel = "NIX_ROOTFS";
-      };
 
       boot.postBootCommands = ''
         if [ -f ${toString config.impermanence.path}/nix-path-registration ]; then
@@ -40,11 +68,7 @@
         fi
       '';
 
-      hardware.firmware = [ pkgs.firmware-kobo-clara ];
-      nixpkgs.config.allowUnfreePredicate = pkg: builtins.elem (lib.getName pkg) [
-        "firmware-kobo-clara"
-      ];
-      system.build.uboot = pkgs.ubootKoboClara;
+      system.build.uboot = pkgs'.uboot;
       boot.initrd.includeDefaultModules = false;
     }
     (lib.mkIf config.phone.buffyboard.enable {

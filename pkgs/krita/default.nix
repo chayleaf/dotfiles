@@ -6,7 +6,9 @@
     ./fix-painting-api-crashes.patch
     ./painting-api-options.patch
     ./painting-api-pressure.patch
+    ./line-painting-api-qpointf.patch
   ]; });
 }).overrideAttrs (old: {
+  patched = true;
   buildInputs = old.buildInputs ++ [ python3Packages.requests ];
 })

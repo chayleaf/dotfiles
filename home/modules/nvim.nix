@@ -81,6 +81,7 @@
       nodePackages_latest.vscode-langservers-extracted
       nil
       marksman
+      nixfmt-rfc-style
       taplo
       ripgrep
       (python3.withPackages (p: with p; [
@@ -437,9 +438,9 @@
                 clangd = { };
                 # https://github.com/python-lsp/python-lsp-server/blob/develop/CONFIGURATION.md
                 pylsp = {
-                  settings = {
-                    pylsp.plugins.pylsp_mypy.enabled = true;
-                    pylsp.plugins.black.enabled = true;
+                  settings.pylsp = {
+                    plugins.pylsp_mypy.enabled = true;
+                    plugins.black.enabled = true;
                   };
                 };
                 svelte = { };
@@ -447,7 +448,11 @@
                 cssls = { };
                 tsserver = { };
                 jsonls = { };
-                nil_ls = { };
+                nil_ls = {
+                  settings.nil = {
+                    formatting.command = ["nixfmt"];
+                  };
+                };
                 taplo = { };
                 marksman = { };
                 rust_analyzer = {

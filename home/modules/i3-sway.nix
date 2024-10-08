@@ -2,7 +2,7 @@
 let
 modifier = if config.phone.enable then "Mod1" else "Mod4";
 rofiSway = config.programs.rofi.finalPackage;
-rofiI3 = pkgs.rofi.override { plugins = config.programs.rofi.plugins; };
+rofiI3 = if config.wayland.windowManager.sway.enable then pkgs.rofi.override { plugins = config.programs.rofi.plugins; } else pkgs.rofi;
 audioNext = pkgs.writeShellScript "playerctl-next" ''
   ${pkgs.playerctl}/bin/playerctl next
   PLAYER=$(${pkgs.playerctl}/bin/playerctl -l | ${pkgs.coreutils}/bin/head -n 1)
@@ -54,7 +54,7 @@ dpms-on = pkgs.writeShellScript "sway-dpms-on" ''
 '';
 lock-script = pkgs.writeShellScript "lock-start" ''
   ${swaylock-start}
-  ${lib.optionalString config.phone.enable
+  ${lib.optionalString (config.phone.enable && config.phone.suspend)
   # suspend if nothing is playing and no ssh sessions are active
   ''
     if ${pkgs.playerctl}/bin/playerctl -a status | ${pkgs.gnugrep}/bin/grep Playing >/dev/null; then
@@ -118,25 +118,29 @@ commonConfig = {
       ${lib.optionalString config.phone.enable ''
         ${pkgs.procps}/bin/pkill -x wvkbd-mobintl
         ${pkgs.wvkbd}/bin/wvkbd-mobintl --hidden -l full,special,cyrillic,emoji&
-        ${pkgs.procps}/bin/pkill -x squeekboard
-        ${pkgs.squeekboard}/bin/squeekboard&
+        ${lib.optionalString (!config.minimal) ''
+          ${pkgs.procps}/bin/pkill -x squeekboard
+          ${pkgs.squeekboard}/bin/squeekboard&
+        ''}
         /run/current-system/sw/bin/busctl call --user sm.puri.OSK0 /sm/puri/OSK0 sm.puri.OSK0 SetVisible b true
       ''}
       ${pkgs.procps}/bin/pkill -x home-daemon
       ${pkgs.home-daemon}/bin/home-daemon system76-scheduler ${lib.optionalString (!config.phone.enable) "empty-sound"}&
-      ${pkgs.procps}/bin/pkill -x keepassxc
-      ${pkgs.zenity}/bin/zenity --password | (${pkgs.keepassxc}/bin/keepassxc --pw-stdin ~/var/local.kdbx &)
-      # sleep to give keepassxc time to take the input
-      sleep 1
-      # nextcloud and nheko need secret service access
-      ${pkgs.procps}/bin/pkill -x nextcloud
-      ${pkgs.nextcloud-client}/bin/nextcloud --background&
-      ${pkgs.procps}/bin/pkill -x nheko
-      ${pkgs.nheko}/bin/nheko&
-      ${pkgs.procps}/bin/pkill -x telegram-desktop
-      ${pkgs.tdesktop}/bin/telegram-desktop -startintray&
-      # and final sleep just in case
-      sleep 1
+      ${lib.optionalString (!config.minimal) ''
+        ${pkgs.procps}/bin/pkill -x keepassxc
+        ${pkgs.zenity}/bin/zenity --password | (${pkgs.keepassxc}/bin/keepassxc --pw-stdin ~/var/local.kdbx &)
+        # sleep to give keepassxc time to take the input
+        sleep 1
+        # nextcloud and nheko need secret service access
+        ${pkgs.procps}/bin/pkill -x nextcloud
+        ${pkgs.nextcloud-client}/bin/nextcloud --background&
+        ${pkgs.procps}/bin/pkill -x nheko
+        ${pkgs.nheko}/bin/nheko&
+        ${pkgs.procps}/bin/pkill -x telegram-desktop
+        ${pkgs.tdesktop}/bin/telegram-desktop -startintray&
+        # and final sleep just in case
+        sleep 1
+      ''}
     ''); }
   ];
   colors = {
@@ -196,7 +200,7 @@ genKeybindings = (default_options: kb:
   kb // {
     "${modifier}+Shift+g" = "floating toggle";
     "${modifier}+g" = "focus mode_toggle";
-    XF86AudioMicMute = "exec ${pkgs.pamixer}/bin/pamixer --default-source --toggle-mute";
+    XF86AudioMicMute = lib.mkIf (!config.minimal) "exec ${pkgs.pamixer}/bin/pamixer --default-source --toggle-mute";
     XF86MonBrightnessDown = "exec ${pkgs.brightnessctl}/bin/brightnessctl set 5%-";
     XF86MonBrightnessUp = "exec ${pkgs.brightnessctl}/bin/brightnessctl set 5%+";
   }
@@ -211,13 +215,11 @@ genKeybindings = (default_options: kb:
       .imports)
     .options.keybindings.default)
 );
-in
-{
-  # TODO merge with colors in gui.nix and terminal.nix
-  imports = [ ./options.nix ./gui.nix ./waybar.nix ];
-  home.sessionVariables = {
-    _JAVA_AWT_WM_NONREPARENTING = "1";
-  };
+in {
+# TODO merge with colors in gui.nix and terminal.nix
+imports = [ ./options.nix ./gui.nix ./waybar.nix ];
+config = lib.mkMerge [
+(lib.mkIf (!config.minimal) {
   xdg.configFile."xdg-desktop-portal-wlr/config".source = (pkgs.formats.ini {}).generate "xdg-desktop-portal-wlr.ini" {
     screencast = {
       max_fps = 60;
@@ -229,6 +231,11 @@ in
   };
   systemd.user.services = lib.mkIf config.wayland.windowManager.sway.enable {
     gammastep.Unit.ConditionEnvironment = "WAYLAND_DISPLAY";
+  };
+})
+{
+  home.sessionVariables = {
+    _JAVA_AWT_WM_NONREPARENTING = "1";
   };
   services.mako = {
     enable = lib.mkDefault config.wayland.windowManager.sway.enable;
@@ -248,18 +255,19 @@ in
     config = let i3Config = {
       bars = [
         (barConfig // {
+          mode = "dock";
           statusCommand = "${pkgs.i3status}/bin/i3status";
         })
       ];
       menu = "${rofiI3}/bin/rofi -show drun";
       keybindings = genKeybindings options.xsession.windowManager.i3 {
         "${modifier}+c" = "exec ${rofiI3}/bin/rofi -show calc -no-show-match -no-sort -no-persist-history";
-        XF86AudioRaiseVolume = "exec ${pkgs.pamixer}/bin/pamixer --increase 5";
-        XF86AudioLowerVolume = "exec ${pkgs.pamixer}/bin/pamixer --decrease 5";
-        XF86AudioMute = "exec ${pkgs.pamixer}/bin/pamixer --toggle-mute";
-        XF86AudioPlay = "exec ${pkgs.playerctl}/bin/playerctl play-pause";
-        XF86AudioNext = "exec ${audioNext}";
-        XF86AudioPrev = "exec ${audioPrev}";
+        XF86AudioRaiseVolume = lib.mkIf (!config.minimal) "exec ${pkgs.pamixer}/bin/pamixer --increase 5";
+        XF86AudioLowerVolume = lib.mkIf (!config.minimal) "exec ${pkgs.pamixer}/bin/pamixer --decrease 5";
+        XF86AudioMute = lib.mkIf (!config.minimal) "exec ${pkgs.pamixer}/bin/pamixer --toggle-mute";
+        XF86AudioPlay = lib.mkIf (!config.minimal) "exec ${pkgs.playerctl}/bin/playerctl play-pause";
+        XF86AudioNext = lib.mkIf (!config.minimal) "exec ${audioNext}";
+        XF86AudioPrev = lib.mkIf (!config.minimal) "exec ${audioPrev}";
       };
       terminal = config.terminalBinX;
     }; in commonConfig // i3Config;
@@ -397,17 +405,17 @@ in
         # and if stoptalking isn't called for some reason, calling it one time stops being enough
         "exec ${pkgs.mumble}/bin/mumble rpc stoptalking && ${pkgs.mumble}/bin/mumble rpc stoptalking")
       //*/ {
-        "--inhibited --no-repeat --allow-other Scroll_Lock" = "exec ${pkgs.mumble}/bin/mumble rpc starttalking";
-        "--inhibited --no-repeat --allow-other --release Scroll_Lock" = "exec ${pkgs.mumble}/bin/mumble rpc stoptalking";
+        "--inhibited --no-repeat --allow-other Scroll_Lock" = lib.mkIf (!config.minimal) "exec ${pkgs.mumble}/bin/mumble rpc starttalking";
+        "--inhibited --no-repeat --allow-other --release Scroll_Lock" = lib.mkIf (!config.minimal) "exec ${pkgs.mumble}/bin/mumble rpc stoptalking";
         "${modifier}+c" = "exec ${rofiSway}/bin/rofi -show calc -no-show-match -no-sort -no-persist-history";
         "${modifier}+Print" = "exec ${grimshot}/bin/grimshot copy area";
         "${modifier}+${if modifier == "Mod1" then "Mod4" else "Mod1"}+Print" = "exec ${grimshot}/bin/grimshot copy window";
-        "--locked XF86AudioRaiseVolume" = "exec ${pkgs.pamixer}/bin/pamixer --increase 5";
-        "--locked XF86AudioLowerVolume" = "exec ${pkgs.pamixer}/bin/pamixer --decrease 5";
-        "--locked XF86AudioMute" = "exec ${pkgs.pamixer}/bin/pamixer --toggle-mute";
-        "--locked --inhibited XF86AudioPlay" = "exec ${pkgs.playerctl}/bin/playerctl play-pause";
-        "--locked --inhibited XF86AudioNext" = "exec ${audioNext}";
-        "--locked --inhibited XF86AudioPrev" = "exec ${audioPrev}";
+        "--locked XF86AudioRaiseVolume" = lib.mkIf (!config.minimal) "exec ${pkgs.pamixer}/bin/pamixer --increase 5";
+        "--locked XF86AudioLowerVolume" = lib.mkIf (!config.minimal) "exec ${pkgs.pamixer}/bin/pamixer --decrease 5";
+        "--locked XF86AudioMute" = lib.mkIf (!config.minimal) "exec ${pkgs.pamixer}/bin/pamixer --toggle-mute";
+        "--locked --inhibited XF86AudioPlay" = lib.mkIf (!config.minimal) "exec ${pkgs.playerctl}/bin/playerctl play-pause";
+        "--locked --inhibited XF86AudioNext" = lib.mkIf (!config.minimal) "exec ${audioNext}";
+        "--locked --inhibited XF86AudioPrev" = lib.mkIf (!config.minimal) "exec ${audioPrev}";
         "--locked --inhibited --release XF86PowerOff" = lib.mkIf config.phone.enable "exec ${pkgs.writeShellScript "power-key" ''
           if ${config.wayland.windowManager.sway.package}/bin/swaymsg -rt get_outputs | ${pkgs.jq}/bin/jq ".[].power" | ${pkgs.gnugrep}/bin/grep true; then
             ${dpms-off}
@@ -470,10 +478,10 @@ in
       # after-resume, lock, unlock
     ];
     timeouts = [
-      { timeout = if config.phone.enable then 30 else 300; 
+      { timeout = if config.phone.enable && !config.minimal then 30 else 300; 
         command = toString dpms-off;
         resumeCommand = toString dpms-on; }
-      { timeout = if config.phone.enable then 60 else 600;
+      { timeout = if config.phone.enable && !config.minimal then 60 else 600;
         command = toString lock-script; }
     ];
   };
@@ -517,12 +525,7 @@ in
     text-wrong-color = text-color;
     ring-wrong-color = "#e64e4e"; # deep-ish red
   };
-  home.packages = lib.mkIf config.wayland.windowManager.sway.enable (with pkgs; [
-    wl-clipboard
-    xdg-desktop-portal
-    # xdg-desktop-portal-wlr
-    xdg-desktop-portal-gtk
-  ]);
+  home.packages = lib.mkIf config.wayland.windowManager.sway.enable (with pkgs; [ wl-clipboard ]);
   programs.rofi = {
     enable = true;
     font = "Noto Sans Mono 16";
@@ -590,4 +593,5 @@ in
       steal-focus = true;
     };
   };
+}];
 }

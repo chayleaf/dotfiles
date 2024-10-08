@@ -102,7 +102,7 @@
     # Private home-manager config for hostname and username
     getPrivUser = hostname: user: (getPriv hostname).${user} or { };
     # extended lib
-    lib = nixpkgs.lib // import ./lib.nix { inherit (nixpkgs) lib; };
+    lib = inputs.nixpkgs.lib // import ./lib.nix { inherit (nixpkgs) lib; };
     # can't use callPackage ./pkgs here, idk why; use import instead
     overlay' = args: self: super: import (if args.pluginsOverlay or false then ./pkgs/nix-plugins-overlay.nix else ./pkgs) ({
       pkgs = super;
@@ -114,8 +114,8 @@
     nix-plugins-overlay = overlay' { pluginsOverlay = true; };
     all-overlays = [ nix-plugins-overlay overlay ];
     # I override some settings down the line, but overlays always stay the same
-    mkPkgs = config: import nixpkgs (config // {
-      overlays = config.overlays or [ ] ++ all-overlays;
+    mkPkgs = config: import (config.flake or nixpkgs) (builtins.removeAttrs config ["flake"] // {
+      overlays = config.overlays or ([ ] ++ all-overlays);
     });
     # this is actual config, it gets processed below
     config = let
@@ -136,6 +136,20 @@
     in {
       router-emmc = mkBpiR3 "emmc" routerConfig;
       router-sd = mkBpiR3 "sd" routerConfig;
+      ereader = {
+        # TODO uncom
+        flake = inputs.nixpkgs-kernel;
+        system = "aarch64-linux";
+        modules = [
+          ./system/devices/kobo-clara-hd-ereader.nix
+          {
+            nixpkgs.crossSystem.system = "armv7l-linux";
+            # nixpkgs.localSystem.system = "aarch64-linux";
+          }
+        ];
+        home.user = [ ./home/hosts/ereader.nix ];
+        home.common.enableNixosModule = true;
+      };
       server = {
         system = "aarch64-linux";
         modules = [
@@ -169,6 +183,7 @@
     packages = lib.genAttrs [
       "x86_64-linux"
       "aarch64-linux"
+      "armv7l-linux"
     ] (system: let self = overlay' { isOverlay = false; } (mkPkgs { inherit system; } // self) (import nixpkgs { inherit system; }); in self);
     nixosImages.router = let pkgs = mkPkgs { inherit (config.router-emmc) system; }; in {
       emmcImage = pkgs.callPackage ./system/hardware/bpi-r3/image.nix {
@@ -194,13 +209,16 @@
 
     # this is the system config processing part
     nixosConfigurations = lib.flip builtins.mapAttrs config (hostname: args @ { modules, nixpkgs ? {}, home ? {}, ... }:
-      lib.nixosSystem {
+      (args.flake or base-inputs.nixpkgs).lib.nixosSystem {
         inherit (args) system;
         # allow modules to access nixpkgs directly, use customized lib,
         # and pass nixos-harware to let hardware modules import parts of nixos-hardware
         specialArgs = {
-          inherit inputs lib;
+          inherit lib;
           hardware = inputs.nixos-hardware.nixosModules;
+          inputs = inputs // lib.optionalAttrs (args?flake) {
+            nixpkgs = args.flake;
+          };
         } // args.specialArgs or { };
         modules = [
           ({ config, ... }: {
@@ -219,16 +237,21 @@
         ++ lib.optionals (home != { } && home.common.enableNixosModule or false) [
           inputs.home-manager.nixosModules.home-manager
           { home-manager = builtins.removeAttrs (home.common or { }) [ "nixpkgs" "nix" "enableNixosModule" ]; }
-          { # set both to false to match behavior with standalone home-manager
-            home-manager.useGlobalPkgs = false;
-            home-manager.useUserPackages = false;
+          {
+            home-manager.extraSpecialArgs = {
+              inputs = inputs // lib.optionalAttrs (args?flake) {
+                nixpkgs = args.flake;
+              };
+            };
+            home-manager.useGlobalPkgs = true;
+            home-manager.useUserPackages = true;
             home-manager.users = builtins.mapAttrs (username: modules: {
               imports = modules ++ [
-                { nixpkgs = home.common.nixpkgs or { };
-                  nix = home.common.nix or { }; }
-                ({ config, pkgs, lib, ...}: {
-                  nixpkgs.overlays = all-overlays;
-                  nix.package = lib.mkDefault pkgs.nixForNixPlugins; })
+                # { nixpkgs = home.common.nixpkgs or { };
+                #   nix = home.common.nix or { }; }
+                # ({ config, pkgs, lib, ...}: {
+                #   nixpkgs.overlays = all-overlays;
+                #   nix.package = lib.mkDefault pkgs.nixForNixPlugins; })
                 (getPrivUser hostname username)
               ];
             }) (builtins.removeAttrs home [ "common" ]); }

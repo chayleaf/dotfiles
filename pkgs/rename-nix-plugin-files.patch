@@ -1,0 +1,13 @@
+diff --git a/src/libstore/globals.hh b/src/libstore/globals.hh
+index dba7d78ef..f102f08f9 100644
+--- a/src/libstore/globals.hh
++++ b/src/libstore/globals.hh
+@@ -959,7 +959,7 @@ public:
+         "Number of seconds between checking free disk space."};
+ 
+     PluginFilesSetting pluginFiles{
+-        this, {}, "plugin-files",
++        this, {}, "plugin-files-2",
+         R"(
+           A list of plugin files to be loaded by Nix. Each of these files will
+           be dlopened by Nix, allowing them to affect execution through static

@@ -1,14 +1,14 @@
-{ pkgs, pkgs', ... }:
+{ pkgs, ... }:
 
 let
-  nixForNixPlugins = pkgs.nixVersions.nix_2_18;
+  unpatchedNixForNixPlugins = pkgs.nixVersions.nix_2_18;
+  nixForNixPlugins = unpatchedNixForNixPlugins.overrideAttrs (old: {
+    patches = (old.patches or [ ]) ++ [ ./rename-nix-plugin-files.patch ];
+    # some tests fail on bcachefs due to insufficient permissions
+    doInstallCheck = false;
+  });
 in {
-  inherit nixForNixPlugins;
-  nix = nixForNixPlugins;
-  nixVersions = pkgs.nixVersions // {
-    stable = nixForNixPlugins;
-    unstable = nixForNixPlugins;
-  };
+  inherit unpatchedNixForNixPlugins nixForNixPlugins;
   # Various patches to change Nix version of existing packages so they don't error out because of nix-plugins in nix.conf
   /*nix-plugins = (pkgs.nix-plugins.override { nix = nixForNixPlugins; }).overrideAttrs (old: {
     version = "13.0.0";
@@ -20,17 +20,6 @@ in {
       })
     ];
   });*/
-  harmonia = (pkgs.harmonia.override { nixVersions.nix_2_21 = nixForNixPlugins; }).overrideAttrs (old: rec {
-    version = "0.7.3";
-    src = old.src.override {
-      rev = "refs/tags/${old.pname}-v${version}";
-      hash = "sha256-XtnK54HvZMKZGSCrVD0FO5PQLMo3Vkj8ezUlsfqStq0=";
-    };
-    cargoDeps = pkgs'.rustPlatform.importCargoLock { lockFile = "${src}/Cargo.lock"; };
-  });
-  nix-init = pkgs.nix-init.override { nix = nixForNixPlugins; };
-  nix-serve = pkgs.nix-serve.override { nix = nixForNixPlugins; };
-  nix-serve-ng = pkgs.nix-serve-ng.override { nix = nixForNixPlugins; };
   hydra_unstable = (pkgs.hydra_unstable.override {
     nix = nixForNixPlugins;
   }).overrideAttrs (old: {
@@ -42,5 +31,4 @@ in {
       hash = "sha256-vXTuE83GL15mgZHegbllVAsVdDFcWWSayPfZxTJN5ys=";
     };
   });
-  nurl = pkgs.nurl.override { nix = nixForNixPlugins; };
 }

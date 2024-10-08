@@ -6,7 +6,7 @@ let
     foot = "${pkgs.foot}/bin/footclient";
     kitty = "${pkgs.kitty}/bin/kitty";
     urxvt = "${pkgs.rxvt-unicode-emoji}/bin/urxvt";
-  }.${term};
+  }.${term} or (throw "Terminal not found");
   color = builtins.elemAt config.colors.base;
   hex = x: if builtins.isFunction x then (y: "#" + (x y)) else ("#" + x);
   shell = lib.mkIf config.termShell.enable (lib.mkDefault config.termShell.path);
@@ -198,21 +198,22 @@ in {
       enabled_layouts = "all";
     };
   };
-  xdg.configFile."fontconfig/conf.d/10-kitty-fonts.conf".text =
+  xdg.configFile."fontconfig/conf.d/10-kitty-fonts.conf" =
     lib.mkIf
-      (supportTerminal "kitty" && config.programs.kitty.font.name == "Noto Sans Mono")
-  ''
-    <?xml version="1.0"?>
-    <!DOCTYPE fontconfig SYSTEM "fonts.dtd">
-    <fontconfig>
-    <match target="scan">
-      <test name="family">
-        <string>Noto Sans Mono</string>
-      </test>
-      <edit name="spacing">
-        <int>90</int>
-      </edit>
-    </match>
-    </fontconfig>
-  '';
+      (supportTerminal "kitty" && config.programs.kitty.font.name == "Noto Sans Mono") {
+      text = ''
+        <?xml version="1.0"?>
+        <!DOCTYPE fontconfig SYSTEM "fonts.dtd">
+        <fontconfig>
+        <match target="scan">
+          <test name="family">
+            <string>Noto Sans Mono</string>
+          </test>
+          <edit name="spacing">
+            <int>90</int>
+          </edit>
+        </match>
+        </fontconfig>
+      '';
+    };
 }

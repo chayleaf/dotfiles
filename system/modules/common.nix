@@ -17,6 +17,15 @@ in {
           default = true;
           description = "whether this is a minimal (no DE/WM) system";
         };
+        useNixPlugins = mkOption {
+          type = types.bool;
+          default = !cfg.minimal;
+        };
+        binaryCache.enable = mkOption {
+          type = types.bool;
+          default = !cfg.minimal;
+          description = "enable binary cache";
+        };
         mainUsername = mkOption {
           type = types.str;
           default = "user";
@@ -58,30 +67,10 @@ in {
         dates = "weekly";
         options = "--delete-older-than 30d";
       };
-      package = pkgs.nixForNixPlugins;
-      extraOptions = ''
-        plugin-files = ${pkgs.nix-plugins.override { nix = config.nix.package; }}/lib/nix/plugins/libnix-extra-builtins.so
-      '';
     };
     systemd.services.nix-daemon.serviceConfig.LimitSTACKSoft = "infinity";
     nix.daemonCPUSchedPolicy = lib.mkDefault "idle";
     nix.daemonIOSchedClass = lib.mkDefault "idle";
-
-    # registry is used for the new flaky nix command
-    nix.registry =
-      builtins.mapAttrs
-      (_: v: { flake = v; })
-      (lib.filterAttrs (_: v: v?outputs) inputs);
-
-    # add import'able flake inputs (like nixpkgs) to nix path
-    # nix path is used for old nix commands (like nix-build, nix-shell)
-    environment.etc = lib.mapAttrs'
-      (name: value: {
-        name = "nix/inputs/${name}";
-        value.source = value.outPath or "${value}";
-      })
-      (lib.filterAttrs (_: v: builtins.pathExists "${v}/default.nix") inputs);
-    nix.nixPath = [ "/etc/nix/inputs" ];
 
     boot.kernelParams = lib.optionals (cfg.resolution != null) [
       "consoleblank=60"
@@ -121,7 +110,7 @@ in {
       rsync
       tmux
       wget
-
+    ] ++ lib.optionals (!builtins.elem pkgs.system ["armv7l-linux"]) [
       kitty.terminfo
       foot.terminfo
       # rxvt-unicode-unwrapped.terminfo
@@ -135,11 +124,14 @@ in {
     # nixos-hardware uses mkDefault here, so we use slightly higher priority
     services.libinput.enable = mkForceDefault (!cfg.minimal);
     programs.fuse.userAllowOther = true;
+  }
+
+  (lib.mkIf cfg.gettyAutologin {
     # autologin once after boot
     # --skip-login means directly call login instead of first asking for username
     # (normally login asks for username too, but getty prefers to do it by itself for whatever reason)
-    services.getty.extraArgs = lib.mkIf cfg.gettyAutologin [ "--skip-login" ];
-    services.getty.loginProgram = lib.mkIf cfg.gettyAutologin (let
+    services.getty.extraArgs = [ "--skip-login" ];
+    services.getty.loginProgram = let
       lockfile = "/tmp/login-once.lock";
     in with pkgs; writeShellScript "login-once" ''
       if [ -f '${lockfile}' ]; then
@@ -148,8 +140,8 @@ in {
         ${coreutils}/bin/touch '${lockfile}'
         exec ${shadow}/bin/login -f user
       fi
-    '');
-  }
+    '';
+  })
 
   (lib.mkIf cfg.minimal {
     programs.fish.interactiveShellInit = ''
@@ -169,7 +161,7 @@ in {
     # conflicts with bash module's mkDefault
     # only override on minimal systems because on non-minimal systems
     # my fish config doesn't work well in fb/drm console
-    users.defaultUserShell = lib.mkIf cfg.minimal (mkForceDefault pkgs.fish);
+    users.defaultUserShell = mkForceDefault pkgs.fish;
 
     programs.vim = {
       enable = lib.mkDefault true;
@@ -191,9 +183,22 @@ in {
   })
 
   (lib.mkIf (!cfg.minimal) {
-    environment.systemPackages = with pkgs; [
-      unixtools.xxd
-    ];
+    # registry is used for the new flaky nix command
+    nix.registry =
+      builtins.mapAttrs
+      (_: v: { flake = v; })
+      (lib.filterAttrs (_: v: v?outputs) inputs);
+
+    # add import'able flake inputs (like nixpkgs) to nix path
+    # nix path is used for old nix commands (like nix-build, nix-shell)
+    environment.etc = lib.mapAttrs'
+      (name: value: {
+        name = "nix/inputs/${name}";
+        value.source = value.outPath or "${value}";
+      })
+      (lib.filterAttrs (_: v: builtins.pathExists "${v}/default.nix") inputs);
+
+    nix.nixPath = [ "/etc/nix/inputs" ];
     hardware.pulseaudio.enable = false;
     services.pipewire = {
       enable = lib.mkDefault true;
@@ -206,7 +211,20 @@ in {
     security.rtkit.enable = true;
     services.dbus.enable = true;
     programs.dconf.enable = true;
+  })
 
+  (lib.mkIf (!cfg.useNixPlugins) {
+    nix.package = pkgs.unpatchedNixForNixPlugins;
+  })
+  (lib.mkIf cfg.useNixPlugins {
+    nix.package = pkgs.nixForNixPlugins;
+    nix.settings.plugin-files-2 = "${pkgs.nix-plugins.override { nix = config.nix.package; }}/lib/nix/plugins/libnix-extra-builtins.so";
+    environment.systemPackages = with pkgs; [
+      unixtools.xxd
+    ];
+  })
+
+  (lib.mkIf cfg.binaryCache.enable {
     nix.settings = {
       netrc-file = "/secrets/netrc";
       substituters = [

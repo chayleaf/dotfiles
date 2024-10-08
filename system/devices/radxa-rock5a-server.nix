@@ -39,6 +39,11 @@ in
 
   networking.useDHCP = false;
   networking.useNetworkd = true;
+  networking.resolvconf.extraConfig = let
+    ip = cidr: builtins.head (lib.splitString "/" cidr);
+  in ''
+    name_servers='${ip router-config.router-settings.network} ${ip router-config.router-settings.network6}'
+  '';
   systemd.network = {
     enable = true;
     links."10-mac" = {

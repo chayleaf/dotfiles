@@ -106,6 +106,7 @@ in {
   nix.settings.allowed-users = [ "nix-serve" "harmonia" ] ++ lib.optionals config.services.hydra.enable [ "hydra" "hydra-www" ];
   # make sure only hydra has access to this file
   # so normal nix evals don't have access to builtins
+  # nix.checkConfig = false;
   nix.settings.extra-builtins-file = "/secrets/nixos/extra-builtins.nix";
   # required for hydra which uses restricted mode
   nix.settings.allowed-uris = [
@@ -167,7 +168,7 @@ in {
       maxJobs = 2;
       # TODO: switch to ssh-ng https://github.com/NixOS/hydra/issues/688
       protocol = "ssh";
-      systems = [ "x86_64-linux" ];
+      systems = [ "x86_64-linux" "i686-linux" ];
       supportedFeatures = [ "benchmark" "big-parallel" "ca-derivations" "kvm" "nixos-test" ];
       # hydra-queue-runner must have read access to this
       sshKey = "/secrets/hydra-builder-key";
@@ -181,6 +182,7 @@ in {
   systemd.services.nix-daemon.serviceConfig.Nice = "19";
   nix.daemonCPUSchedPolicy = "idle";
   nix.daemonIOSchedClass = "idle";
+  common.useNixPlugins = true;
   systemd.services.hydra-evaluator = lib.mkIf config.services.hydra.enable {
     # https://github.com/NixOS/hydra/issues/1186
     environment.GC_DONT_GC = "1";
@@ -363,6 +365,8 @@ in {
       }
     ];
   };
+  # don't mess with my dns god damn it
+  services.resolved.enable = false;
   # TODO: enable
   services.matrix-appservice-discord.settings.metrics = {
     enable = true;

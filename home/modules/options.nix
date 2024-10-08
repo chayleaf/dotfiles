@@ -10,6 +10,10 @@ with lib; {
       default = false;
       description = "whether this is a phone";
     };
+    suspend = mkOption {
+      type = types.bool;
+      default = true;
+    };
   };
   options.rustAnalyzerAndroidSettings = mkOption {
     type = with types; attrs;

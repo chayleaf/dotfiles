@@ -40,6 +40,8 @@
     });
   '';
 
+  phone.buffyboard.enable = true;
+  phone.rndis.enable = true;
   common.minimal = false;
   services.sshd.enable = true;
   services.tlp.enable = true;
