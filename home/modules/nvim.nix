@@ -73,9 +73,9 @@
     luasnip = REQ "luasnip";
 
     plugins = let ps = pkgs.vimPlugins; in [
-      ps.vim-svelte
+      { plugin = ps.vim-svelte; }
       # vim-nix isn't necessary for syntax highlighting, but it improves overall editing experience
-      ps.vim-nix
+      { plugin = ps.vim-nix; }
       { plugin = pkgs.vimUtils.buildVimPlugin {
           pname = "vscode-nvim";
           version = "2023-02-10";
@@ -124,8 +124,8 @@
             };
           })
         ])); }
-      ps.vim-sleuth
-      ps.luasnip
+      { plugin = ps.vim-sleuth; }
+      { plugin = ps.luasnip; }
       { plugin = ps.nvim-cmp;
         config = let
           border = (name: [
@@ -200,9 +200,9 @@
             ];
           }
         )); }
-      ps.lspkind-nvim
-      ps.cmp_luasnip
-      ps.cmp-nvim-lsp
+      { plugin = ps.lspkind-nvim; }
+      { plugin = ps.cmp_luasnip; }
+      { plugin = ps.cmp-nvim-lsp; }
       { plugin = ps.nvim-autopairs;
         config = (LET
           (REQ "cmp") (REQ "nvim-autopairs.completion.cmp") (REQ "nvim-autopairs")
@@ -413,7 +413,7 @@
     vimdiffAlias = true;
 
     extraConfigLua = compile "main" (
-      builtins.concatLists (map (x: if x?plugin then lib.toList x.config else [ ]) plugins) ++ [
+      builtins.concatLists (map (x: if x?plugin && x?config then lib.toList x.config else [ ]) plugins) ++ [
       (kmSetNs {
         "<C-X>" = {
           rhs = DEFUN (vim.fn.system [ "chmod" "+x" (vim.fn.expand "%") ]);
@@ -475,6 +475,6 @@
         }
       ))
     ]);
-    extraPlugins = map (x: x.plugin or x) plugins;
+    extraPlugins = builtins.filter (x: x != null) (map (x: x.plugin or null) plugins);
   };
 }
