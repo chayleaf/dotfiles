@@ -76,18 +76,9 @@
       { plugin = ps.vim-svelte; }
       # vim-nix isn't necessary for syntax highlighting, but it improves overall editing experience
       { plugin = ps.vim-nix; }
-      { plugin = pkgs.vimUtils.buildVimPlugin {
-          pname = "vscode-nvim";
-          version = "2023-02-10";
-          src = pkgs.fetchFromGitHub {
-            owner = "Mofiqul";
-            repo = "vscode.nvim";
-            rev = "db9ee339b5556aa832ca58871fd18f9467a18520";
-            sha256 = "sha256-X2IgIjO5NNq7vJdl09hBY1TFqHlsfF1xfllKr4osILI=";
-          };
-        };
-        config = [
-          ((REQ "vscode").setup {
+      { settings.colorschemes.vscode = {
+          enable = true;
+          settings = {
             transparent = true;
             color_overrides = {
               vscGray = "#745b5f";
@@ -104,7 +95,9 @@
               vscYellow = "#${config.colors.yellow}";
               vscPink = "#cf83c4";
             };
-          })
+          };
+        };
+        config = [
           (vim.api.nvim_set_hl 0 "NormalFloat" {
             bg = "NONE";
           })
@@ -381,7 +374,7 @@
           (which-key.setup { })
         ]; }
     ];
-  in {
+  in lib.mkMerge ((builtins.concatLists (map (x: lib.toList (x.settings or [ ])) plugins)) ++ lib.toList {
     enable = true;
     defaultEditor = true;
     package = pkgs.neovim-unwrapped;
@@ -476,5 +469,5 @@
       ))
     ]);
     extraPlugins = builtins.filter (x: x != null) (map (x: x.plugin or null) plugins);
-  };
+  });
 }
