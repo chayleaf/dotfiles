@@ -13,8 +13,11 @@
   */
 
   # welcome to my cursed DSL
-  programs.neovim = let
-    notlua-nvim = notlua.neovim { inherit (config.programs.neovim) plugins extraLuaPackages; };
+  programs.nixvim = let
+    notlua-nvim = notlua.neovim {
+      plugins = config.programs.nixvim.extraPlugins;
+      inherit (config.programs.nixvim) extraLuaPackages;
+    };
     inherit (notlua.keywords)
       AND APPLY CALL DEFUN ELSE EQ GE IDX IF
       LE LET LETREC MERGE OR PROP RETURN SET;
@@ -68,100 +71,8 @@
 
     which-key = REQ "which-key";
     luasnip = REQ "luasnip";
-  in {
-    enable = true;
-    defaultEditor = true;
-    package = pkgs.neovim-unwrapped;
-    extraPackages = with pkgs; [
-      rust-analyzer
-      nodePackages_latest.bash-language-server shellcheck
-      nodePackages_latest.typescript-language-server
-      # nodePackages_latest.svelte-language-server
-      clang-tools_latest
-      nodePackages_latest.vscode-langservers-extracted
-      nil
-      marksman
-      nixfmt-rfc-style
-      taplo
-      ripgrep
-      (python3.withPackages (p: with p; [
-        python-lsp-server
-        python-lsp-black
-        pylsp-mypy
-        python-lsp-server.optional-dependencies.pyflakes
-        python-lsp-server.optional-dependencies.mccabe
-        python-lsp-server.optional-dependencies.pycodestyle
-      ]))
-    ];
-    # extraPython3Packages = pyPkgs: with pyPkgs; [
-    # ];
-    viAlias = true;
-    vimAlias = true;
-    vimdiffAlias = true;
 
-    extraLuaConfig = compile "main" [
-      (kmSetNs {
-        "<C-X>" = {
-          rhs = DEFUN (vim.fn.system [ "chmod" "+x" (vim.fn.expand "%") ]);
-          desc = "chmod +x %";
-        };
-      })
-      (SET (vimg "vimsyn_embed") "l")
-      (LET (vim.api.nvim_create_augroup "nvimrc" { clear = true; }) (group:
-        lib.mapAttrsToList (k: v: vim.api.nvim_create_autocmd k { inherit group; callback = v; }) {
-          BufReadPre = DEFUN (SET vim.o.foldmethod "syntax");
-          BufEnter = { buf, ... }:
-            LET (vim.filetype.match { inherit buf; }) (filetype: [
-              (IF (APPLY OR (map (EQ filetype) [ "gitcommit" "markdown" "mail" ])) (
-                LET vim.o.colorcolumn (old_colorcolumn: [
-                  (SET vim.o.colorcolumn "73")
-                  (vim.api.nvim_create_autocmd "BufLeave" {
-                    buffer = buf;
-                    callback = DEFUN [
-                      (SET vim.o.colorcolumn old_colorcolumn)
-                      # return true = delete autocommand
-                      (RETURN true)
-                    ];
-                  })
-                ])
-              ))
-              (IF (APPLY OR (map (EQ filetype) [ "markdown" "mail" ])) (
-                (SET (IDX vim.bo buf).textwidth 72)
-              ))
-            ]);
-          BufWinEnter = { buf, ... }:
-            LET (vim.filetype.match { inherit buf; }) (filetype: [
-              (CALL (PROP vim.cmd "folddoc") "foldopen!")
-              (IF (EQ filetype "gitcommit") (
-                vim.cmd {
-                  cmd = "normal"; bang = true;
-                  args = [ "gg" ];
-                }
-              ) ELSE (LET
-                (IDX (vim.api.nvim_buf_get_mark buf "\"") 1)
-                (vim.api.nvim_buf_line_count buf)
-              (pos: cnt:
-                IF (AND (GE pos 1) (LE pos cnt))
-                  (vim.cmd {
-                    cmd = "normal"; bang = true;
-                    args = [ "g`\"" ];
-                  })
-                /*ELIF*/ (GE pos 1)
-                  (vim.cmd {
-                    cmd = "normal"; bang = true;
-                    args = [ "g$" ];
-                  })
-                ELSE
-                  (vim.cmd {
-                    cmd = "normal"; bang = true;
-                    args = [ "gg" ];
-                  })
-              )))
-            ]);
-        }
-      ))
-    ];
-    plugins = let ps = pkgs.vimPlugins; in map (x: if x?config && x?plugin then { type = "lua"; } // x else x) [
+    plugins = let ps = pkgs.vimPlugins; in [
       ps.vim-svelte
       # vim-nix isn't necessary for syntax highlighting, but it improves overall editing experience
       ps.vim-nix
@@ -175,7 +86,7 @@
             sha256 = "sha256-X2IgIjO5NNq7vJdl09hBY1TFqHlsfF1xfllKr4osILI=";
           };
         };
-        config = compile "vscode_nvim" [
+        config = [
           ((REQ "vscode").setup {
             transparent = true;
             color_overrides = {
@@ -199,9 +110,9 @@
           })
         ]; }
       { plugin = ps.nvim-web-devicons;
-        config = compile "nvim_web_devicons" ((REQ "nvim-web-devicons").setup { }); }
+        config = ((REQ "nvim-web-devicons").setup { }); }
       { plugin = ps.nvim-tree-lua;
-        config = compile "nvim_tree_lua" (LET (REQ "nvim-tree") (REQ "nvim-tree.api") (nvim-tree: nvim-tree-api: [
+        config = (LET (REQ "nvim-tree") (REQ "nvim-tree.api") (nvim-tree: nvim-tree-api: [
           (SET (vimg "loaded_netrw") 1)
           (SET (vimg "loaded_netrwPlugin") 1)
           (SET vim.o.termguicolors true)
@@ -227,7 +138,7 @@
             [ "╰" name ]
             [ "│" name ]
           ]);
-        in compile "nvim_cmp" (LET (REQ "cmp") (REQ "lspkind") (cmp: lspkind:
+        in (LET (REQ "cmp") (REQ "lspkind") (cmp: lspkind:
           # call is required because cmp.setup is a table
           cmp.setup {
             snippet = {
@@ -293,7 +204,7 @@
       ps.cmp_luasnip
       ps.cmp-nvim-lsp
       { plugin = ps.nvim-autopairs;
-        config = compile "nvim_autopairs" (LET
+        config = (LET
           (REQ "cmp") (REQ "nvim-autopairs.completion.cmp") (REQ "nvim-autopairs")
           (cmp: cmp-autopairs: nvim-autopairs:
         [
@@ -303,7 +214,7 @@
           (cmp.event.on cmp.event "confirm_done" (cmp-autopairs.on_confirm_done { }))
         ])); }
       { plugin = ps.comment-nvim;
-        config = compile "comment_nvim" [
+        config = [
           ((REQ "Comment").setup { })
           (kmSetNs {
             "<space>/" = {
@@ -320,7 +231,7 @@
           })
         ]; }
       { plugin = ps.nvim-lspconfig;
-        config = compile "nvim_lspconfig" (
+        config = (
           let lsp = name: builtins.seq
             # ensure an lsp exists (otherwise lspconfig will still create an empty config for some reason)
             (REQ "lspconfig.server_configurations.${name}")
@@ -464,11 +375,106 @@
           )) # END
         ]); }
       { plugin = ps.which-key-nvim;
-        config = compile "which_key_nvim" [
+        config = [
           (SET vim.o.timeout true)
           (SET vim.o.timeoutlen 500)
           (which-key.setup { })
         ]; }
     ];
+  in {
+    enable = true;
+    defaultEditor = true;
+    package = pkgs.neovim-unwrapped;
+    extraPackages = with pkgs; [
+      rust-analyzer
+      nodePackages_latest.bash-language-server shellcheck
+      nodePackages_latest.typescript-language-server
+      # nodePackages_latest.svelte-language-server
+      clang-tools_latest
+      nodePackages_latest.vscode-langservers-extracted
+      nil
+      marksman
+      nixfmt-rfc-style
+      taplo
+      ripgrep
+      (python3.withPackages (p: with p; [
+        python-lsp-server
+        python-lsp-black
+        pylsp-mypy
+        python-lsp-server.optional-dependencies.pyflakes
+        python-lsp-server.optional-dependencies.mccabe
+        python-lsp-server.optional-dependencies.pycodestyle
+      ]))
+    ];
+    # extraPython3Packages = pyPkgs: with pyPkgs; [
+    # ];
+    viAlias = true;
+    vimAlias = true;
+    vimdiffAlias = true;
+
+    extraConfigLua = compile "main" (
+      builtins.concatLists (map (x: if x?plugin then lib.toList x.config else [ ]) plugins) ++ [
+      (kmSetNs {
+        "<C-X>" = {
+          rhs = DEFUN (vim.fn.system [ "chmod" "+x" (vim.fn.expand "%") ]);
+          desc = "chmod +x %";
+        };
+      })
+      (SET (vimg "vimsyn_embed") "l")
+      (LET (vim.api.nvim_create_augroup "nvimrc" { clear = true; }) (group:
+        lib.mapAttrsToList (k: v: vim.api.nvim_create_autocmd k { inherit group; callback = v; }) {
+          BufReadPre = DEFUN (SET vim.o.foldmethod "syntax");
+          BufEnter = { buf, ... }:
+            LET (vim.filetype.match { inherit buf; }) (filetype: [
+              (IF (APPLY OR (map (EQ filetype) [ "gitcommit" "markdown" "mail" ])) (
+                LET vim.o.colorcolumn (old_colorcolumn: [
+                  (SET vim.o.colorcolumn "73")
+                  (vim.api.nvim_create_autocmd "BufLeave" {
+                    buffer = buf;
+                    callback = DEFUN [
+                      (SET vim.o.colorcolumn old_colorcolumn)
+                      # return true = delete autocommand
+                      (RETURN true)
+                    ];
+                  })
+                ])
+              ))
+              (IF (APPLY OR (map (EQ filetype) [ "markdown" "mail" ])) (
+                (SET (IDX vim.bo buf).textwidth 72)
+              ))
+            ]);
+          BufWinEnter = { buf, ... }:
+            LET (vim.filetype.match { inherit buf; }) (filetype: [
+              (CALL (PROP vim.cmd "folddoc") "foldopen!")
+              (IF (EQ filetype "gitcommit") (
+                vim.cmd {
+                  cmd = "normal"; bang = true;
+                  args = [ "gg" ];
+                }
+              ) ELSE (LET
+                (IDX (vim.api.nvim_buf_get_mark buf "\"") 1)
+                (vim.api.nvim_buf_line_count buf)
+              (pos: cnt:
+                IF (AND (GE pos 1) (LE pos cnt))
+                  (vim.cmd {
+                    cmd = "normal"; bang = true;
+                    args = [ "g`\"" ];
+                  })
+                /*ELIF*/ (GE pos 1)
+                  (vim.cmd {
+                    cmd = "normal"; bang = true;
+                    args = [ "g$" ];
+                  })
+                ELSE
+                  (vim.cmd {
+                    cmd = "normal"; bang = true;
+                    args = [ "gg" ];
+                  })
+              )))
+            ]);
+        }
+      ))
+    ]);
+    extraPlugins = map (x: x.plugin or x) plugins;
   };
 }

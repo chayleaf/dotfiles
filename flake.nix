@@ -5,6 +5,7 @@
     nix-community-infra.url = "github:nix-community/infra";
     nixpkgs-kernel.url = "github:NixOS/nixpkgs/a58bc8ad779655e790115244571758e8de055e3d";
     nixpkgs.url = "github:chayleaf/nixpkgs/ci";
+    nixvim.url = "github:nix-community/nixvim";
     nixos-hardware.url = "github:NixOS/nixos-hardware";
     nix-index-database = {
       url = "github:nix-community/nix-index-database";
@@ -160,6 +161,7 @@
       nixmsi = rec {
         system = "x86_64-linux";
         modules = [ ./system/devices/msi-delta-15-workstation.nix ];
+        home.common.modules = [ inputs.nixvim.homeManagerModules.default ];
         home.common.extraSpecialArgs = {
           notlua = inputs.notlua.lib.${system};
         };
@@ -168,6 +170,7 @@
       phone = rec {
         system = "aarch64-linux";
         modules = [ ./system/devices/oneplus-6-phone.nix ];
+        home.common.modules = [ inputs.nixvim.homeManagerModules.default ];
         home.common.extraSpecialArgs = {
           notlua = inputs.notlua.lib.${system};
         };
