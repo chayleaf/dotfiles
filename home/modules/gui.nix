@@ -118,6 +118,14 @@ config = lib.mkMerge [
 
       "1" = "add volume -1";
       "2" = "add volume 1";
+      "3" = "add contrast -1";
+      "4" = "add contrast 1";
+      "5" = "add brightness -1";
+      "6" = "add brightness 1";
+      "7" = "add saturation -1";
+      "8" = "add saturation 1";
+      "9" = "add gamma -1";
+      "0" = "add gamma 1";
       s = "cycle sub";
       v = "cycle video";
       a = "cycle audio";
