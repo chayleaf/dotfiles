@@ -76,9 +76,20 @@
       { plugin = ps.vim-svelte; }
       # vim-nix isn't necessary for syntax highlighting, but it improves overall editing experience
       { plugin = ps.vim-nix; }
-      { settings.colorschemes.vscode = {
-          enable = true;
-          settings = {
+      # the latest version of vscode-nvim has breaking changes and i'm too lazy to migrate
+      # FIXME: migrate
+      { plugin = pkgs.vimUtils.buildVimPlugin {
+          pname = "vscode-nvim";
+          version = "2023-02-10";
+          src = pkgs.fetchFromGitHub {
+            owner = "Mofiqul";
+            repo = "vscode.nvim";
+            rev = "db9ee339b5556aa832ca58871fd18f9467a18520";
+            sha256 = "sha256-X2IgIjO5NNq7vJdl09hBY1TFqHlsfF1xfllKr4osILI=";
+          };
+        };
+        config = [
+          ((REQ "vscode").setup {
             transparent = true;
             color_overrides = {
               vscGray = "#745b5f";
@@ -95,21 +106,17 @@
               vscYellow = "#${config.colors.yellow}";
               vscPink = "#cf83c4";
             };
-          };
-        };
-        config = [
+          })
           (vim.api.nvim_set_hl 0 "NormalFloat" {
             bg = "NONE";
           })
         ]; }
-      { plugin = ps.nvim-web-devicons;
-        config = ((REQ "nvim-web-devicons").setup { }); }
-      { plugin = ps.nvim-tree-lua;
+      { settings.plugins.web-devicons.enable = true; }
+      { settings.plugins.nvim-tree.enable = true;
+        settings.globalOpts.termguicolors = true;
+        settings.globals.loaded_netrw = 1;
+        settings.globals.loaded_netrwPlugin = 1;
         config = (LET (REQ "nvim-tree") (REQ "nvim-tree.api") (nvim-tree: nvim-tree-api: [
-          (SET (vimg "loaded_netrw") 1)
-          (SET (vimg "loaded_netrwPlugin") 1)
-          (SET vim.o.termguicolors true)
-          (nvim-tree.setup { }) # :help nvim-tree-setup
           (kmSetNs {
             "<C-N>" = {
               rhs = nvim-tree-api.tree.toggle;
@@ -117,9 +124,10 @@
             };
           })
         ])); }
-      { plugin = ps.vim-sleuth; }
-      { plugin = ps.luasnip; }
+      { settings.plugins.sleuth.enable = true; }
+      { settings.plugins.luasnip.enable = true; }
       { plugin = ps.nvim-cmp;
+        settings.plugins.cmp.enable = false;
         config = let
           border = (name: [
             [ "╭" name ]
@@ -193,10 +201,11 @@
             ];
           }
         )); }
-      { plugin = ps.lspkind-nvim; }
-      { plugin = ps.cmp_luasnip; }
-      { plugin = ps.cmp-nvim-lsp; }
+      { settings.plugins.lspkind.enable = true; }
+      { settings.plugins.cmp_luasnip.enable = true; }
+      { settings.plugins.cmp-nvim-lsp.enable = true; }
       { plugin = ps.nvim-autopairs;
+        settings.plugins.nvim-autopairs.enable = false;
         config = (LET
           (REQ "cmp") (REQ "nvim-autopairs.completion.cmp") (REQ "nvim-autopairs")
           (cmp: cmp-autopairs: nvim-autopairs:
@@ -206,9 +215,9 @@
           })
           (cmp.event.on cmp.event "confirm_done" (cmp-autopairs.on_confirm_done { }))
         ])); }
-      { plugin = ps.comment-nvim;
+      { settings.plugins.comment.enable = true;
         config = [
-          ((REQ "Comment").setup { })
+          # ((REQ "Comment").setup { })
           (kmSetNs {
             "<space>/" = {
               # metatables......
@@ -224,6 +233,7 @@
           })
         ]; }
       { plugin = ps.nvim-lspconfig;
+        settings.plugins.lsp.enable = false;
         config = (
           let lsp = name: builtins.seq
             # ensure an lsp exists (otherwise lspconfig will still create an empty config for some reason)
@@ -367,12 +377,9 @@
             ]) # END
           )) # END
         ]); }
-      { plugin = ps.which-key-nvim;
-        config = [
-          (SET vim.o.timeout true)
-          (SET vim.o.timeoutlen 500)
-          (which-key.setup { })
-        ]; }
+      { settings.plugins.which-key.enable = true;
+        settings.globalOpts.timeout = true;
+        settings.globalOpts.timeoutlen = 500; }
     ];
   in lib.mkMerge ((builtins.concatLists (map (x: lib.toList (x.settings or [ ])) plugins)) ++ lib.toList {
     enable = true;
