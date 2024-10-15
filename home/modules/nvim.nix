@@ -198,6 +198,7 @@
             sources = cmp.config.sources [
               { name = "nvim_lsp"; }
               { name = "luasnip"; }
+              { name = "neorg"; }
             ];
           }
         )); }
@@ -380,6 +381,65 @@
       { settings.plugins.which-key.enable = true;
         settings.globalOpts.timeout = true;
         settings.globalOpts.timeoutlen = 500; }
+      { settings.plugins.treesitter = {
+          enable = true;
+          grammarPackages = with pkgs.tree-sitter-grammars; [
+            tree-sitter-norg
+            tree-sitter-norg-meta
+          ];
+          settings.highlight.enable = true;
+        }; }
+      { settings.plugins.image = {
+          enable = true;
+          backend = "kitty";
+          integrations = {
+            markdown = {
+              enabled = true;
+              downloadRemoteImages = false;
+            };
+            neorg = {
+              enabled = true;
+              downloadRemoteImages = true;
+            };
+          };
+        }; }
+      { settings.plugins.telescope.enable = true; }
+      { plugin = ps.neorg;
+        # TODO: remove when bumping inputs https://github.com/nix-community/nixvim/issues/1395
+        settings.extraLuaPackages = (x: with x; [
+          lua-utils-nvim
+          pathlib-nvim
+          nvim-nio
+        ]);
+        config = (REQ "neorg").setup {
+          load = {
+            "core.defaults" = { };
+            "core.completion".config = {
+              engine = "nvim-cmp";
+            };
+            "core.concealer" = { };
+            "core.dirman".config = {
+              workspaces.ws = "~/notes";
+              default_workspace = "ws";
+            };
+            "core.esupports.metagen".config = {
+              author = "chayleaf";
+              timezone = "utc";
+              type = "empty";
+            };
+            "core.integrations.nvim-cmp" = { };
+            "core.integrations.image" = { };
+            "core.integrations.treesitter".config = {
+              # install_parsers = false;
+            };
+            "core.journal".config = {
+              workspace = "ws";
+            };
+            "core.keybinds" = { };
+            "core.latex.renderer" = { };
+          };
+        }; }
+      { plugin = ps.neorg-telescope; }
     ];
   in lib.mkMerge ((builtins.concatLists (map (x: lib.toList (x.settings or [ ])) plugins)) ++ lib.toList {
     enable = true;
