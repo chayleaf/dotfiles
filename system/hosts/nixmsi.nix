@@ -81,6 +81,7 @@
     7777
     9887
   ];
+  networking.firewall.allowedUDPPorts = [ 27015 ];
   # kde connect
   networking.firewall.allowedTCPPortRanges = [
     { from = 1714; to = 1764; }

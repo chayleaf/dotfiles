@@ -60,11 +60,11 @@ def main():
         else:
             copy_args.extend(["--from", "ssh-ng://root@" + build_host])
     else:
-        print('building', drv)
+        print('building', attr_path)
         cmd = ["nix", "build", attr_path, "--no-link", "--json"] + args
         ret = subprocess.run(cmd, check=True, encoding="utf-8", stdout=subprocess.PIPE)
     ret = json.loads(ret.stdout)[0]["outputs"]["out"]
-    print(drv, 'output', ret)
+    print('output', ret)
     cmds = []
     if act in ["boot", "switch"]:
         cmds.append(["nix-env", "-p", "/nix/var/nix/profiles/system", "--set", ret])
