@@ -129,7 +129,7 @@
   services.printing.drivers = [ pkgs.hplip ];
   # from nix-gaming
   services.pipewire.lowLatency = {
-    enable = false;
+    enable = true;
     # 96 is mostly fine but has some xruns
     # 128 has xruns every now and then too
     quantum = 128;

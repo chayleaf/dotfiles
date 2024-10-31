@@ -46,10 +46,10 @@
           ublock-origin
           unpaywall
           vimium-c
+          yomitan
           youtube-shorts-block
         ]) ++ (with pkgs.firefoxAddons; [
           fastforwardteam
-          rikaitan
           youtube-nonstop
         ]);
         search.default = "search.pavluk.org";

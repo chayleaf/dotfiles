@@ -19,7 +19,7 @@ def main():
         addr = opts["addresses"][cfg]
     build_host = opts["build_host"].get(cfg)
     act = args[2]
-    assert act in ["boot", "switch", "test"]
+    assert act in ["boot", "switch", "test", "build"]
     args = args[3:]
     args.extend(
         [
@@ -66,6 +66,8 @@ def main():
     ret = json.loads(ret.stdout)[0]["outputs"]["out"]
     print('output', ret)
     cmds = []
+    if act in ["build"]:
+        return
     if act in ["boot", "switch"]:
         cmds.append(["nix-env", "-p", "/nix/var/nix/profiles/system", "--set", ret])
     cmds.append(

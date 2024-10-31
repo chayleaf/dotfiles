@@ -473,7 +473,7 @@
     vimdiffAlias = true;
 
     extraConfigLua = compile "main" (
-      builtins.concatLists (map (x: if x?plugin && x?config then lib.toList x.config else [ ]) plugins) ++ [
+      builtins.concatLists (map (x: lib.toList (x.config or [ ])) plugins) ++ [
       (kmSetNs {
         "<C-X>" = {
           rhs = DEFUN (vim.fn.system [ "chmod" "+x" (vim.fn.expand "%") ]);

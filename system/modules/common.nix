@@ -124,6 +124,22 @@ in {
     # nixos-hardware uses mkDefault here, so we use slightly higher priority
     services.libinput.enable = mkForceDefault (!cfg.minimal);
     programs.fuse.userAllowOther = true;
+
+    # registry is used for the new flaky nix command
+    nix.registry =
+      builtins.mapAttrs
+      (_: v: { flake = v; })
+      (lib.filterAttrs (k: v: (k != "self" || !cfg.minimal) && v?outputs) inputs);
+
+    # add import'able flake inputs (like nixpkgs) to nix path
+    # nix path is used for old nix commands (like nix-build, nix-shell)
+    environment.etc = lib.mapAttrs'
+      (name: value: {
+        name = "nix/inputs/${name}";
+        value.source = value.outPath or "${value}";
+      })
+      (lib.filterAttrs (k: v: (k != "self" || !cfg.minimal) && builtins.pathExists "${v}/default.nix") inputs);
+
   }
 
   (lib.mkIf cfg.gettyAutologin {
@@ -183,21 +199,6 @@ in {
   })
 
   (lib.mkIf (!cfg.minimal) {
-    # registry is used for the new flaky nix command
-    nix.registry =
-      builtins.mapAttrs
-      (_: v: { flake = v; })
-      (lib.filterAttrs (_: v: v?outputs) inputs);
-
-    # add import'able flake inputs (like nixpkgs) to nix path
-    # nix path is used for old nix commands (like nix-build, nix-shell)
-    environment.etc = lib.mapAttrs'
-      (name: value: {
-        name = "nix/inputs/${name}";
-        value.source = value.outPath or "${value}";
-      })
-      (lib.filterAttrs (_: v: builtins.pathExists "${v}/default.nix") inputs);
-
     nix.nixPath = [ "/etc/nix/inputs" ];
     hardware.pulseaudio.enable = false;
     services.pipewire = {
