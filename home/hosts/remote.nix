@@ -5,7 +5,7 @@
 {
   imports = [
     ../modules/general.nix
-    inputs.nur.nixosModules.nur
+    inputs.nur.modules.homeManager.default
   ];
 
   home.stateVersion = "24.05";

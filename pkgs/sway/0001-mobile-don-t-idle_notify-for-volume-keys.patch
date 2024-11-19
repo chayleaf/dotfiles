@@ -1,4 +1,4 @@
-From c4690b1496ca34c416869d2932abfa112a93f188 Mon Sep 17 00:00:00 2001
+From c0ee6ec0b06721c2aa4f370fc84daaa48d3a6ff3 Mon Sep 17 00:00:00 2001
 From: chayleaf <chayleaf-git@pavluk.org>
 Date: Wed, 14 Aug 2024 08:17:44 +0700
 Subject: [PATCH 1/4] mobile: don't idle_notify for volume keys
@@ -8,10 +8,10 @@ Subject: [PATCH 1/4] mobile: don't idle_notify for volume keys
  1 file changed, 3 insertions(+), 1 deletion(-)
 
 diff --git a/sway/input/keyboard.c b/sway/input/keyboard.c
-index 8927287f..d42f62b0 100644
+index 1a73df01..ce4137d6 100644
 --- a/sway/input/keyboard.c
 +++ b/sway/input/keyboard.c
-@@ -404,7 +404,9 @@ static void handle_key_event(struct sway_keyboard *keyboard,
+@@ -406,7 +406,9 @@ static void handle_key_event(struct sway_keyboard *keyboard,
  		keyboard->seat_device->input_device->wlr_device;
  	char *device_identifier = input_device_get_identifier(wlr_device);
  	bool exact_identifier = keyboard->wlr->group != NULL;
@@ -19,9 +19,9 @@ index 8927287f..d42f62b0 100644
 +	if (event->keycode != XKB_KEY_XF86AudioLowerVolume && event->keycode != XKB_KEY_XF86AudioRaiseVolume) {
 +		seat_idle_notify_activity(seat, IDLE_SOURCE_KEYBOARD);
 +	}
- 	bool input_inhibited = seat->exclusive_client != NULL ||
- 		server.session_lock.locked;
+ 	bool locked = server.session_lock.lock;
  	struct sway_keyboard_shortcuts_inhibitor *sway_inhibitor =
+ 		keyboard_shortcuts_inhibitor_get_for_focused_surface(seat);
 -- 
 2.45.2
 

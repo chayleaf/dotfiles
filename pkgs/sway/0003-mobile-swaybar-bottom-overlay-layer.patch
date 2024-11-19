@@ -1,4 +1,4 @@
-From 2bc4fabd214939f24c7f980e80fe5f3f0c6ff687 Mon Sep 17 00:00:00 2001
+From f61e3735f05c45b37ee2857ad42bfbe7a0a5bf88 Mon Sep 17 00:00:00 2001
 From: chayleaf <chayleaf-git@pavluk.org>
 Date: Fri, 23 Aug 2024 05:35:57 +0700
 Subject: [PATCH 3/4] mobile: swaybar: bottom -> overlay layer
@@ -8,10 +8,10 @@ Subject: [PATCH 3/4] mobile: swaybar: bottom -> overlay layer
  1 file changed, 1 insertion(+), 1 deletion(-)
 
 diff --git a/swaybar/bar.c b/swaybar/bar.c
-index 021fc3bd..7f44799d 100644
+index 4d20f20f..7dc16b5e 100644
 --- a/swaybar/bar.c
 +++ b/swaybar/bar.c
-@@ -103,7 +103,7 @@ static void add_layer_surface(struct swaybar_output *output) {
+@@ -102,7 +102,7 @@ static void add_layer_surface(struct swaybar_output *output) {
  	output->layer_surface = zwlr_layer_shell_v1_get_layer_surface(
  			bar->layer_shell, output->surface, output->output,
  			hidden || overlay ? ZWLR_LAYER_SHELL_V1_LAYER_OVERLAY :

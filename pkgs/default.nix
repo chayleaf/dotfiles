@@ -24,14 +24,6 @@ in
 
   krita = pkgs.callPackage ./krita { inherit (pkgs) krita; };
 
-  openssh = pkgs.openssh.overrideAttrs (old: rec {
-    version = "9.8p1";
-    src = pkgs.fetchurl {
-      url = "mirror://openbsd/OpenSSH/portable/openssh-${version}.tar.gz";
-      hash = "sha256-3YvQAqN5tdSZ37BQ3R+pr4Ap6ARh9LtsUjxJlz9aOfM=";
-    };
-  });
-
   inherit (inputs.unbound-rust-mod.packages.${pkgs.system}) unbound-mod;
   unbound-full = pkgs.unbound-full.overrideAttrs (old: {
     configureFlags = old.configureFlags ++ [ "--with-dynlibmodule" ];

@@ -23,13 +23,13 @@
     };
     "rikaitan" = buildFirefoxXpiAddon {
       pname = "rikaitan";
-      version = "24.7.31.0";
+      version = "25.1.5.0";
       addonId = "tatsu@autistici.org";
-      url = "https://addons.mozilla.org/firefox/downloads/file/4337076/rikaitan-24.7.31.0.xpi";
-      sha256 = "be4b8484221aa8eb4348d1880de988d6f19f3b9ca53deda3fca657dfa2ce3108";
+      url = "https://addons.mozilla.org/firefox/downloads/file/4418773/rikaitan-25.1.5.0.xpi";
+      sha256 = "b2ab8e545190fb0e8c60957acee92ded54e729bbec252d0f0e4decc005caf96b";
       meta = with lib;
       {
-        homepage = "https://github.com/Ajatt-Tools/rikaitan";
+        homepage = "https://rikaitan.github.io/";
         description = "Japanese dictionary with Anki integration and flashcard creation support.";
         license = licenses.gpl3;
         mozPermissions = [

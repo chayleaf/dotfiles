@@ -208,7 +208,7 @@ config = lib.mkMerge [
     # for working with nix
     nix-init
     nvfetcher
-    config.nur.repos.rycee.mozilla-addons-to-nix
+    pkgs.nur.repos.rycee.mozilla-addons-to-nix
   ];
 })
 (lib.mkIf (!config.minimal) {

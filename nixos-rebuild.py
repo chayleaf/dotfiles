@@ -19,7 +19,7 @@ def main():
         addr = opts["addresses"][cfg]
     build_host = opts["build_host"].get(cfg)
     act = args[2]
-    assert act in ["boot", "switch", "test", "build"]
+    assert act in ["boot", "switch", "test", "build", "home"]
     args = args[3:]
     args.extend(
         [
@@ -28,7 +28,10 @@ def main():
             os.path.dirname(__file__) + "/extra-builtins.nix",
         ]
     )
-    attr_path = f".#nixosConfigurations.{cfg}.config.system.build.toplevel"
+    if act == "home":
+        attr_path = f'.#homeConfigurations.user@{cfg}.activation-script'
+    else:
+        attr_path = f".#nixosConfigurations.{cfg}.config.system.build.toplevel"
     copy_args = []
     do_copy = True
     if build_host is not None:
@@ -70,9 +73,10 @@ def main():
         return
     if act in ["boot", "switch"]:
         cmds.append(["nix-env", "-p", "/nix/var/nix/profiles/system", "--set", ret])
-    cmds.append(
-        ["env", "NIXOS_INSTALL_BOOTLOADER=", ret + "/bin/switch-to-configuration", act]
-    )
+    if act != "home":
+        cmds.append(
+            ["env", "NIXOS_INSTALL_BOOTLOADER=", ret + "/bin/switch-to-configuration", act]
+        )
     if addr is None:
         for cmd in cmds:
             print('running', *cmd)
@@ -88,13 +92,14 @@ def main():
                 + args,
                 check=True,
             )
-        print('running', *cmd)
-        subprocess.run(
-            ["ssh", "root@" + addr],
-            input="\n".join(" ".join(cmd) for cmd in cmds) + "\n",
-            check=True,
-            encoding="utf-8",
-        )
+        if cmds:
+            print('running', cmds)
+            subprocess.run(
+                ["ssh", "root@" + addr],
+                input="\n".join(" ".join(cmd) for cmd in cmds) + "\n",
+                check=True,
+                encoding="utf-8",
+            )
 
 
 if __name__ == "__main__":

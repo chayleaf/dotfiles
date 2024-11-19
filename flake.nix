@@ -4,8 +4,8 @@
   inputs = {
     nix-community-infra.url = "github:nix-community/infra";
     nixpkgs-kernel.url = "github:NixOS/nixpkgs/a58bc8ad779655e790115244571758e8de055e3d";
-    nixpkgs.url = "github:chayleaf/nixpkgs";
-    nixvim.url = "github:nix-community/nixvim";
+    nixpkgs.url = "github:chayleaf/nixpkgs/ci";
+    nixvim.url = "github:nix-community/nixvim/nixos-24.11";
     nixos-hardware.url = "github:NixOS/nixos-hardware";
     nix-index-database = {
       url = "github:nix-community/nix-index-database";
@@ -30,7 +30,7 @@
       inputs.nixpkgs.follows = "nixpkgs";
     };
     home-manager = {
-      url = "github:chayleaf/home-manager";
+      url = "github:chayleaf/home-manager/ci";
       inputs.nixpkgs.follows = "nixpkgs";
     };
     nix-gaming = {
@@ -50,9 +50,8 @@
       inputs.nixpkgs.follows = "nixpkgs";
     };
     nixos-mailserver = {
-      url = "gitlab:simple-nixos-mailserver/nixos-mailserver";
+      url = "gitlab:simple-nixos-mailserver/nixos-mailserver/nixos-24.11";
       inputs.nixpkgs.follows = "nixpkgs";
-      inputs.nixpkgs-24_05.follows = "nixpkgs";
     };
     unbound-rust-mod = {
       url = "github:chayleaf/unbound-rust-mod";

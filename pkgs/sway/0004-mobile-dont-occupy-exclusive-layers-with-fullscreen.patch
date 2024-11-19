@@ -1,46 +1,18 @@
-From 7ce9a5b2ded14623e6ff56311f4336fba4d22c7f Mon Sep 17 00:00:00 2001
+From 8ca0427a879085b3380b6ed4d50c059f4589b5c7 Mon Sep 17 00:00:00 2001
 From: chayleaf <chayleaf-git@pavluk.org>
 Date: Fri, 23 Aug 2024 05:34:58 +0700
 Subject: [PATCH 4/4] mobile: dont occupy exclusive layers with fullscreen
 
 ---
- include/sway/desktop.h     |  5 ++++
- sway/desktop/layer_shell.c |  2 +-
- sway/tree/container.c      |  4 ++--
- sway/tree/view.c           | 48 +++++++++++++++++++++++++++++++-------
- 4 files changed, 48 insertions(+), 11 deletions(-)
+ sway/tree/container.c |  4 ++--
+ sway/tree/view.c      | 43 +++++++++++++++++++++++++++++++++++--------
+ 2 files changed, 37 insertions(+), 10 deletions(-)
 
-diff --git a/include/sway/desktop.h b/include/sway/desktop.h
-index 7f2f5b3e..c20f5ee6 100644
---- a/include/sway/desktop.h
-+++ b/include/sway/desktop.h
-@@ -11,3 +11,8 @@ void desktop_damage_whole_container(struct sway_container *con);
- void desktop_damage_box(struct wlr_box *box);
- 
- void desktop_damage_view(struct sway_view *view);
-+
-+void apply_exclusive(struct wlr_box *usable_area,
-+		uint32_t anchor, int32_t exclusive,
-+		int32_t margin_top, int32_t margin_right,
-+		int32_t margin_bottom, int32_t margin_left);
-diff --git a/sway/desktop/layer_shell.c b/sway/desktop/layer_shell.c
-index 41a638ee..79833ef3 100644
---- a/sway/desktop/layer_shell.c
-+++ b/sway/desktop/layer_shell.c
-@@ -50,7 +50,7 @@ struct wlr_layer_surface_v1 *toplevel_layer_surface_from_surface(
- 	} while (true);
- }
- 
--static void apply_exclusive(struct wlr_box *usable_area,
-+void apply_exclusive(struct wlr_box *usable_area,
- 		uint32_t anchor, int32_t exclusive,
- 		int32_t margin_top, int32_t margin_right,
- 		int32_t margin_bottom, int32_t margin_left) {
 diff --git a/sway/tree/container.c b/sway/tree/container.c
-index 8c344a6d..8034029e 100644
+index 62bff1ea..6cfbc27a 100644
 --- a/sway/tree/container.c
 +++ b/sway/tree/container.c
-@@ -1132,7 +1132,7 @@ static void container_fullscreen_workspace(struct sway_container *con) {
+@@ -1235,7 +1235,7 @@ static void container_fullscreen_workspace(struct sway_container *con) {
  	con->saved_height = con->pending.height;
  
  	if (con->pending.workspace) {
@@ -49,7 +21,7 @@ index 8c344a6d..8034029e 100644
  		struct sway_seat *seat;
  		struct sway_workspace *focus_ws;
  		wl_list_for_each(seat, &server.input->seats, link) {
-@@ -1159,7 +1159,7 @@ static void container_fullscreen_global(struct sway_container *con) {
+@@ -1262,7 +1262,7 @@ static void container_fullscreen_global(struct sway_container *con) {
  	}
  	set_fullscreen(con, true);
  
@@ -59,42 +31,37 @@ index 8c344a6d..8034029e 100644
  	con->saved_y = con->pending.y;
  	con->saved_width = con->pending.width;
 diff --git a/sway/tree/view.c b/sway/tree/view.c
-index 65ca0c9c..032f7994 100644
+index ebf98faa..85adc608 100644
 --- a/sway/tree/view.c
 +++ b/sway/tree/view.c
-@@ -34,6 +34,7 @@
+@@ -35,6 +35,7 @@
+ #include "sway/config.h"
  #include "sway/xdg_decoration.h"
- #include "pango.h"
  #include "stringop.h"
 +#include "sway/layers.h"
  
- void view_init(struct sway_view *view, enum sway_view_type type,
+ bool view_init(struct sway_view *view, enum sway_view_type type,
  		const struct sway_view_impl *impl) {
-@@ -239,6 +240,23 @@ static bool gaps_to_edge(struct sway_view *view) {
+@@ -250,6 +251,18 @@ static bool gaps_to_edge(struct sway_view *view) {
  	return gaps.top > 0 || gaps.right > 0 || gaps.bottom > 0 || gaps.left > 0;
  }
  
-+void calculate_exclusive(struct sway_output *output, struct wlr_box *usable_area) {
-+	struct sway_layer_surface *sway_layer;
-+	for (int i = ZWLR_LAYER_SHELL_V1_LAYER_BACKGROUND; i <= ZWLR_LAYER_SHELL_V1_LAYER_OVERLAY; ++i) {
-+		struct wl_list *list = &output->layers[i];
-+		wl_list_for_each_reverse(sway_layer, list, link) {
-+			struct wlr_layer_surface_v1 *layer = sway_layer->layer_surface;
-+			struct wlr_layer_surface_v1_state *state = &layer->current;
-+			if (state->exclusive_zone <= 0) {
-+				continue;
-+			}
-+			apply_exclusive(usable_area, state->anchor, state->exclusive_zone,
-+			state->margin.top, state->margin.right,
-+					state->margin.bottom, state->margin.left);
-+		}
-+	}
++void calculate_exclusive(struct sway_view *view, struct wlr_box *usable_area) {
++	struct wlr_surface *surface = view->surface;
++	if (!surface) return;
++	struct wlr_layer_surface_v1 *layer_surface = wlr_layer_surface_v1_try_from_wlr_surface(surface);
++	if (!layer_surface) return;
++	struct wlr_layer_surface_v1_state *state = &layer_surface->current;
++	usable_area->y += state->margin.top;
++	usable_area->height -= state->margin.top + state->margin.bottom;
++	usable_area->x += state->margin.left;
++	usable_area->width -= state->margin.left + state->margin.right;
 +}
 +
  void view_autoconfigure(struct sway_view *view) {
  	struct sway_container *con = view->container;
  	struct sway_workspace *ws = con->pending.workspace;
-@@ -250,16 +268,30 @@ void view_autoconfigure(struct sway_view *view) {
+@@ -261,16 +274,30 @@ void view_autoconfigure(struct sway_view *view) {
  	struct sway_output *output = ws ? ws->output : NULL;
  
  	if (con->pending.fullscreen_mode == FULLSCREEN_WORKSPACE) {
@@ -108,7 +75,7 @@ index 65ca0c9c..032f7994 100644
 +			.width = output->width,
 +			.height = output->height,
 +		};
-+		calculate_exclusive(output, &box);
++		calculate_exclusive(view, &box);
 +		con->pending.content_x = box.x;
 +		con->pending.content_y = box.y;
 +		con->pending.content_width = box.width;
@@ -125,7 +92,7 @@ index 65ca0c9c..032f7994 100644
 +			.width = root->width,
 +			.height = root->height,
 +		};
-+		calculate_exclusive(output, &box);
++		calculate_exclusive(view, &box);
 +		con->pending.content_x = box.x;
 +		con->pending.content_y = box.y;
 +		con->pending.content_width = box.width;

@@ -28,7 +28,7 @@
         }];
     profiles.chayleaf = lib.mkMerge [
       {
-        extensions = (with config.nur.repos.rycee.firefox-addons; [
+        extensions = (with pkgs.nur.repos.rycee.firefox-addons; [
           cookies-txt
           don-t-fuck-with-paste
           greasemonkey
