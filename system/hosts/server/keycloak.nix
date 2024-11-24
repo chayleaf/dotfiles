@@ -15,7 +15,7 @@ in {
       http-host = "127.0.0.1";
       http-port = 5739;
       https-port = 5740;
-      proxy = "edge";
+      proxy-headers = "xforwarded";
     };
   };
   services.nginx.virtualHosts."keycloak.${cfg.domainName}" = {
