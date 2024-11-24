@@ -20,6 +20,7 @@
     "steam"
     "steam-original"
     "steam-runtime"
+    "steam-unwrapped"
     "steamcmd"
     "osu-lazer-bin"
   ];

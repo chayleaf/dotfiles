@@ -52,6 +52,7 @@
 
   nixpkgs.config.allowUnfreePredicate = pkg: builtins.elem (lib.getName pkg) [
     "steam-original"
+    "steam-unwrapped"
   ];
   hardware = {
     flipperzero.enable = true;
