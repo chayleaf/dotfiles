@@ -281,6 +281,10 @@ config = lib.mkMerge [
     };
   };
 
+  nixpkgs.config.permittedInsecurePackages = [
+    "olm-3.2.16"
+  ];
+
   # some packages require a pointer theme
   home.pointerCursor.gtk.enable = true;
   home.pointerCursor.package = pkgs.vanilla-dmz;
