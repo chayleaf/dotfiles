@@ -60,6 +60,10 @@
     chatty
   ];
 
+  nixpkgs.config.permittedInsecurePackages = [
+    "olm-3.2.16"
+  ];
+
   programs.sway.enable = true;
   xdg.portal = {
     enable = true;
