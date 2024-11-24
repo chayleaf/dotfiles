@@ -197,7 +197,7 @@ config = lib.mkMerge [
   };
   programs.yt-dlp.enable = true;
   home.packages = with pkgs; [
-    qt5ct qgnomeplatform
+    qgnomeplatform
     qbittorrent mumble
     keepassxc nheko nextcloud-client 
     # cli tools
