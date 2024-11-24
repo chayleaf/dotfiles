@@ -20,7 +20,7 @@ in {
     unbound = {
       enable = true;
       # controlInterface = "/run/unbound/unbound.ctl";
-      host = "unix:///run/unbound/unbound.ctl";
+      unbound.host = "unix:///run/unbound/unbound.ctl";
       listenAddress = netAddresses.lan4;
       group = config.services.unbound.group;
     };
