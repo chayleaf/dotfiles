@@ -255,7 +255,7 @@ in*/
         config = (
           let lsp = name: builtins.seq
             # ensure an lsp exists (otherwise lspconfig will still create an empty config for some reason)
-            (REQ "lspconfig.server_configurations.${name}")
+            (REQ "lspconfig.configs.${name}")
             # metatables, son! they harden in response to physical trauma
             (REQ' (PROP (require "lspconfig") name));
           in [
@@ -364,7 +364,7 @@ in*/
             } // args);
             in on_attach_rust: [
               # (vim.lsp.set_log_level "debug")
-              # see https://github.com/neovim/nvim-lspconfig/blob/master/doc/server_configurations.md
+              # see https://github.com/neovim/nvim-lspconfig/blob/master/doc/configs.md
               (lib.mapAttrsToList setupLsp {
                 bashls = { };
                 clangd = { };
@@ -386,7 +386,7 @@ in*/
                 svelte = { };
                 html = { };
                 cssls = { };
-                tsserver = { };
+                ts_ls = { };
                 jsonls = { };
                 nil_ls = {
                   settings.nil = {
