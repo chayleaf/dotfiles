@@ -298,6 +298,6 @@ config = lib.mkMerge [
     noto-fonts-emoji noto-fonts-extra
     (nerdfonts.override { fonts = [ "NerdFontsSymbolsOnly" ]; })
   ]
-  ++ lib.optional config.services.kdeconnect.enable kdeconnect;
+  ++ lib.optional config.services.kdeconnect.enable plasma5Packages.kdeconnect-kde;
 }];
 }
