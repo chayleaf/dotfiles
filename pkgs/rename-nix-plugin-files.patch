@@ -1,13 +1,26 @@
-diff --git a/src/libstore/globals.hh b/src/libstore/globals.hh
-index dba7d78ef..f102f08f9 100644
---- a/src/libstore/globals.hh
-+++ b/src/libstore/globals.hh
-@@ -959,7 +959,7 @@ public:
-         "Number of seconds between checking free disk space."};
- 
+diff --git a/src/libmain/plugin.cc b/src/libmain/plugin.cc
+index ccfd7f900..c1b737ad6 100644
+--- a/src/libmain/plugin.cc
++++ b/src/libmain/plugin.cc
+@@ -40,7 +40,7 @@ struct PluginSettings : Config
      PluginFilesSetting pluginFiles{
--        this, {}, "plugin-files",
-+        this, {}, "plugin-files-2",
+         this,
+         {},
+-        "plugin-files",
++        "plugin-files-2",
          R"(
            A list of plugin files to be loaded by Nix. Each of these files will
-           be dlopened by Nix, allowing them to affect execution through static
+           be dlopened by Nix. If they contain the symbol `nix_plugin_entry()`,
+diff --git a/src/libstore/remote-store.cc b/src/libstore/remote-store.cc
+index 555936c18..26db2b7cb 100644
+--- a/src/libstore/remote-store.cc
++++ b/src/libstore/remote-store.cc
+@@ -134,7 +134,7 @@ void RemoteStore::setOptions(Connection & conn)
+         overrides.erase(settings.useSubstitutes.name);
+         overrides.erase(loggerSettings.showTrace.name);
+         overrides.erase(experimentalFeatureSettings.experimentalFeatures.name);
+-        overrides.erase("plugin-files");
++        overrides.erase("plugin-files-2");
+         conn.to << overrides.size();
+         for (auto & i : overrides)
+             conn.to << i.first << i.second.value;

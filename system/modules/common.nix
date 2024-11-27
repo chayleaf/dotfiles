@@ -59,7 +59,6 @@ in {
           "flakes"
           "nix-command"
           "no-url-literals"
-          "repl-flake"
         ];
       };
       gc = {

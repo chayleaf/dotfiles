@@ -1,0 +1,22 @@
+diff --git a/extra-builtins.cc b/extra-builtins.cc
+index bae8f83..4c15c7f 100644
+--- a/extra-builtins.cc
++++ b/extra-builtins.cc
+@@ -39,9 +39,6 @@ static void extraBuiltins(EvalState & state, const PosIdx pos,
+         auto fun = state.allocValue();
+         state.evalFile(extraBuiltinsFile, *fun);
+         Value * arg;
+-        if (evalSettings.enableNativeCode) {
+-            arg = state.baseEnv.values[0];
+-        } else {
+             auto attrs = state.buildBindings(2);
+ 
+             auto sExec = state.symbols.create("exec");
+@@ -60,7 +57,6 @@ static void extraBuiltins(EvalState & state, const PosIdx pos,
+ 
+             arg = state.allocValue();
+             arg->mkAttrs(attrs);
+-        }
+         v.mkApp(fun, arg);
+         state.forceValue(v, pos);
+     } catch (SysError & e) {
