@@ -10,6 +10,7 @@
 , libsodium
 , libxkbcommon
 , wayland
+, wayland-scanner
 , wayland-protocols
 }:
 
@@ -29,7 +30,7 @@ stdenv.mkDerivation {
     ninja
     pkg-config
     scdoc
-    wayland
+    wayland-scanner
   ];
 
   buildInputs = [
