@@ -74,6 +74,7 @@
 
   ### SECTION 2: SYSTEM CONFIG/ENVIRONMENT ###
 
+  nix.gc.automatic = lib.mkForce false;
   networking.useDHCP = true;
   # networking.firewall.enable = false;
   networking.firewall.allowedTCPPorts = [
