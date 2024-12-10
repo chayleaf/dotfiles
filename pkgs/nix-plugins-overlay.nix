@@ -1,7 +1,8 @@
 { pkgs, ... }:
 
 let
-  unpatchedNixForNixPlugins = pkgs.nixVersions.nix_2_24;
+  # TODO: remove after full update
+  unpatchedNixForNixPlugins = if pkgs?nixVersions.nix_2_25 then pkgs.nixVersions.nix_2_24 else pkgs.nixVersions.nix_2_18;
   nixForNixPlugins = unpatchedNixForNixPlugins.overrideAttrs (old: {
     patches = (old.patches or [ ]) ++ [ ./rename-nix-plugin-files.patch ];
     # some tests fail on bcachefs due to insufficient permissions
