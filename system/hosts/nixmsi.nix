@@ -34,6 +34,7 @@
   ### SECTION 1: HARDWARE/BOOT PARAMETERS ###
 
   boot = {
+    crashDump.enable = true;
     kernel.sysctl = {
       "vm.dirty_ratio" = 4;
       "vm.dirty_background_ratio" = 2;
