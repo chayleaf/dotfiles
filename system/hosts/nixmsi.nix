@@ -186,6 +186,7 @@
     man-pages man-pages-posix
   ];
   documentation.dev.enable = true;
+  virtualisation.waydroid.enable = true;
 
   impermanence.directories = [
     /secrets

@@ -155,6 +155,8 @@ in {
         { directory = /var/lib/libvirt; user = "root"; group = "root"; mode = "0755"; }
       ] ++ lib.optionals config.virtualisation.libvirtd.qemu.swtpm.enable [
         { directory = /var/lib/swtpm-localca; user = "root"; group = "root"; mode = "0750"; }
+      ] ++ lib.optionals config.virtualisation.waydroid.enable [
+        { directory = /var/lib/waydroid; user = "root"; group = "root"; mode = "0755"; }
       ]) ++ cfg.directories);
       files = map (x:
         if builtins.isPath x then toString x
