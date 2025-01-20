@@ -410,9 +410,12 @@ config = lib.mkMerge [
         "${modifier}+c" = "exec ${rofiSway}/bin/rofi -show calc -no-show-match -no-sort -no-persist-history";
         "${modifier}+Print" = "exec ${grimshot}/bin/grimshot copy area";
         "${modifier}+${if modifier == "Mod1" then "Mod4" else "Mod1"}+Print" = "exec ${grimshot}/bin/grimshot copy window";
-        "--locked XF86AudioRaiseVolume" = lib.mkIf (!config.minimal) "exec ${pkgs.pamixer}/bin/pamixer --increase 5";
-        "--locked XF86AudioLowerVolume" = lib.mkIf (!config.minimal) "exec ${pkgs.pamixer}/bin/pamixer --decrease 5";
-        "--locked XF86AudioMute" = lib.mkIf (!config.minimal) "exec ${pkgs.pamixer}/bin/pamixer --toggle-mute";
+        "--locked XF86AudioRaiseVolume" = lib.mkIf (!config.minimal)
+          (if config.phone.enable then "exec ${pkgs.pamixer}/bin/pamixer --increase 5" else "exec ${config.home.homeDirectory}/scripts/vol/raise.sh");
+        "--locked XF86AudioLowerVolume" = lib.mkIf (!config.minimal)
+          (if config.phone.enable then "exec ${pkgs.pamixer}/bin/pamixer --decrease 5" else "exec ${config.home.homeDirectory}/scripts/vol/lower.sh");
+        "--locked XF86AudioMute" = lib.mkIf (!config.minimal)
+          (if config.phone.enable then "exec ${pkgs.pamixer}/bin/pamixer --toggle-mute" else "exec ${config.home.homeDirectory}/scripts/vol/mute.sh");
         "--locked --inhibited XF86AudioPlay" = lib.mkIf (!config.minimal) "exec ${pkgs.playerctl}/bin/playerctl play-pause";
         "--locked --inhibited XF86AudioNext" = lib.mkIf (!config.minimal) "exec ${audioNext}";
         "--locked --inhibited XF86AudioPrev" = lib.mkIf (!config.minimal) "exec ${audioPrev}";

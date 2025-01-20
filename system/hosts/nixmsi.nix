@@ -54,6 +54,7 @@
     "steam-original"
   ];
   hardware = {
+    flipperzero.enable = true;
     opentabletdriver.enable = true;
     steam-hardware.enable = true;
     graphics.enable32Bit = true;
@@ -184,9 +185,16 @@
     comma
     neovim
     man-pages man-pages-posix
+    distrobox
   ];
   documentation.dev.enable = true;
   virtualisation.waydroid.enable = true;
+  services.flatpak.enable = true;
+
+  virtualisation.podman = {
+    enable = true;
+    dockerCompat = true;
+  };
 
   impermanence.directories = [
     /secrets

@@ -157,6 +157,8 @@ in {
         { directory = /var/lib/swtpm-localca; user = "root"; group = "root"; mode = "0750"; }
       ] ++ lib.optionals config.virtualisation.waydroid.enable [
         { directory = /var/lib/waydroid; user = "root"; group = "root"; mode = "0755"; }
+      ] ++ lib.optionals config.virtualisation.podman.enable [
+        { directory = /var/lib/containers; user = "root"; group = "root"; mode = "0700"; }
       ]) ++ cfg.directories);
       files = map (x:
         if builtins.isPath x then toString x

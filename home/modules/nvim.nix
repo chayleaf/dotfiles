@@ -1,4 +1,21 @@
 { config, pkgs, lib, notlua, ... }:
+/*let
+  omnisharp-mono = pkgs.fetchzip {
+    url = "https://github.com/omnisharp/omnisharp-roslyn/releases/download/v1.39.13/omnisharp-linux-x64.zip";
+    name = "omnisharp-linux-x64.zip";
+    stripRoot = false;
+    hash = "sha256-N1c+4poK5TUr1mnLdBR04+M0Foh3EHTC7FVbJtZIchE=";
+  };
+  comb = pkgs.symlinkJoin {
+    name = "mono-msbuild";
+    paths = with pkgs; [
+      mono
+      msbuild
+    ];
+  };
+
+  omnishar-mono-cmd = [ "${comb}/bin/mono" "${omnisharp-mono}/omnisharp/OmniSharp.exe" ];
+in*/
 {
   imports = [ ./options.nix ];
   /*
@@ -351,6 +368,14 @@
               (lib.mapAttrsToList setupLsp {
                 bashls = { };
                 clangd = { };
+                csharp_ls = { };
+                /*omnisharp = {
+                  cmd = omnishar-mono-cmd;
+                  settings = {
+                    MSBuild.UseLegacySdkResolver = true;
+                  };
+                };*/
+                fsautocomplete = { };
                 # https://github.com/python-lsp/python-lsp-server/blob/develop/CONFIGURATION.md
                 pylsp = {
                   settings.pylsp = {
@@ -465,6 +490,8 @@
         python-lsp-server.optional-dependencies.mccabe
         python-lsp-server.optional-dependencies.pycodestyle
       ]))
+      csharp-ls
+      fsautocomplete
     ];
     # extraPython3Packages = pyPkgs: with pyPkgs; [
     # ];
