@@ -492,6 +492,7 @@ in*/
       ]))
       csharp-ls
       fsautocomplete
+      fantomas
     ];
     # extraPython3Packages = pyPkgs: with pyPkgs; [
     # ];
