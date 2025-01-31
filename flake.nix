@@ -137,7 +137,6 @@
       router-emmc = mkBpiR3 "emmc" routerConfig;
       router-sd = mkBpiR3 "sd" routerConfig;
       ereader = {
-        # TODO uncom
         flake = inputs.nixpkgs-kernel;
         system = "aarch64-linux";
         modules = [
@@ -203,7 +202,7 @@
     hydraJobs = {
       server.${config.server.system} = self.nixosConfigurations.server.config.system.build.toplevel;
       router.${config.router-emmc.system} = self.nixosConfigurations.router-emmc.config.system.build.toplevel;
-      ereader.${config.phone.system} = self.nixosConfigurations.ereader.config.system.build.toplevel;
+      ereader.${config.ereader.system} = self.nixosConfigurations.ereader.config.system.build.toplevel;
       phone.${config.phone.system} = self.nixosConfigurations.phone.config.system.build.toplevel;
       phone-home.${config.phone.system} = self.homeConfigurations."user@phone".activation-script;
       workstation.${config.nixmsi.system} = self.nixosConfigurations.nixmsi.config.system.build.toplevel;
