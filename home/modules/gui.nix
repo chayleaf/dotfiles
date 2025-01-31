@@ -281,9 +281,11 @@ config = lib.mkMerge [
     };
   };
 
-  nixpkgs.config.permittedInsecurePackages = [
-    "olm-3.2.16"
-  ];
+  nixpkgs = lib.mkIf (!config.minimal) {
+    config.permittedInsecurePackages = [
+      "olm-3.2.16"
+    ];
+  };
 
   # some packages require a pointer theme
   home.pointerCursor.gtk.enable = true;
