@@ -24,5 +24,8 @@
     squeekboard
     techmino
     tdesktop
+    nodejs
+    nodePackages.npm
+    yarn
   ];
 }

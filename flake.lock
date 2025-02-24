@@ -1113,11 +1113,11 @@
         ]
       },
       "locked": {
-        "lastModified": 1720010227,
-        "narHash": "sha256-ADhjhE6UMjcCgjycONnabDqJ7WR2O4SpoAYvmScLwgc=",
+        "lastModified": 1740349653,
+        "narHash": "sha256-bDAkNbdjywo4KGMYnlKQ2hlnoHNrdjYTWbYMMd2SIxU=",
         "owner": "chayleaf",
         "repo": "osu-wine.nix",
-        "rev": "1406bb2c6ee6eaa8c1433516ef5d324eb651c3fc",
+        "rev": "ba4ca9d08432e911e0fc6a06d0316597273ed586",
         "type": "github"
       },
       "original": {

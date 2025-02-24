@@ -69,6 +69,10 @@
     tio
     tdesktop
     osu-wine
+    dotnet-sdk_9
+    nodejs
+    nodePackages.npm
+    yarn
   ];
   xdg.configFile."looking-glass/client.ini".text = ''
     [app]
