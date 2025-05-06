@@ -19,10 +19,10 @@ stdenv.mkDerivation {
   version = "unstable-2022-02-02";
 
   src = fetchFromGitHub {
-    owner = "telent";
+    owner = "chayleaf";
     repo = "schlock";
-    rev = "f3dde16f074fd5b7482a253b9d26b4ead66dea82";
-    hash = "sha256-Ot86vALt1kkzbBocwh9drCycbRIw2jMKJU4ODe9PYQM=";
+    rev = "2413a7c2e2d222c9b83729885374fa4b2c6fe891";
+    hash = "sha256-F4SMVV5DMmx/y6PwqKAk8cwTIOB4pUJ77/SxZREEFB4=";
   };
 
   nativeBuildInputs = [

@@ -35,12 +35,16 @@ audioPrev = pkgs.writeShellScript "playerctl-prev" ''
   fi
 '';
 # TODO: only unidle mako when unlocked
+swaylockPre = if config.phone.enable then "${pkgs.coreutils}/bin/nohup ${pkgs.coreutils}/bin/env CTHULOCK_PASSWORD_FILE=/secrets/cthulock.pin " else "";
+swaylockPost = if config.phone.enable then "&" else "";
+pgrepFlags = if config.phone.enable then "" else "-fx";
 swaylock =
+  # TODO
   if config.phone.enable
-  then "${pkgs.schlock}/bin/schlock -fp /secrets/schlock.pin"
+  then "${pkgs.cthulock.override { withPatches = true; }}/bin/cthulock"
   else "${pkgs.swaylock}/bin/swaylock -f";
 swaylock-start = pkgs.writeShellScript "swaylock-start" ''
-  ${pkgs.procps}/bin/pgrep -fx "${swaylock}" || ${swaylock}
+  ${pkgs.procps}/bin/pgrep ${pgrepFlags} "${swaylock}" || ${swaylockPre}${swaylock}${swaylockPost}
 '';
 dpms-off = pkgs.writeShellScript "sway-dpms-off" ''
   ${config.wayland.windowManager.sway.package}/bin/swaymsg output "*" power off

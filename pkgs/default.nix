@@ -72,7 +72,10 @@ in
     version = "unstable-" + sources.searxng.date;
     postInstall = builtins.replaceStrings [ "/botdetection" ] [ "" ] old.postInstall;
   }));
+  cthulock = callPackage ./cthulock { };
   schlock = callPackage ./schlock { };
+  sxmo-swaylock = callPackage ./sxmo-swaylock { };
+  swaylock-mobile = callPackage ./swaylock-mobile { };
   techmino = callPackage ./techmino { };
 
   firefoxAddons = lib.recurseIntoAttrs (callPackage ./firefox-addons { inherit nur sources; });

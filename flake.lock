@@ -1113,11 +1113,11 @@
         ]
       },
       "locked": {
-        "lastModified": 1740349653,
-        "narHash": "sha256-bDAkNbdjywo4KGMYnlKQ2hlnoHNrdjYTWbYMMd2SIxU=",
+        "lastModified": 1740532722,
+        "narHash": "sha256-UkZ8vSurlqDKO4xqQLZXpeiVYCx5H6dIMo5sio/8Frw=",
         "owner": "chayleaf",
         "repo": "osu-wine.nix",
-        "rev": "ba4ca9d08432e911e0fc6a06d0316597273ed586",
+        "rev": "9a8f502f76e90d79e621bdc39626d6b84a1b40b1",
         "type": "github"
       },
       "original": {
@@ -1157,11 +1157,11 @@
         ]
       },
       "locked": {
-        "lastModified": 1737340068,
-        "narHash": "sha256-5UciRckNV+YOZ6y6ASBIb01cySB12whDxgFUK+EqT8g=",
+        "lastModified": 1740450604,
+        "narHash": "sha256-T/lqASXzCzp5lJISCUw+qwfRmImVUnhKgAhn8ymRClI=",
         "owner": "oxalica",
         "repo": "rust-overlay",
-        "rev": "275c824ed9e90e7fd4f96d187bde3670062e721f",
+        "rev": "5961ca311c85c31fc5f51925b4356899eed36221",
         "type": "github"
       },
       "original": {

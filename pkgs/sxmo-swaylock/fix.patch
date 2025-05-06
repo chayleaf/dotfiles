@@ -1,0 +1,24 @@
+diff --git a/meson.build b/meson.build
+index 0fe9465..071f71d 100644
+--- a/meson.build
++++ b/meson.build
+@@ -147,7 +147,7 @@ sources = [
+ ]
+ 
+ if libpam.found()
+-	sources += ['pam.c']
++	sources += ['src/pam.c']
+ 	dependencies += [libpam]
+ else
+ 	warning('The swaylock binary must be setuid when compiled without libpam')
+diff --git a/src/main.c b/src/main.c
+index e88c258..ff6f5a6 100644
+--- a/src/main.c
++++ b/src/main.c
+@@ -1,5 +1,5 @@
+-#include <wayland-client-protocol.h>
+ #define _POSIX_C_SOURCE 200809L
++#include <wayland-client-protocol.h>
+ #include <assert.h>
+ #include <ctype.h>
+ #include <errno.h>
