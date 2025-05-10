@@ -27,5 +27,7 @@
     nodejs
     nodePackages.npm
     yarn
+    pavucontrol
+    brightnessctl
   ];
 }

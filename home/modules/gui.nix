@@ -187,6 +187,7 @@ config = lib.mkMerge [
     };
   };
   services.gammastep.enable = true;
+  programs.ncmpcpp.enable = true;
   services.mpd = {
     enable = true;
     network.startWhenNeeded = true;

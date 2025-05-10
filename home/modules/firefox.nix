@@ -15,17 +15,15 @@
       libName = "librewolf";
       nativeMessagingHosts = with pkgs; [ keepassxc ];
     };
-    profiles.other.id = 1;
+    /*profiles.other.id = 1;
     profiles.other.bookmarks = [{
-          name = "bookmarklets";
-          toolbar = true;
-          bookmarks = [
-            {
-              name = "example.com";
-              url = "https://example.com";
-            }
-          ];
-        }];
+      name = "bookmarklets";
+      toolbar = true;
+      bookmarks = [
+        { name = "example.com";
+          url = "https://example.com"; }
+      ];
+    }];*/
     profiles.chayleaf = lib.mkMerge [
       {
         extensions = (with pkgs.nur.repos.rycee.firefox-addons; [

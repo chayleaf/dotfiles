@@ -41,6 +41,8 @@
     CARGO_TARGET_X86_64_UNKNOWN_LINUX_GNU_RUSTFLAGS = "-C link-arg=--ld-path=${pkgs.mold}/bin/mold";
   };
   home.packages = with pkgs; [
+    pavucontrol
+    wayland-proxy
     firefox-devedition
     anki-bin
     (gimp.overrideAttrs (old: { doCheck = false; })) krita blender-hip
