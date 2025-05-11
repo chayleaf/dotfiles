@@ -45,8 +45,11 @@
     wayland-proxy
     firefox-devedition
     anki-bin
-    (gimp.overrideAttrs (old: { doCheck = false; })) krita blender-hip
-    kdenlive glaxnimate mediainfo
+    (gimp.overrideAttrs (old: { doCheck = false; }))
+    # TODO
+    # krita
+    blender-hip
+    kdePackages.kdenlive glaxnimate mediainfo
     ghidra (cutter.withPlugins (p: with p; [ sigdb rz-ghidra ]))
     openrgb piper
     steam-run steam
@@ -70,7 +73,8 @@
     lalrpop
     tio
     tdesktop
-    osu-wine
+    # TODO:
+    # osu-wine
     dotnet-sdk_9
     nodejs
     nodePackages.npm

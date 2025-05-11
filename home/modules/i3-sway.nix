@@ -245,15 +245,12 @@ config = lib.mkMerge [
     enable = lib.mkDefault config.wayland.windowManager.sway.enable;
     package = pkgs.mako.overrideAttrs (old: {
       patches = old.patches or []
-          ++ (lib.mapAttrsToList (k: v: ../../pkgs/mako/${k}) (builtins.readDir ../../pkgs/mako));
+          ++ lib.optionals config.phone.enable (lib.mapAttrsToList (k: v: ../../pkgs/mako/${k}) (builtins.readDir ../../pkgs/mako));
     });
     defaultTimeout = 10000;
     font = "Noto Sans Mono 12";
-    extraConfig = ''
-      max-history=50
-      [mode=idle]
-      freeze=1
-    '';
+    settings.max-history = 50;
+    criteria."mode=idle".freeze = 1;
   };
   xsession.windowManager.i3 = {
     config = let i3Config = {

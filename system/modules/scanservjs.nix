@@ -58,6 +58,8 @@ let
   '';
 
 in {
+  disabledModules = [ "services/hardware/scanservjs.nix" ];
+
   options.services.scanservjs = {
     enable = lib.mkEnableOption (lib.mdDoc "scanservjs");
     stateDir = lib.mkOption {

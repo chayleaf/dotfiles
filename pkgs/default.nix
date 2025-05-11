@@ -38,7 +38,7 @@ in
   gimp = callPackage ./gimp { inherit (pkgs) gimp; };
   home-daemon = callPackage ./home-daemon { };
   # pin version
-  looking-glass-client = pkgs.looking-glass-client.overrideAttrs (old: rec {
+  /*looking-glass-client = pkgs.looking-glass-client.overrideAttrs (old: rec {
     version = "B6";
     postUnpack = ''
       echo ${src.rev} > source/VERSION
@@ -55,7 +55,7 @@ in
   });
   kvmfrOverlay = kvmfr: (kvmfr.override { inherit (pkgs') looking-glass-client; }).overrideAttrs (old: {
     patches = [ ./looking-glass.patch ];
-  });
+  });*/
   mobile-config-firefox = callPackage ./mobile-config-firefox { };
   ping-exporter = callPackage ./ping-exporter { };
   proton-ge = pkgs.stdenvNoCC.mkDerivation {

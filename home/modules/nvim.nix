@@ -417,7 +417,7 @@ in*/
       { settings.plugins.image = {
           enable = true;
           backend = "kitty";
-          integrations = {
+          settings.integrations = {
             markdown = {
               enabled = true;
               downloadRemoteImages = false;

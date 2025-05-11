@@ -213,7 +213,7 @@ config = lib.mkMerge [
 })
 (lib.mkIf (!config.minimal) {
   systemd.user.services.fcitx5-daemon = {
-    Unit.After = "graphical-session-pre.target";
+    # Unit.After = "graphical-session-pre.target";
     Service = {
       Restart = "on-failure";
       RestartSec = 3;
@@ -251,7 +251,7 @@ config = lib.mkMerge [
       name = "Papirus-Dark";
     };
     theme = lib.mkIf (!config.minimal) {
-      package = pkgs.breeze-gtk;
+      package = pkgs.kdePackages.breeze-gtk;
       name = "Breeze-Dark";
     };
   };
@@ -298,8 +298,14 @@ config = lib.mkMerge [
     # fonts
     noto-fonts noto-fonts-cjk-sans noto-fonts-cjk-serif
     noto-fonts-emoji noto-fonts-extra
-    (nerdfonts.override { fonts = [ "NerdFontsSymbolsOnly" ]; })
-  ]
-  ++ lib.optional config.services.kdeconnect.enable plasma5Packages.kdeconnect-kde;
+    # no idea why this is necessary
+    (pkgs.runCommand "nerd-fonts-symbols-only" {} ''
+      mkdir -p "$out"
+      cp -r "${nerd-fonts.symbols-only}"/* "$out"
+      chmod +w "$out/share/fonts/truetype/NerdFonts"
+      cp -r "$out/share/fonts/truetype/NerdFonts/Symbols"/* "$out/share/fonts/truetype/NerdFonts"
+    '')
+  ];
+  #++ lib.optional config.services.kdeconnect.enable plasma5Packages.kdeconnect-kde;
 }];
 }

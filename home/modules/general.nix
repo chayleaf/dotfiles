@@ -23,8 +23,8 @@
     s = "sudo -A";
     se = "sudo -AE";
     l = "lsd";
-    la = "lsd -A";
-    ll = "lsd -l";
+    # la = "lsd -A";
+    # ll = "lsd -l";
     g = "git";
     gp = "git push";
     gr = "git rebase";

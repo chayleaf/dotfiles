@@ -218,7 +218,9 @@ in {
   })
   (lib.mkIf cfg.useNixPlugins {
     nix.package = pkgs.nixForNixPlugins;
-    nix.settings.plugin-files-2 = "${pkgs.nix-plugins.override { nix = config.nix.package; }}/lib/nix/plugins/libnix-extra-builtins.so";
+    nix.settings.plugin-files-2 = "${pkgs.nix-plugins.override {
+      nixVersions = builtins.mapAttrs (k: v: config.nix.package) pkgs.nixVersions;
+    }}/lib/nix/plugins/libnix-extra-builtins.so";
     environment.systemPackages = with pkgs; [
       unixtools.xxd
     ];

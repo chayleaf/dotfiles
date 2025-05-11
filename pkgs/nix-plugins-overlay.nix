@@ -8,10 +8,11 @@ let
     # some tests fail on bcachefs due to insufficient permissions
     doInstallCheck = false;
   });
+  patchedNixVersions = builtins.mapAttrs (k: v: nixForNixPlugins) pkgs.nixVersions;
 in {
   inherit unpatchedNixForNixPlugins nixForNixPlugins;
   # Various patches to change Nix version of existing packages so they don't error out because of nix-plugins in nix.conf
-  nix-plugins = (pkgs.nix-plugins.override { nix = nixForNixPlugins; })
+  nix-plugins = (pkgs.nix-plugins.override { nixVersions = patchedNixVersions; })
   .overrideAttrs (old: {
     # version = "13.0.0";
     patches = [
