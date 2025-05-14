@@ -73,8 +73,7 @@
     lalrpop
     tio
     tdesktop
-    # TODO:
-    # osu-wine
+    osu-wine
     dotnet-sdk_9
     nodejs
     nodePackages.npm
