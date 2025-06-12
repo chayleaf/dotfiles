@@ -39,7 +39,6 @@ swaylockPre = if config.phone.enable then "${pkgs.coreutils}/bin/nohup ${pkgs.co
 swaylockPost = if config.phone.enable then "&" else "";
 pgrepFlags = if config.phone.enable then "" else "-fx";
 swaylock =
-  # TODO
   if config.phone.enable
   then "${pkgs.cthulock.override { withPatches = true; }}/bin/cthulock"
   else "${pkgs.swaylock}/bin/swaylock -f";

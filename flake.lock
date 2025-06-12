@@ -79,11 +79,11 @@
         ]
       },
       "locked": {
-        "lastModified": 1732733541,
-        "narHash": "sha256-4kMy/AfcSqoDWGGWOPf2J7GxpXi2ikg9Z+WnPCsfpiA=",
+        "lastModified": 1749595862,
+        "narHash": "sha256-En5YDjNPJigDj84OZFtaNxHJiKVD2iGFS+roK5VmXw8=",
         "owner": "chayleaf",
         "repo": "coop-fd",
-        "rev": "25ad04f7a813cb0f2c4edb349656065119b5cb4b",
+        "rev": "8b4bbfc5bb2f5a9d02f28b254b8a076faeb3193c",
         "type": "github"
       },
       "original": {

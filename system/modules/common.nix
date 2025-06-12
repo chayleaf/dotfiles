@@ -199,7 +199,6 @@ in {
 
   (lib.mkIf (!cfg.minimal) {
     nix.nixPath = [ "/etc/nix/inputs" ];
-    hardware.pulseaudio.enable = false;
     services.pipewire = {
       enable = lib.mkDefault true;
       alsa.enable = true;

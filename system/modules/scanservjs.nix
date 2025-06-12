@@ -1,3 +1,5 @@
+{}
+/*
 { config
 , lib
 , pkgs
@@ -31,8 +33,8 @@ let
   # config.convert = '/usr/bin/convert';
   # config.tesseract = '/usr/bin/tesseract';
   # config.previewResolution = 100;
+  /* eslint-disable no-unused-vars *//*
   configFile = pkgs.writeText "config.local.js" ''
-    /* eslint-disable no-unused-vars */
     module.exports = {
       afterConfig(config) {
         ${builtins.concatStringsSep ""
@@ -146,3 +148,4 @@ in {
     };
   };
 }
+*/

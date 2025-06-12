@@ -52,7 +52,8 @@ in {
     homeserver = "http://${lib.quoteListenAddr matrixAddr}:${toString matrixPort}/";
   };
 
-  services.matrix-appservice-discord = {
+  # TODO
+  /*services.matrix-appservice-discord = {
     enable = true;
     environmentFile = "/secrets/discord-bridge-token";
     settings = {
@@ -69,7 +70,7 @@ in {
         disableRoomTopicNotifications = true;
       };
     };
-  };
+  };*/
 
   environment.systemPackages = with pkgs; [ matrix-synapse-tools.rust-synapse-compress-state ];
 

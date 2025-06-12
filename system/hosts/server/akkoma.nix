@@ -5,15 +5,6 @@
 let
   cfg = config.server;
 in {
-  # TODO: remove this in 2024
-  services.nginx.virtualHosts."pleroma.${cfg.domainName}" = {
-    quic = true;
-    enableACME = true;
-    addSSL = true;
-    serverAliases = [ "akkoma.${cfg.domainName}" ];
-    locations."/".return = "301 https://fedi.${cfg.domainName}$request_uri";
-  };
-
   services.postgresql.extraPlugins = with config.services.postgresql.package.pkgs; [ tsja ];
 
   services.akkoma = let

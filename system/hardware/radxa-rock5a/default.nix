@@ -11,7 +11,12 @@
 
   boot.kernelPackages = pkgs.linuxPackagesFor pkgs.linux_latest;
 
-  boot.kernelParams = [ "dtb=/${config.hardware.deviceTree.name}" ];
+  boot.kernelParams = [
+    "dtb=/${config.hardware.deviceTree.name}"
+    # TODO: hopefully remove in late 2025 or whatever
+    # https://lore.kernel.org/lkml/20250220-rk3588-gpu-pwr-domain-regulator-v6-0-a4f9c24e5b81@kernel.org/
+    "modprobe.blacklist=panthor"
+  ];
   hardware.deviceTree.enable = true;
   hardware.deviceTree.name = "rockchip/rk3588s-rock-5a.dtb";
   hardware.deviceTree.filter = "*-rock-5a*.dtb";

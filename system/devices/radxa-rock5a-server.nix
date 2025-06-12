@@ -6,6 +6,8 @@
 , ...
 }:
 
+# TODO: SYSTEMD_SULOGIN_FORCE
+
 let
   uuids.enc = "15945050-df48-418b-b736-827749b9262a";
   uuids.swap = "5c7f9e4e-c245-4ccb-98a2-1211ea7008e8";
@@ -138,6 +140,7 @@ in
                   "degraded"
                   "errors=ro"
                   "x-systemd.device-timeout=0"
+                  "x-systemd.mount-timeout=0"
                   "x-systemd.${dep}=dev-mapper-bch0.device"
                   "x-systemd.${dep}=dev-mapper-bch1.device"
                   "x-systemd.${dep}=dev-mapper-bch2.device"

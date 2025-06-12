@@ -6,19 +6,33 @@
 let
   cfg = config.server;
 in {
-  services.nginx.virtualHosts."git.${cfg.domainName}" = let inherit (config.services.forgejo) settings; in {
+  users.users.nginx.extraGroups = [ "anubis" ];
+  services.nginx.upstreams.forgejo.servers."unix:/${config.services.anubis.instances.forgejo.settings.BIND}" = {};
+  services.nginx.virtualHosts."git.${cfg.domainName}" = {
     quic = true;
     enableACME = true;
     forceSSL = true;
-    locations."/".proxyPass = "http://${lib.quoteListenAddr settings.server.HTTP_ADDR}:${toString settings.server.HTTP_PORT}";
-    locations."= /robots.txt".extraConfig = ''
-      return 200 ${builtins.toJSON ''
-        User-agent: *
-        Disallow: /mirrors/nixpkgs
-        Disallow: /chayleaf/nixpkgs
-      ''};
-    '';
+    locations."/".proxyPass = "http://forgejo/";
   };
+
+  users.users.anubis-forgejo = { group = "anubis"; extraGroups = [ "forgejo" ]; isSystemUser = true; };
+  services.anubis.instances.forgejo = {
+    user = "anubis-forgejo";
+    botPolicy.bots = [
+      { import = "(data)/apps/gitea-rss-feeds.yaml"; }
+      # { import = "(data)/clients/git.yaml"; }
+    ];
+    # TODO: ?????????? why is this necessary
+    settings.POLICY_FNAME = (pkgs.formats.json {}).generate "policy.json" (let cfg = config.services.anubis.defaultOptions.botPolicy; in cfg // {
+      bots = cfg.bots ++ config.services.anubis.instances.forgejo.botPolicy.bots;
+    });
+    settings.OG_PASSTHROUGH = false;
+    # settings.BIND = "[::1]:3311";
+    settings.TARGET =
+      let inherit (config.services.forgejo) settings;
+      in "unix://${lib.quoteListenAddr settings.server.HTTP_ADDR}";
+  };
+
   services.forgejo = {
     enable = true;
     database = {
@@ -52,8 +66,9 @@ in {
       };
       server = {
         ROOT_URL = "https://git.${cfg.domainName}";
-        HTTP_ADDR = "::1";
-        HTTP_PORT = 3310;
+        PROTOCOL = "http+unix";
+        # HTTP_ADDR = "::1";
+        # HTTP_PORT = 3310;
         DOMAIN = "git.${cfg.domainName}";
         # START_SSH_SERVER = true;
         # SSH_PORT = 2222;
@@ -87,7 +102,7 @@ in {
   };
   services.nextcloud = {
     enable = true;
-    package = pkgs.nextcloud29;
+    package = pkgs.nextcloud30;
     autoUpdateApps.enable = true;
     # TODO: use socket auth and remove the next line
     database.createLocally = false;

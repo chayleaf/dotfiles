@@ -163,6 +163,28 @@ in {
     };
   };
 
+  # TODO: update this on every anubis update lol
+  services.anubis.defaultOptions.botPolicy = {
+    bots = [
+      { import = "(data)/common/allow-private-addresses.yaml"; }
+      { import = "(data)/bots/ai-robots-txt.yaml"; }
+      { import = "(data)/bots/cloudflare-workers.yaml"; }
+      { import = "(data)/bots/headless-browsers.yaml"; }
+      { import = "(data)/bots/us-ai-scraper.yaml"; }
+      { import = "(data)/crawlers/googlebot.yaml"; }
+      { import = "(data)/crawlers/bingbot.yaml"; }
+      { import = "(data)/crawlers/duckduckbot.yaml"; }
+      { import = "(data)/crawlers/qwantbot.yaml"; }
+      { import = "(data)/crawlers/internet-archive.yaml"; }
+      { import = "(data)/crawlers/kagibot.yaml"; }
+      { import = "(data)/crawlers/marginalia.yaml"; }
+      { import = "(data)/crawlers/mojeekbot.yaml"; }
+      { import = "(data)/common/keep-internet-working.yaml"; }
+      { name = "generic-browser"; user_agent_regex = "Mozilla|Opera"; action = "CHALLENGE"; }
+    ];
+    dnsbl = false;
+  };
+
   /*locations."/dns-query".extraConfig = ''
     grpc_pass grpc://127.0.0.1:53453;
   '';*/

@@ -66,7 +66,7 @@ in
     '';
   };
   rofi-steam-game-list = callPackage ./rofi-steam-game-list { };
-  scanservjs = callPackage ./scanservjs { };
+  # scanservjs = callPackage ./scanservjs { };
   searxng = pkgs'.python3.pkgs.toPythonModule (pkgs.searxng.overrideAttrs (old: {
     inherit (sources.searxng) src;
     version = "unstable-" + sources.searxng.date;

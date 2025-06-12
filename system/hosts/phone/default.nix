@@ -19,7 +19,7 @@
   services.logind.powerKeyLongPress = "poweroff";
   hardware.sensor.iio.enable = true;
   services.pipewire.enable = false;
-  hardware.pulseaudio.enable = lib.mkForce true;
+  hardware.pulseaudio.enable = true;
   users.users.${config.common.mainUsername}.extraGroups = [
     "dialout"
     "feedbackd"
