@@ -1,0 +1,12 @@
+diff --git a/libs/libkis/Node.cpp b/libs/libkis/Node.cpp
+index 74e893ee99..245e3ff2c2 100644
+--- a/libs/libkis/Node.cpp
++++ b/libs/libkis/Node.cpp
+@@ -40,6 +40,7 @@
+ #include <commands_new/kis_set_layer_style_command.h>
+ #include <kis_processing_applicator.h>
+ #include <kis_asl_layer_style_serializer.h>
++#include <brushengine/kis_paintop_preset.h>
+ 
+ #include <kis_raster_keyframe_channel.h>
+ #include <kis_keyframe.h>

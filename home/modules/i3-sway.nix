@@ -128,7 +128,11 @@ commonConfig = {
         /run/current-system/sw/bin/busctl call --user sm.puri.OSK0 /sm/puri/OSK0 sm.puri.OSK0 SetVisible b true
       ''}
       ${pkgs.procps}/bin/pkill -x home-daemon
-      ${pkgs.home-daemon}/bin/home-daemon system76-scheduler ${lib.optionalString (!config.phone.enable) "empty-sound"}&
+      ${pkgs.home-daemon}/bin/home-daemon daemon system76-scheduler ${
+        lib.optionalString config.programs.notmuch.enable "email"
+      } ${
+        lib.optionalString (!config.phone.enable) "empty-sound"
+      }&
       ${lib.optionalString (!config.minimal) ''
         ${pkgs.procps}/bin/pkill -x keepassxc
         ${pkgs.zenity}/bin/zenity --password | (${pkgs.keepassxc}/bin/keepassxc --pw-stdin ~/var/local.kdbx &)
@@ -249,7 +253,12 @@ config = lib.mkMerge [
     defaultTimeout = 10000;
     font = "Noto Sans Mono 12";
     settings.max-history = 50;
-    criteria."mode=idle".freeze = 1;
+    # TODO: fix freezing
+    # settings."mode=idle".freeze = 1;
+    #extraConfig = ''
+    #  [mode=idle]
+    #  freeze=1
+    #'';
   };
   xsession.windowManager.i3 = {
     config = let i3Config = {

@@ -35,7 +35,7 @@ in
   /*ghidra = pkgs.ghidra.overrideAttrs (old: {
     patches = old.patches ++ [ ./ghidra-stdcall.patch ];
   });*/
-  gimp = callPackage ./gimp { inherit (pkgs) gimp; };
+  # gimp = callPackage ./gimp { inherit (pkgs) gimp; };
   home-daemon = callPackage ./home-daemon { };
   # pin version
   /*looking-glass-client = pkgs.looking-glass-client.overrideAttrs (old: rec {

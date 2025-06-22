@@ -1,23 +1,44 @@
-use cpal::{traits::{DeviceTrait, HostTrait, StreamTrait}, SampleFormat};
+use cpal::{
+    traits::{DeviceTrait, HostTrait, StreamTrait},
+    SampleFormat,
+};
 use futures_util::stream::StreamExt;
 use std::collections::HashSet;
 use swayipc_async::{Connection, Event, EventType, WindowChange};
 
+mod email;
+
 #[tokio::main(flavor = "current_thread")]
 async fn main() {
     let sys_dbus = Box::leak(Box::new(zbus::Connection::system().await.unwrap()));
-    let _ses_dbus = Box::leak(Box::new(zbus::Connection::session().await.unwrap()));
+    let ses_dbus = Box::leak(Box::new(zbus::Connection::session().await.unwrap()));
 
     let mut handlers = Vec::<Box<dyn SwayIpcHandler>>::new();
     let mut panic = true;
-    for args in std::env::args().skip(1) {
-        handlers.push(match args.as_str() {
+    let mut args = std::env::args().skip(1);
+    let mode = args.next().expect("must pass mode (cli/daemon)");
+    match mode.as_str() {
+        "cli" => {
+            email::run_cli().await;
+            return;
+        }
+        "daemon" => {}
+        _ => panic!("mode must be cli or daemon"),
+    }
+    for arg in args {
+        handlers.push(match arg.as_str() {
             "system76-scheduler" => Box::new(System76::new(sys_dbus).await),
             "empty-sound" => {
                 panic = false;
                 tokio::spawn(async {
                     play_empty_sound().await;
                 });
+                continue;
+            }
+            "email" => {
+                panic = false;
+                let email = email::Email::new(ses_dbus).await;
+                tokio::spawn(email.run());
                 continue;
             }
             _ => panic!("handler not supported"),

@@ -1,5 +1,5 @@
 { lib
-, substituteAll
+, replaceVars
 , nix-gitignore 
 , rustPlatform
 , xdg-utils
@@ -12,8 +12,7 @@ rustPlatform.buildRustPackage {
   src = nix-gitignore.gitignoreSource ["/target" "default.nix"] (lib.cleanSource ./.);
 
   patches = [
-    (substituteAll {
-      src = ./hardcode_xdg_open.patch;
+    (replaceVars ./hardcode_xdg_open.patch {
       xdg_open = "${xdg-utils}/bin/xdg-open";
     })
   ];

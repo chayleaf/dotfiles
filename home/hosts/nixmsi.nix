@@ -45,9 +45,10 @@
     wayland-proxy
     firefox-devedition
     anki-bin
-    (gimp.overrideAttrs (old: { doCheck = false; }))
-    # TODO
-    # krita
+    #(gimp.overrideAttrs (old: { doCheck = false; }))
+    gimp3
+    krita
+    xournalpp
     blender-hip
     kdePackages.kdenlive glaxnimate mediainfo
     ghidra (cutter.withPlugins (p: with p; [ sigdb rz-ghidra ]))

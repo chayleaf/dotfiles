@@ -7,6 +7,7 @@
     ./painting-api-options.patch
     ./painting-api-pressure.patch
     ./line-painting-api-qpointf.patch
+    ./fixup.patch
   ]; });
 }).overrideAttrs (old: {
   patched = true;

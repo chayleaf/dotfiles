@@ -1,5 +1,5 @@
 { stdenv
-, substituteAll
+, replaceVars
 , fetchFromGitHub
 , mpv-unwrapped
 , port ? 8080
@@ -18,8 +18,7 @@ stdenv.mkDerivation {
   patches = [
     # patch for setting port and whether secondary subs should be shown
     # (also removes verbose logs)
-    (substituteAll {
-      src = ./settings.patch;
+    (replaceVars ./settings.patch {
       inherit port;
       sub_text = if secondary then "secondary-sub-text" else "sub-text";
     })

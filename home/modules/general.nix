@@ -179,9 +179,10 @@
     msmtp.enable = !config.minimal;
     notmuch = {
       enable = !config.minimal;
-      hooks.preNew = ''
-        ${config.services.mbsync.package}/bin/mbsync --all || ${pkgs.coreutils}/bin/true
-      '';
+      # syncing is handled by home-daemon now
+      #hooks.preNew = ''
+      #  ${config.services.mbsync.package}/bin/mbsync --all || ${pkgs.coreutils}/bin/true
+      #'';
     };
     mbsync.enable = !config.minimal;
   };

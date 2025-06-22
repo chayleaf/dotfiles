@@ -1,7 +1,7 @@
 { lib
 , gimp
 , fetchFromGitHub
-, substituteAll
+, replaceVars
 , fetchpatch
 , meson
 , ninja
@@ -48,15 +48,13 @@ in gimp.overrideAttrs (old: rec {
     hash = "sha256-rQd/EwGk6AFQ4dQCx2Jys60mcDvaLSkXeVsrjTJw8wg=";
   };
   patches = [
-    (substituteAll {
-      src = ./hardcode-plugin-interpreters.patch;
+    (replaceVars ./hardcode-plugin-interpreters.patch {
       python_interpreter = python.interpreter;
     })
-    (substituteAll {
-      src = fetchpatch {
-        url = "https://raw.githubusercontent.com/NixOS/nixpkgs/86947c8f83a3bd593eefb8e5f433f0d045c3d9a7/pkgs/applications/graphics/gimp/tests-dbus-conf.patch";
-        hash = "sha256-XEsYmrNcuF6i4/EwTbXZ+vI6zY9iLbasn0I5EHhwLWU=";
-      };
+    (replaceVars (fetchpatch {
+      url = "https://raw.githubusercontent.com/NixOS/nixpkgs/86947c8f83a3bd593eefb8e5f433f0d045c3d9a7/pkgs/applications/graphics/gimp/tests-dbus-conf.patch";
+      hash = "sha256-XEsYmrNcuF6i4/EwTbXZ+vI6zY9iLbasn0I5EHhwLWU=";
+    }) {
       session_conf = "${dbus.out}/share/dbus-1/session.conf";
     })
     (fetchpatch {
