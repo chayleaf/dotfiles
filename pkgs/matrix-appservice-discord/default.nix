@@ -2,7 +2,7 @@
 
 matrix-appservice-discord.overrideAttrs (old: {
   doCheck = false;
-  patches = (old.patches or []) ++ [
+  patches = (old.patches or [ ]) ++ [
     # https://github.com/matrix-org/matrix-appservice-discord/pull/917
     (fetchpatch {
       url = "https://github.com/matrix-org/matrix-appservice-discord/commit/eb989fa710e8db4ebc8f2ce36c6679ee6cbc1a44.patch";

@@ -22,25 +22,56 @@ in
 
   fileSystems = {
     # mount root on tmpfs
-    "/" =     { device = "none"; fsType = "tmpfs"; neededForBoot = true;
-                options = [ "defaults" "size=2G" "mode=755" ]; };
-    "/persist" =
-              { device = rootPart; fsType = "btrfs"; neededForBoot = true;
-                options = [ "compress=zstd:15" "subvol=@" ]; };
-    "/boot" =
-              { device = rootPart; fsType = "btrfs"; neededForBoot = true;
-                options = [ "subvol=@boot" ]; };
-    "/nix" =
-              { device = rootPart; fsType = "btrfs"; neededForBoot = true;
-                options = [ "compress=zstd:15" "subvol=@nix" ]; };
+    "/" = {
+      device = "none";
+      fsType = "tmpfs";
+      neededForBoot = true;
+      options = [
+        "defaults"
+        "size=2G"
+        "mode=755"
+      ];
+    };
+    "/persist" = {
+      device = rootPart;
+      fsType = "btrfs";
+      neededForBoot = true;
+      options = [
+        "compress=zstd:15"
+        "subvol=@"
+      ];
+    };
+    "/boot" = {
+      device = rootPart;
+      fsType = "btrfs";
+      neededForBoot = true;
+      options = [ "subvol=@boot" ];
+    };
+    "/nix" = {
+      device = rootPart;
+      fsType = "btrfs";
+      neededForBoot = true;
+      options = [
+        "compress=zstd:15"
+        "subvol=@nix"
+      ];
+    };
   };
 
   impermanence = {
     enable = true;
     path = /persist;
     directories = [
-      { directory = /home/${config.common.mainUsername}; user = config.common.mainUsername; group = "users"; mode = "0700"; }
-      { directory = /root; mode = "0700"; }
+      {
+        directory = /home/${config.common.mainUsername};
+        user = config.common.mainUsername;
+        group = "users";
+        mode = "0700";
+      }
+      {
+        directory = /root;
+        mode = "0700";
+      }
     ];
   };
 

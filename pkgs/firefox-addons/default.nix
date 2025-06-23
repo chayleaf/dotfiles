@@ -1,9 +1,11 @@
-{ lib
-, stdenv
-, fetchurl
-, nur
-# , pkgs
-, ... }:
+{
+  lib,
+  stdenv,
+  fetchurl,
+  nur,
+  # , pkgs
+  ...
+}:
 
 # let
 #   buildExtension = { pname, version, src, id, meta ? { } }: pkgs.stdenvNoCC.mkDerivation {

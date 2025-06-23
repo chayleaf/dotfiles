@@ -1,7 +1,8 @@
-{ pkgs
-, config
-, lib
-, ...
+{
+  pkgs,
+  config,
+  lib,
+  ...
 }:
 
 let
@@ -38,22 +39,34 @@ in
       # boot.initrd.extraFiles."lib/firmware/imx/epdc/epdc.fw".source = pkgs.copyPathToStore config.ereader.epdc-firmware;
       nixpkgs.overlays = [
         (self: super: {
-          makeModulesClosure = args: (super.makeModulesClosure args).overrideAttrs (old: {
-            builder = pkgs.writeShellScript "builder.sh" ''
-              source ${old.builder}
-              cd "$firmware"
-              mkdir -p "$out/lib/firmware/imx"
-              cp --no-preserve=mode -vrL lib/firmware/imx/* "$out/lib/firmware/imx/"
-            '';
-          });
+          makeModulesClosure =
+            args:
+            (super.makeModulesClosure args).overrideAttrs (old: {
+              builder = pkgs.writeShellScript "builder.sh" ''
+                source ${old.builder}
+                cd "$firmware"
+                mkdir -p "$out/lib/firmware/imx"
+                cp --no-preserve=mode -vrL lib/firmware/imx/* "$out/lib/firmware/imx/"
+              '';
+            });
         })
       ];
 
       hardware.enableRedistributableFirmware = true;
 
-      boot.initrd.kernelModules = [ "tps6518x_hwmon" "tps6518x_regulator" "mxc_epdc_drm" ];
-      boot.initrd.availableKernelModules = [ "mmc_block" "dm_mod" ];
-      boot.kernelParams = [ "console=ttymxc0,115200" "detect_clara_rev" ];
+      boot.initrd.kernelModules = [
+        "tps6518x_hwmon"
+        "tps6518x_regulator"
+        "mxc_epdc_drm"
+      ];
+      boot.initrd.availableKernelModules = [
+        "mmc_block"
+        "dm_mod"
+      ];
+      boot.kernelParams = [
+        "console=ttymxc0,115200"
+        "detect_clara_rev"
+      ];
       # "dtb=/${config.hardware.deviceTree.name}"
 
       boot.initrd.compressor = "zstd";

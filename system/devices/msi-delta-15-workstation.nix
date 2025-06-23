@@ -1,5 +1,6 @@
 # device-specific non-portable config
-{ ...
+{
+  ...
 }:
 
 let
@@ -37,14 +38,35 @@ in
   boot.kernelParams = [ "boot.shell_on_fail" ];
 
   fileSystems = {
-    "/" =     { device = "none"; fsType = "tmpfs"; neededForBoot = true;
-                options = [ "defaults" "size=2G" "mode=755" ]; };
-    "/persist" =
-              { device = parts.root; fsType = "bcachefs"; neededForBoot = true;
-                options = [ "discard=1" ]; };
-    "/boot" = { device = parts.efi; fsType = "vfat"; neededForBoot = true; };
-    "/data" = { device = parts.data; fsType = "btrfs";
-                options = [ "discard=async" "compress=zstd:15" ]; };
+    "/" = {
+      device = "none";
+      fsType = "tmpfs";
+      neededForBoot = true;
+      options = [
+        "defaults"
+        "size=2G"
+        "mode=755"
+      ];
+    };
+    "/persist" = {
+      device = parts.root;
+      fsType = "bcachefs";
+      neededForBoot = true;
+      options = [ "discard=1" ];
+    };
+    "/boot" = {
+      device = parts.efi;
+      fsType = "vfat";
+      neededForBoot = true;
+    };
+    "/data" = {
+      device = parts.data;
+      fsType = "btrfs";
+      options = [
+        "discard=async"
+        "compress=zstd:15"
+      ];
+    };
   };
   impermanence.directories = [
     /root
@@ -68,7 +90,10 @@ in
     filesystems.dataroot = {
       spec = "UUID=${uuids.data}";
       hashTableSizeMB = 256;
-      extraOptions = [ "--loadavg-target" "8.0" ];
+      extraOptions = [
+        "--loadavg-target"
+        "8.0"
+      ];
     };
   };
 }

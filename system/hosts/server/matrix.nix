@@ -1,7 +1,9 @@
-{ config
-, lib
-, pkgs
-, ... }:
+{
+  config,
+  lib,
+  pkgs,
+  ...
+}:
 
 let
   cfg = config.server;
@@ -23,10 +25,14 @@ let
   '';
   matrixAddr = "::1";
   matrixPort = 8008;
-in {
+in
+{
   imports = [ ./maubot.nix ];
 
-  networking.firewall.allowedTCPPorts = [ 8008 8448 ];
+  networking.firewall.allowedTCPPorts = [
+    8008
+    8448
+  ];
   systemd.services.matrix-synapse.serviceConfig.TimeoutStartSec = 900;
 
   services.nginx.virtualHosts."${cfg.domainName}" = {
@@ -53,24 +59,26 @@ in {
   };
 
   # TODO
-  /*services.matrix-appservice-discord = {
-    enable = true;
-    environmentFile = "/secrets/discord-bridge-token";
-    settings = {
-      auth.usePrivilegedIntents = true;
-      database.filename = "";
-      bridge = {
-        domain = "matrix.${cfg.domainName}";
-        homeserverUrl = "https://matrix.${cfg.domainName}";
-        enableSelfServiceBridging = true;
-        disablePresence = true;
-        disablePortalBridging = true;
-        disableInviteNotifications = true;
-        disableJoinLeaveNotifications = true;
-        disableRoomTopicNotifications = true;
+  /*
+    services.matrix-appservice-discord = {
+      enable = true;
+      environmentFile = "/secrets/discord-bridge-token";
+      settings = {
+        auth.usePrivilegedIntents = true;
+        database.filename = "";
+        bridge = {
+          domain = "matrix.${cfg.domainName}";
+          homeserverUrl = "https://matrix.${cfg.domainName}";
+          enableSelfServiceBridging = true;
+          disablePresence = true;
+          disablePortalBridging = true;
+          disableInviteNotifications = true;
+          disableJoinLeaveNotifications = true;
+          disableRoomTopicNotifications = true;
+        };
       };
     };
-  };*/
+  */
 
   environment.systemPackages = with pkgs; [ rust-synapse-compress-state ];
 
@@ -100,17 +108,24 @@ in {
         notif_for_new_users = false;
         enable_notifs = true;
       };
-      listeners = [{
-        port = matrixPort;
-        bind_addresses = [ matrixAddr ];
-        type = "http";
-        tls = false;
-        x_forwarded = true;
-        resources = [{
-          names = [ "client" "federation" ];
-          compress = false;
-        }];
-      }];
+      listeners = [
+        {
+          port = matrixPort;
+          bind_addresses = [ matrixAddr ];
+          type = "http";
+          tls = false;
+          x_forwarded = true;
+          resources = [
+            {
+              names = [
+                "client"
+                "federation"
+              ];
+              compress = false;
+            }
+          ];
+        }
+      ];
     };
   };
 }

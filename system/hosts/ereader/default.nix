@@ -1,7 +1,8 @@
-{ config
-, pkgs
-, lib
-, ...
+{
+  config,
+  pkgs,
+  lib,
+  ...
 }:
 
 {
@@ -42,10 +43,16 @@
 
   # kde connect
   networking.firewall.allowedTCPPortRanges = [
-    { from = 1714; to = 1764; }
+    {
+      from = 1714;
+      to = 1764;
+    }
   ];
   networking.firewall.allowedUDPPortRanges = [
-    { from = 1714; to = 1764; }
+    {
+      from = 1714;
+      to = 1764;
+    }
   ];
 
   # services.xserver.displayManager.startx.enable = true;

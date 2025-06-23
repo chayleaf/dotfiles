@@ -1,17 +1,18 @@
-{ lib
-, stdenv
-, fetchFromGitHub
-, meson
-, ninja
-, pkg-config
-, scdoc
-, cairo
-, gdk-pixbuf
-, libsodium
-, libxkbcommon
-, wayland
-, wayland-scanner
-, wayland-protocols
+{
+  lib,
+  stdenv,
+  fetchFromGitHub,
+  meson,
+  ninja,
+  pkg-config,
+  scdoc,
+  cairo,
+  gdk-pixbuf,
+  libsodium,
+  libxkbcommon,
+  wayland,
+  wayland-scanner,
+  wayland-protocols,
 }:
 
 stdenv.mkDerivation {

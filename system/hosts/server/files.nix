@@ -1,13 +1,17 @@
-{ config
-, lib
-, pkgs
-, ... }:
+{
+  config,
+  lib,
+  pkgs,
+  ...
+}:
 
 let
   cfg = config.server;
-in {
+in
+{
   users.users.nginx.extraGroups = [ "anubis" ];
-  services.nginx.upstreams.forgejo.servers."unix:/${config.services.anubis.instances.forgejo.settings.BIND}" = {};
+  services.nginx.upstreams.forgejo.servers."unix:/${config.services.anubis.instances.forgejo.settings.BIND}" =
+    { };
   services.nginx.virtualHosts."git.${cfg.domainName}" = {
     quic = true;
     enableACME = true;
@@ -15,7 +19,11 @@ in {
     locations."/".proxyPass = "http://forgejo/";
   };
 
-  users.users.anubis-forgejo = { group = "anubis"; extraGroups = [ "forgejo" ]; isSystemUser = true; };
+  users.users.anubis-forgejo = {
+    group = "anubis";
+    extraGroups = [ "forgejo" ];
+    isSystemUser = true;
+  };
   services.anubis.instances.forgejo = {
     user = "anubis-forgejo";
     botPolicy.bots = [
@@ -23,14 +31,22 @@ in {
       # { import = "(data)/clients/git.yaml"; }
     ];
     # TODO: ?????????? why is this necessary
-    settings.POLICY_FNAME = (pkgs.formats.json {}).generate "policy.json" (let cfg = config.services.anubis.defaultOptions.botPolicy; in cfg // {
-      bots = cfg.bots ++ config.services.anubis.instances.forgejo.botPolicy.bots;
-    });
+    settings.POLICY_FNAME = (pkgs.formats.json { }).generate "policy.json" (
+      let
+        cfg = config.services.anubis.defaultOptions.botPolicy;
+      in
+      cfg
+      // {
+        bots = cfg.bots ++ config.services.anubis.instances.forgejo.botPolicy.bots;
+      }
+    );
     settings.OG_PASSTHROUGH = false;
     # settings.BIND = "[::1]:3311";
     settings.TARGET =
-      let inherit (config.services.forgejo) settings;
-      in "unix://${lib.quoteListenAddr settings.server.HTTP_ADDR}";
+      let
+        inherit (config.services.forgejo) settings;
+      in
+      "unix://${lib.quoteListenAddr settings.server.HTTP_ADDR}";
   };
 
   services.forgejo = {

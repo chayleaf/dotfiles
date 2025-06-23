@@ -1,7 +1,9 @@
-{ pkgs
-, pkgs-kernel
-, config
-, ... }:
+{
+  pkgs,
+  pkgs-kernel,
+  config,
+  ...
+}:
 
 {
   boot.loader = {
@@ -23,8 +25,17 @@
 
   # # disable a bunch of useless drivers
   # boot.initrd.includeDefaultModules = false;
-  boot.initrd.availableKernelModules = [ "mmc_block" "dm_mod" "rfkill" "cfg80211" "mt7915e" ];
-  boot.kernelParams = [ "boot.shell_on_fail" "console=ttyS0,115200" ];
+  boot.initrd.availableKernelModules = [
+    "mmc_block"
+    "dm_mod"
+    "rfkill"
+    "cfg80211"
+    "mt7915e"
+  ];
+  boot.kernelParams = [
+    "boot.shell_on_fail"
+    "console=ttyS0,115200"
+  ];
 
   boot.initrd.compressor = "zstd";
 

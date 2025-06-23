@@ -1,7 +1,9 @@
-{ pkgs
-, pkgs'
-, lib
-, ... }:
+{
+  pkgs,
+  pkgs',
+  lib,
+  ...
+}:
 
 let
   # there are few direct hits with the linux kernel, so use CCACHE_NODIRECT
@@ -15,20 +17,35 @@ let
     CCACHE_NODIRECT = "1";
   };
 
-  buildCachedFirefox = useSccache: unwrapped:
+  buildCachedFirefox =
+    useSccache: unwrapped:
     (unwrapped.override {
-      buildMozillaMach = x: pkgs'.buildMozillaMach (x // {
-        extraConfigureFlags = (x.extraConfigureFlags or [])
-          ++ lib.toList (if useSccache then "--with-ccache=sccache" else "--with-ccache");
-      });
-    }).overrideAttrs (prev: if useSccache then {
-      nativeBuildInputs = (prev.nativeBuildInputs or []) ++ [ pkgs'.sccache ];
-      SCCACHE_DIR = "/var/cache/sccache";
-      SCCACHE_MAX_FRAME_LENGTH = "104857600";
-      RUSTC_WRAPPER = "${pkgs'.sccache}/bin/sccache";
-    } else ccacheVars // {
-      nativeBuildInputs = (prev.nativeBuildInputs or []) ++ [ pkgs'.ccache ];
-    });
+      buildMozillaMach =
+        x:
+        pkgs'.buildMozillaMach (
+          x
+          // {
+            extraConfigureFlags =
+              (x.extraConfigureFlags or [ ])
+              ++ lib.toList (if useSccache then "--with-ccache=sccache" else "--with-ccache");
+          }
+        );
+    }).overrideAttrs
+      (
+        prev:
+        if useSccache then
+          {
+            nativeBuildInputs = (prev.nativeBuildInputs or [ ]) ++ [ pkgs'.sccache ];
+            SCCACHE_DIR = "/var/cache/sccache";
+            SCCACHE_MAX_FRAME_LENGTH = "104857600";
+            RUSTC_WRAPPER = "${pkgs'.sccache}/bin/sccache";
+          }
+        else
+          ccacheVars
+          // {
+            nativeBuildInputs = (prev.nativeBuildInputs or [ ]) ++ [ pkgs'.ccache ];
+          }
+      );
 
   ccacheConfig = ''
     ${builtins.concatStringsSep "\n" (lib.mapAttrsToList (k: v: "export ${k}=${v}") ccacheVars)}
@@ -50,11 +67,14 @@ let
     fi
   '';
 
-  overrides = { extraConfig = ccacheConfig; };
+  overrides = {
+    extraConfig = ccacheConfig;
+  };
 
   cacheStdenv = pkgs: pkgs.ccacheStdenv.override overrides;
 
-in {
+in
+{
   # read by system/modules/ccache.nix
   __dontIncludeCcacheOverlay = true;
   ccacheWrapper = pkgs.ccacheWrapper.override overrides;
@@ -62,10 +82,12 @@ in {
   buildFirefoxWithCcache = buildCachedFirefox false;
   buildFirefoxWithSccache = buildCachedFirefox true;
 
-  buildLinuxWithCcache = linux: linux.override {
-    stdenv = cacheStdenv pkgs';
-    buildPackages = pkgs'.buildPackages // {
-      stdenv = cacheStdenv pkgs'.buildPackages;
+  buildLinuxWithCcache =
+    linux:
+    linux.override {
+      stdenv = cacheStdenv pkgs';
+      buildPackages = pkgs'.buildPackages // {
+        stdenv = cacheStdenv pkgs'.buildPackages;
+      };
     };
-  };
 }

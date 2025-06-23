@@ -1,5 +1,7 @@
-{ callPackage
-, ... }:
+{
+  callPackage,
+  ...
+}:
 
 {
   subserv = callPackage ./subserv { };

@@ -1,46 +1,54 @@
-{ lib
-, gimp
-, fetchFromGitHub
-, replaceVars
-, fetchpatch
-, meson
-, ninja
-, pkg-config
-, gettext
-, gtk3
-, graphviz
-, libarchive
-, luajit
-, python3
-, wrapGAppsHook
-, libxslt
-, gobject-introspection
-, vala
-, gi-docgen
-, perl
-, appstream-glib
-, desktop-file-utils
-, json-glib
-, gjs
-, xorg
-, xvfb-run
-, dbus
-, adwaita-icon-theme
-, alsa-lib
-, glib
-, glib-networking
-, libiff
-, libilbm
-, cfitsio
+{
+  lib,
+  gimp,
+  fetchFromGitHub,
+  replaceVars,
+  fetchpatch,
+  meson,
+  ninja,
+  pkg-config,
+  gettext,
+  gtk3,
+  graphviz,
+  libarchive,
+  luajit,
+  python3,
+  wrapGAppsHook,
+  libxslt,
+  gobject-introspection,
+  vala,
+  gi-docgen,
+  perl,
+  appstream-glib,
+  desktop-file-utils,
+  json-glib,
+  gjs,
+  xorg,
+  xvfb-run,
+  dbus,
+  adwaita-icon-theme,
+  alsa-lib,
+  glib,
+  glib-networking,
+  libiff,
+  libilbm,
+  cfitsio,
 }:
 
 let
-  python = python3.withPackages (pp: with pp; [
-    pygobject3
-  ]);
-in gimp.overrideAttrs (old: rec {
+  python = python3.withPackages (
+    pp: with pp; [
+      pygobject3
+    ]
+  );
+in
+gimp.overrideAttrs (old: rec {
   version = "2_99_18+date=2024-02-18";
-  outputs = [ "out" "dev" "devdoc" ];
+  outputs = [
+    "out"
+    "dev"
+    "devdoc"
+  ];
   src = fetchFromGitHub {
     owner = "GNOME";
     repo = "gimp";
@@ -51,12 +59,15 @@ in gimp.overrideAttrs (old: rec {
     (replaceVars ./hardcode-plugin-interpreters.patch {
       python_interpreter = python.interpreter;
     })
-    (replaceVars (fetchpatch {
-      url = "https://raw.githubusercontent.com/NixOS/nixpkgs/86947c8f83a3bd593eefb8e5f433f0d045c3d9a7/pkgs/applications/graphics/gimp/tests-dbus-conf.patch";
-      hash = "sha256-XEsYmrNcuF6i4/EwTbXZ+vI6zY9iLbasn0I5EHhwLWU=";
-    }) {
-      session_conf = "${dbus.out}/share/dbus-1/session.conf";
-    })
+    (replaceVars
+      (fetchpatch {
+        url = "https://raw.githubusercontent.com/NixOS/nixpkgs/86947c8f83a3bd593eefb8e5f433f0d045c3d9a7/pkgs/applications/graphics/gimp/tests-dbus-conf.patch";
+        hash = "sha256-XEsYmrNcuF6i4/EwTbXZ+vI6zY9iLbasn0I5EHhwLWU=";
+      })
+      {
+        session_conf = "${dbus.out}/share/dbus-1/session.conf";
+      }
+    )
     (fetchpatch {
       url = "https://raw.githubusercontent.com/NixOS/nixpkgs/86947c8f83a3bd593eefb8e5f433f0d045c3d9a7/pkgs/applications/graphics/gimp/fix-isocodes-paths.patch";
       hash = "sha256-8jqQmfbOARMPNIsBfNKpMIeK4dXoAme7rUJeQZwh4PM=";
@@ -79,8 +90,7 @@ in gimp.overrideAttrs (old: rec {
     xvfb-run
     dbus
   ];
-  buildInputs = builtins.filter (x: !builtins.elem (lib.getName x) ["gtk2"]) old.buildInputs
-  ++ [
+  buildInputs = builtins.filter (x: !builtins.elem (lib.getName x) [ "gtk2" ]) old.buildInputs ++ [
     appstream-glib
     gtk3
     libarchive
@@ -102,7 +112,9 @@ in gimp.overrideAttrs (old: rec {
     "-Dcheck-update=no"
     "-Dappdata-test=disabled"
   ];
-  env = old.env // { GIO_EXTRA_MODULES = "${glib-networking}/lib/gio/modules"; };
+  env = old.env // {
+    GIO_EXTRA_MODULES = "${glib-networking}/lib/gio/modules";
+  };
   preConfigure = "";
   postPatch = ''
     patchShebangs \

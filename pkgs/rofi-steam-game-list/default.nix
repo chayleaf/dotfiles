@@ -1,15 +1,17 @@
-{ lib
-, replaceVars
-, nix-gitignore 
-, rustPlatform
-, xdg-utils
-, ... }:
+{
+  lib,
+  replaceVars,
+  nix-gitignore,
+  rustPlatform,
+  xdg-utils,
+  ...
+}:
 
 rustPlatform.buildRustPackage {
   pname = "rofi-steam-game-list";
   version = "0.1";
 
-  src = nix-gitignore.gitignoreSource ["/target" "default.nix"] (lib.cleanSource ./.);
+  src = nix-gitignore.gitignoreSource [ "/target" "default.nix" ] (lib.cleanSource ./.);
 
   patches = [
     (replaceVars ./hardcode_xdg_open.patch {

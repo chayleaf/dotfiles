@@ -1,7 +1,8 @@
-{ lib
-, fetchFromGitHub
-, buildNpmPackage
-, nodejs
+{
+  lib,
+  fetchFromGitHub,
+  buildNpmPackage,
+  nodejs,
 }:
 
 buildNpmPackage {

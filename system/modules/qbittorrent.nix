@@ -1,12 +1,14 @@
-{ config
-, lib
-, pkgs
-, ...
+{
+  config,
+  lib,
+  pkgs,
+  ...
 }:
 
 let
   cfg = config.services.qbittorrent-nox;
-in {
+in
+{
   options.services.qbittorrent-nox = {
     enable = lib.mkEnableOption "qbittorrent-nox";
 
@@ -39,8 +41,9 @@ in {
     networking.firewall.allowedTCPPorts =
       lib.optional (cfg.torrent.addToFirewall && cfg.torrent.port != null) cfg.torrent.port
       ++ lib.optional cfg.ui.addToFirewall cfg.ui.port;
-    networking.firewall.allowedUDPPorts =
-      lib.optional (cfg.torrent.addToFirewall && cfg.torrent.port != null) cfg.torrent.port;
+    networking.firewall.allowedUDPPorts = lib.optional (
+      cfg.torrent.addToFirewall && cfg.torrent.port != null
+    ) cfg.torrent.port;
 
     users.users.qbittorrent-nox = {
       isSystemUser = true;
@@ -52,7 +55,11 @@ in {
     systemd.services.qbittorrent-nox = {
       description = "qBittorrent-nox service";
       wants = [ "network-online.target" ];
-      after = [ "local-fs.target" "network-online.target" "nss-lookup.target" ];
+      after = [
+        "local-fs.target"
+        "network-online.target"
+        "nss-lookup.target"
+      ];
       wantedBy = [ "multi-user.target" ];
       unitConfig.Documentation = "man:qbittorrent-nox(1)";
       # required for reverse proxying
@@ -68,7 +75,9 @@ in {
         StateDirectory = "qbittorrent-nox";
         WorkingDirectory = "/var/lib/qbittorrent-nox";
         ExecStart = ''
-          ${cfg.package}/bin/qbittorrent-nox ${lib.optionalString (cfg.torrent.port != null) "--torrenting-port=${toString cfg.torrent.port}"} \
+          ${cfg.package}/bin/qbittorrent-nox ${
+            lib.optionalString (cfg.torrent.port != null) "--torrenting-port=${toString cfg.torrent.port}"
+          } \
             --webui-port=${toString cfg.ui.port} --profile=/var/lib/qbittorrent-nox
         '';
       };

@@ -1,22 +1,27 @@
-{ config
-, lib
-, pkgs
-, inputs
-, ... }:
+{
+  config,
+  lib,
+  pkgs,
+  inputs,
+  ...
+}:
 
 let
   cfg = config.server;
   synapseMetricsPort = 8009;
   synapseMetricsAddr = "127.0.0.1";
-  collectListeners = names:
-    map
-      (x: "127.0.0.1:${toString x.port}")
-      (builtins.attrValues
-        (lib.filterAttrs (k: v: builtins.elem k names && v.enable) config.services.prometheus.exporters));
+  collectListeners =
+    names:
+    map (x: "127.0.0.1:${toString x.port}") (
+      builtins.attrValues (
+        lib.filterAttrs (k: v: builtins.elem k names && v.enable) config.services.prometheus.exporters
+      )
+    );
   hplip = pkgs.hplipWithPlugin.override {
     withQt5 = false;
   };
-in {
+in
+{
   imports = [ inputs.coop-fd.nixosModules.default ];
 
   # a bunch of services for personal use not intended for the public
@@ -39,9 +44,10 @@ in {
       security.secret_key = "$__file{/secrets/grafana_key_file}";
     };
   };
-  services.nginx.upstreams.grafana.servers."unix:/${config.services.grafana.settings.server.socket}" = {};
+  services.nginx.upstreams.grafana.servers."unix:/${config.services.grafana.settings.server.socket}" =
+    { };
 
-  # TODO: 
+  # TODO:
   # services.keycloak.plugins = [ pkgs.keycloak.plugins.keycloak-metrics-spi ];
   services.keycloak.settings.metrics-enabled = true;
 
@@ -63,7 +69,8 @@ in {
     '';
     # locations."/.well-known/acme-challenge".extraConfig = "auth_basic off;";
     locations."/".root = "/var/www/home.${cfg.domainName}/";
-    locations."/scan/".proxyPass = "http://${lib.quoteListenAddr config.services.scanservjs.settings.host}:${toString config.services.scanservjs.settings.port}/";
+    locations."/scan/".proxyPass =
+      "http://${lib.quoteListenAddr config.services.scanservjs.settings.host}:${toString config.services.scanservjs.settings.port}/";
     locations."/grafana/" = {
       proxyPass = "http://grafana/";
       proxyWebsockets = true;
@@ -93,8 +100,10 @@ in {
       client_body_timeout 300;
       send_timeout 300;
     '';
-    locations."/".proxyPass = "http://${lib.quoteListenAddr config.services.hydra.listenHost}:${toString config.services.hydra.port}/";
-    locations."/static/".root = lib.mkIf config.services.hydra.enable "${config.services.hydra.package}/libexec/hydra/root/";
+    locations."/".proxyPass =
+      "http://${lib.quoteListenAddr config.services.hydra.listenHost}:${toString config.services.hydra.port}/";
+    locations."/static/".root =
+      lib.mkIf config.services.hydra.enable "${config.services.hydra.package}/libexec/hydra/root/";
   };
   users.users.nginx.extraGroups = [ "grafana" ];
 
@@ -103,7 +112,15 @@ in {
     signKeyPaths = [ "/secrets/cache-priv-key.pem" ];
     settings.bind = "[::1]:5000";
   };
-  nix.settings.allowed-users = [ "nix-serve" "harmonia" ] ++ lib.optionals config.services.hydra.enable [ "hydra" "hydra-www" ];
+  nix.settings.allowed-users =
+    [
+      "nix-serve"
+      "harmonia"
+    ]
+    ++ lib.optionals config.services.hydra.enable [
+      "hydra"
+      "hydra-www"
+    ];
   # make sure only hydra has access to this file
   # so normal nix evals don't have access to builtins
   # nix.checkConfig = false;
@@ -163,16 +180,35 @@ in {
       hostName = "localhost";
       protocol = null;
       maxJobs = 8;
-      supportedFeatures = [ "benchmark" "big-parallel" "ca-derivations" "local" "kvm" "nixos-test" ];
-      systems = [ "builtin" pkgs.system ];
+      supportedFeatures = [
+        "benchmark"
+        "big-parallel"
+        "ca-derivations"
+        "local"
+        "kvm"
+        "nixos-test"
+      ];
+      systems = [
+        "builtin"
+        pkgs.system
+      ];
     }
     {
       hostName = cfg.laptopHostname;
       maxJobs = 2;
       # TODO: switch to ssh-ng https://github.com/NixOS/hydra/issues/688
       protocol = "ssh";
-      systems = [ "x86_64-linux" "i686-linux" ];
-      supportedFeatures = [ "benchmark" "big-parallel" "ca-derivations" "kvm" "nixos-test" ];
+      systems = [
+        "x86_64-linux"
+        "i686-linux"
+      ];
+      supportedFeatures = [
+        "benchmark"
+        "big-parallel"
+        "ca-derivations"
+        "kvm"
+        "nixos-test"
+      ];
       # hydra-queue-runner must have read access to this
       sshKey = "/secrets/hydra-builder-key";
       sshUser = "hydra-builder";
@@ -199,10 +235,14 @@ in {
   services.gitea.settings.metrics.ENABLED = true;
   services.akkoma.config.":prometheus"."Pleroma.Web.Endpoint.MetricsExporter" = {
     enabled = true;
-    auth = [ ((pkgs.formats.elixirConf { }).lib.mkRaw ":basic") "prometheus" {
-      _secret = "/secrets/akkoma/prometheus_password";
-    } ];
-    ip_whitelist = ["127.0.0.1"];
+    auth = [
+      ((pkgs.formats.elixirConf { }).lib.mkRaw ":basic")
+      "prometheus"
+      {
+        _secret = "/secrets/akkoma/prometheus_password";
+      }
+    ];
+    ip_whitelist = [ "127.0.0.1" ];
     path = "/api/pleroma/app_metrics";
     format = (pkgs.formats.elixirConf { }).lib.mkRaw ":text";
   };
@@ -211,13 +251,19 @@ in {
     exporters = {
       node = {
         enable = true;
-        enabledCollectors = [ "logind" "systemd" ];
+        enabledCollectors = [
+          "logind"
+          "systemd"
+        ];
         listenAddress = "127.0.0.1";
         port = 9101; # cups is 9100
       };
       dovecot = {
         enable = true;
-        scopes = [ "user" "global" ];
+        scopes = [
+          "user"
+          "global"
+        ];
         listenAddress = "127.0.0.1";
       };
       nextcloud = {
@@ -273,81 +319,99 @@ in {
       {
         job_name = "local_frequent";
         scrape_interval = "1m";
-        static_configs = [ {
-          targets = collectListeners [
-            "node"
-            "nginx"
-            "process"
-          ];
-          labels.machine = "server";
-        } ];
+        static_configs = [
+          {
+            targets = collectListeners [
+              "node"
+              "nginx"
+              "process"
+            ];
+            labels.machine = "server";
+          }
+        ];
       }
       {
         job_name = "local_medium_freq";
         scrape_interval = "15m";
-        static_configs = [ {
-          targets = [ "127.0.0.1:9548" "127.0.0.1:9198" "127.0.0.1:9173" ];
-          labels.machine = "server";
-        } ];
+        static_configs = [
+          {
+            targets = [
+              "127.0.0.1:9548"
+              "127.0.0.1:9198"
+              "127.0.0.1:9173"
+            ];
+            labels.machine = "server";
+          }
+        ];
       }
       {
         job_name = "local_infrequent";
         scrape_interval = "1h";
-        static_configs = [ {
-          targets = collectListeners [
-            "dovecot"
-            "nextcloud"
-            "nginxlog"
-            "postfix"
-            "postgres"
-            "redis"
-            "rspamd"
-            "smartctl"
-          ];
-          labels.machine = "server";
-        } ];
+        static_configs = [
+          {
+            targets = collectListeners [
+              "dovecot"
+              "nextcloud"
+              "nginxlog"
+              "postfix"
+              "postgres"
+              "redis"
+              "rspamd"
+              "smartctl"
+            ];
+            labels.machine = "server";
+          }
+        ];
       }
       {
         job_name = "gitea";
         bearer_token_file = "/secrets/prometheus_bearer";
         scrape_interval = "1h";
-        static_configs = [ {
-          targets = [ "git.${cfg.domainName}" ];
-          labels.machine = "server";
-        } ];
+        static_configs = [
+          {
+            targets = [ "git.${cfg.domainName}" ];
+            labels.machine = "server";
+          }
+        ];
       }
       {
         job_name = "router_frequent";
         scrape_interval = "1m";
-        static_configs = [ {
-          targets = [
-            "retracker.local:9101"
-            "retracker.local:9256"
-            "retracker.local:9167"
-            "retracker.local:9380"
-          ];
-          labels.machine = "router";
-        } ];
+        static_configs = [
+          {
+            targets = [
+              "retracker.local:9101"
+              "retracker.local:9256"
+              "retracker.local:9167"
+              "retracker.local:9380"
+            ];
+            labels.machine = "router";
+          }
+        ];
       }
       {
         job_name = "router_infrequent";
         scrape_interval = "10m";
-        static_configs = [ {
-          targets = [
-            "retracker.local:9430"
-            "retracker.local:9547"
-          ];
-          labels.machine = "router";
-        } ];
+        static_configs = [
+          {
+            targets = [
+              "retracker.local:9430"
+              "retracker.local:9547"
+            ];
+            labels.machine = "router";
+          }
+        ];
       }
       {
         job_name = "synapse";
         metrics_path = "/_synapse/metrics";
         scrape_interval = "15s";
-        static_configs = [ {
-          targets = [ "${lib.quoteListenAddr synapseMetricsAddr}:${toString synapseMetricsPort}" ];
-          labels.machine = "server";
-        } ];
+        static_configs = [
+          {
+            targets = [ "${lib.quoteListenAddr synapseMetricsAddr}:${toString synapseMetricsPort}" ];
+            labels.machine = "server";
+          }
+        ];
       }
       {
         job_name = "akkoma";
@@ -355,10 +419,12 @@ in {
         scrape_interval = "10m";
         basic_auth.username = "prometheus";
         basic_auth.password_file = "/secrets/akkoma/prometheus_password";
-        static_configs = [ {
-          targets = [ "pleroma.${cfg.domainName}" ];
-          labels.machine = "server";
-        } ];
+        static_configs = [
+          {
+            targets = [ "pleroma.${cfg.domainName}" ];
+            labels.machine = "server";
+          }
+        ];
       }
     ];
   };
@@ -374,42 +440,48 @@ in {
     enable_metrics = true;
     federation_metrics_domains = [ "matrix.org" ];
     /*
-    normally you're supposed to use
-    - port: 9000
-      type: metrics
-      bind_addresses: ['::1', '127.0.0.1']
+      normally you're supposed to use
+      - port: 9000
+        type: metrics
+        bind_addresses: ['::1', '127.0.0.1']
 
-    but the NixOS module doesn't allow creating such a listener
+      but the NixOS module doesn't allow creating such a listener
     */
-    listeners = [ {
-      port = synapseMetricsPort;
-      bind_addresses = [ synapseMetricsAddr ];
-      type = "metrics";
-      tls = false;
-      resources = [ ];
-    } ];
+    listeners = [
+      {
+        port = synapseMetricsPort;
+        bind_addresses = [ synapseMetricsAddr ];
+        type = "metrics";
+        tls = false;
+        resources = [ ];
+      }
+    ];
   };
 
   /*
-  # this uses elasticsearch, rip
-  services.parsedmarc = {
-    enable = true;
-    provision = {
-      localMail = {
-        enable = true;
-        hostname = cfg.domainName;
-      };
-      grafana = {
-        datasource = true;
-        dashboard = true;
+    # this uses elasticsearch, rip
+    services.parsedmarc = {
+      enable = true;
+      provision = {
+        localMail = {
+          enable = true;
+          hostname = cfg.domainName;
+        };
+        grafana = {
+          datasource = true;
+          dashboard = true;
+        };
       };
     };
-  };*/
+  */
 
   networking.firewall.allowedTCPPorts = [ 631 ];
   services.printing = {
     enable = true;
-    allowFrom = [ cfg.lanCidrV4 cfg.lanCidrV6 ];
+    allowFrom = [
+      cfg.lanCidrV4
+      cfg.lanCidrV6
+    ];
     browsing = true;
     clientConf = ''
       ServerName home.${cfg.domainName}

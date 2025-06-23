@@ -1,10 +1,13 @@
-{ config
-, lib
-, ... }:
+{
+  config,
+  lib,
+  ...
+}:
 
 let
   cfg = config.server;
-in {
+in
+{
   services.murmur = {
     enable = true;
     imgMsgLength = 0;
@@ -25,17 +28,25 @@ in {
     group = "nginxandmurmur";
     reloadServices = [ "murmur" ];
   };
-  users.groups.nginxandmurmur.members = [ "murmur" "nginx" ];
+  users.groups.nginxandmurmur.members = [
+    "murmur"
+    "nginx"
+  ];
 
   # Mumble music bot
-  services.nginx.virtualHosts."mumble.${cfg.domainName}" = let inherit (config.services.botamusique) settings; in {
-    quic = true;
-    enableACME = true;
-    forceSSL = true;
-    globalRedirect = cfg.domainName;
-    locations."/music".extraConfig = "return 301 https://mumble.${cfg.domainName}/music/;";
-    locations."/music/".proxyPass = "http://${lib.quoteListenAddr settings.webinterface.listening_addr}:${toString settings.webinterface.listening_port}/";
-  };
+  services.nginx.virtualHosts."mumble.${cfg.domainName}" =
+    let
+      inherit (config.services.botamusique) settings;
+    in
+    {
+      quic = true;
+      enableACME = true;
+      forceSSL = true;
+      globalRedirect = cfg.domainName;
+      locations."/music".extraConfig = "return 301 https://mumble.${cfg.domainName}/music/;";
+      locations."/music/".proxyPass =
+        "http://${lib.quoteListenAddr settings.webinterface.listening_addr}:${toString settings.webinterface.listening_port}/";
+    };
 
   services.botamusique = {
     enable = true;

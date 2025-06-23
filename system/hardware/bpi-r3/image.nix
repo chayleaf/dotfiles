@@ -1,17 +1,19 @@
-{ gptfdisk
-, e2fsprogs
-, util-linux
-, zstd
-, stdenvNoCC
-, btrfs-progs
-, vmTools
-, runCommand
-, kmod
+{
+  gptfdisk,
+  e2fsprogs,
+  util-linux,
+  zstd,
+  stdenvNoCC,
+  btrfs-progs,
+  vmTools,
+  runCommand,
+  kmod,
 
-, bpiR3Stuff
-, config
-, rootfsImage
-, ... }:
+  bpiR3Stuff,
+  config,
+  rootfsImage,
+  ...
+}:
 
 let
   imageSize = 7818182656; # emmc size
@@ -31,31 +33,40 @@ in
 # so, do as much as possible outside of it
 # but i still need it to create subvolumes
 let
-  template = vmTools.runInLinuxVM (runCommand "bpi-r3-fs-template" {
-    preVM = ''
-      truncate -s ${toString ((rootPartEnd - rootPartStart + 1) * 512)} ./tmp.img
-      ${btrfs-progs}/bin/mkfs.btrfs \
-        --label NIXOS_SD \
-        --uuid "44444444-4444-4444-8888-888888888888" \
-        ./tmp.img
-    '';
-    nativeBuildInputs = [ btrfs-progs e2fsprogs util-linux kmod ];
-    postVM = ''
-      mkdir -p $out
-      ${zstd}/bin/zstd tmp.img -o $out/template.btrfs.zst
-    '';
-    memSize = "4G";
-    QEMU_OPTS = "-drive file=./tmp.img,format=raw,if=virtio,cache=unsafe,werror=report -rtc base=2000-01-01,clock=vm";
-  } ''
-    modprobe btrfs
-    mkdir -p /mnt
-    mount -t btrfs -o space_cache=v2 /dev/vda /mnt
-    btrfs filesystem resize max /mnt
-    btrfs subvolume create /mnt/@boot
-    btrfs subvolume create /mnt/@
-    btrfs subvolume create /mnt/@nix
-    chattr +C /mnt/@boot
-  '');
+  template = vmTools.runInLinuxVM (
+    runCommand "bpi-r3-fs-template"
+      {
+        preVM = ''
+          truncate -s ${toString ((rootPartEnd - rootPartStart + 1) * 512)} ./tmp.img
+          ${btrfs-progs}/bin/mkfs.btrfs \
+            --label NIXOS_SD \
+            --uuid "44444444-4444-4444-8888-888888888888" \
+            ./tmp.img
+        '';
+        nativeBuildInputs = [
+          btrfs-progs
+          e2fsprogs
+          util-linux
+          kmod
+        ];
+        postVM = ''
+          mkdir -p $out
+          ${zstd}/bin/zstd tmp.img -o $out/template.btrfs.zst
+        '';
+        memSize = "4G";
+        QEMU_OPTS = "-drive file=./tmp.img,format=raw,if=virtio,cache=unsafe,werror=report -rtc base=2000-01-01,clock=vm";
+      }
+      ''
+        modprobe btrfs
+        mkdir -p /mnt
+        mount -t btrfs -o space_cache=v2 /dev/vda /mnt
+        btrfs filesystem resize max /mnt
+        btrfs subvolume create /mnt/@boot
+        btrfs subvolume create /mnt/@
+        btrfs subvolume create /mnt/@nix
+        chattr +C /mnt/@boot
+      ''
+  );
 in
 
 stdenvNoCC.mkDerivation {
@@ -64,7 +75,7 @@ stdenvNoCC.mkDerivation {
     util-linux # sfdisk
     zstd
   ];
-    # ${vmTools.qemu}/bin/qemu-img create -f raw $img 7818182656
+  # ${vmTools.qemu}/bin/qemu-img create -f raw $img 7818182656
   unpackPhase = "true";
   buildPhase = ''
     img=./result.img

@@ -1,7 +1,8 @@
-{ pkgs
-, lib
-, config
-, ...
+{
+  pkgs,
+  lib,
+  config,
+  ...
 }:
 
 {
@@ -20,13 +21,16 @@
   hardware.sensor.iio.enable = true;
   services.pipewire.enable = false;
   hardware.pulseaudio.enable = true;
-  users.users.${config.common.mainUsername}.extraGroups = [
-    "dialout"
-    "feedbackd"
-    "video"
-  ] ++ lib.optional (config.networking.modemmanager.enable || config.networking.networkmanager.enable) "networkmanager";
+  users.users.${config.common.mainUsername}.extraGroups =
+    [
+      "dialout"
+      "feedbackd"
+      "video"
+    ]
+    ++ lib.optional (
+      config.networking.modemmanager.enable || config.networking.networkmanager.enable
+    ) "networkmanager";
 
-        
   security.polkit.extraConfig = ''
     polkit.addRule(function(action, subject) {
       if ((action.id.indexOf("org.freedesktop.login1.suspend" == 0)
@@ -48,10 +52,16 @@
 
   # kde connect
   networking.firewall.allowedTCPPortRanges = [
-    { from = 1714; to = 1764; }
+    {
+      from = 1714;
+      to = 1764;
+    }
   ];
   networking.firewall.allowedUDPPortRanges = [
-    { from = 1714; to = 1764; }
+    {
+      from = 1714;
+      to = 1764;
+    }
   ];
 
   programs.calls.enable = true;

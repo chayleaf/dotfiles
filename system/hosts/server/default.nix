@@ -1,18 +1,20 @@
-{ lib
-, pkgs
-, config
-, ... }:
+{
+  lib,
+  pkgs,
+  config,
+  ...
+}:
 
 let
   cfg = config.server;
 
-  hostedDomains =
-    builtins.concatLists
-      (builtins.attrValues
-        (builtins.mapAttrs
-          (k: v: [ k ] ++ v.serverAliases)
-          config.services.nginx.virtualHosts));
-in {
+  hostedDomains = builtins.concatLists (
+    builtins.attrValues (
+      builtins.mapAttrs (k: v: [ k ] ++ v.serverAliases) config.services.nginx.virtualHosts
+    )
+  );
+in
+{
   imports = [
     ./options.nix
     ./akkoma.nix
@@ -30,7 +32,10 @@ in {
   system.stateVersion = "22.11";
   impermanence.directories = [
     { directory = /var/www; }
-    { directory = /secrets; mode = "0755"; }
+    {
+      directory = /secrets;
+      mode = "0755";
+    }
   ];
   networking.firewall = {
     enable = true;
@@ -39,23 +44,28 @@ in {
         # ssh
         22
         # http/s
-        80 443
+        80
+        443
       ]
       (lib.mkIf config.services.unbound.enable [
         # dns
-        53 853
+        53
+        853
       ])
     ];
     allowedUDPPorts = lib.mkIf config.services.unbound.enable [
       # dns
-      53 853
+      53
+      853
       # quic
       443
     ];
   };
 
   # UNBOUND
-  users.users.${config.common.mainUsername}.extraGroups = lib.mkIf config.services.unbound.enable [ config.services.unbound.group ];
+  users.users.${config.common.mainUsername}.extraGroups = lib.mkIf config.services.unbound.enable [
+    config.services.unbound.group
+  ];
 
   networking.resolvconf.extraConfig = lib.mkIf config.services.unbound.enable ''
     name_servers="127.0.0.1 ::1"
@@ -71,8 +81,14 @@ in {
     resolveLocalQueries = false;
     settings = {
       server = {
-        interface = [ "0.0.0.0" "::" ];
-        access-control =  [ "0.0.0.0/0 allow" "::/0 allow" ];
+        interface = [
+          "0.0.0.0"
+          "::"
+        ];
+        access-control = [
+          "0.0.0.0/0 allow"
+          "::/0 allow"
+        ];
         aggressive-nsec = true;
         do-ip6 = true;
       };
@@ -90,8 +106,9 @@ in {
   services.openssh.enable = true;
   services.fail2ban = {
     enable = true;
-    ignoreIP = lib.optionals (cfg.lanCidrV4 != "0.0.0.0/0") [ cfg.lanCidrV4 ]
-                ++ (lib.optionals (cfg.lanCidrV6 != "::/0") [ cfg.lanCidrV6 ]);
+    ignoreIP =
+      lib.optionals (cfg.lanCidrV4 != "0.0.0.0/0") [ cfg.lanCidrV4 ]
+      ++ (lib.optionals (cfg.lanCidrV6 != "::/0") [ cfg.lanCidrV6 ]);
     maxretry = 10;
     jails.dovecot = ''
       enabled = true
@@ -103,35 +120,43 @@ in {
   services.nginx.enable = true;
   services.nginx.enableReload = true;
   services.nginx.package = pkgs.nginxQuic;
-  /* DNS over TLS
-  services.nginx.streamConfig =
-  let
-    inherit (config.security.acme.certs."${cfg.domainName}") directory;
-  in ''
-    upstream dns {
-      zone dns 64k;
-      server 127.0.0.1:53;
-    }
-    server {
-      listen 853 ssl;
-      ssl_certificate ${directory}/fullchain.pem;
-      ssl_certificate_key ${directory}/key.pem;
-      ssl_trusted_certificate ${directory}/chain.pem;
-      proxy_pass dns;
-    }
-  '';*/
+  /*
+    DNS over TLS
+    services.nginx.streamConfig =
+    let
+      inherit (config.security.acme.certs."${cfg.domainName}") directory;
+    in ''
+      upstream dns {
+        zone dns 64k;
+        server 127.0.0.1:53;
+      }
+      server {
+        listen 853 ssl;
+        ssl_certificate ${directory}/fullchain.pem;
+        ssl_certificate_key ${directory}/key.pem;
+        ssl_trusted_certificate ${directory}/chain.pem;
+        proxy_pass dns;
+      }
+    '';
+  */
   services.nginx.commonHttpConfig = ''
     log_format postdata '{\"ip\":\"$remote_addr\",\"time\":\"$time_iso8601\",\"referer\":\"$http_referer\",\"body\":\"$request_body\",\"ua\":\"$http_user_agent\"}';
 
-    ${lib.concatMapStringsSep "\n" (x: "set_real_ip_from ${x};") (lib.splitString "\n" ''
-      ${builtins.readFile (builtins.fetchurl {
-        url = "https://www.cloudflare.com/ips-v4";
-        sha256 = "0ywy9sg7spafi3gm9q5wb59lbiq0swvf0q3iazl0maq1pj1nsb7h";
-      })}
-      ${builtins.readFile (builtins.fetchurl {
-        url = "https://www.cloudflare.com/ips-v6";
-        sha256 = "1ad09hijignj6zlqvdjxv7rjj8567z357zfavv201b9vx3ikk7cy";
-      })}'')}
+    ${lib.concatMapStringsSep "\n" (x: "set_real_ip_from ${x};") (
+      lib.splitString "\n" ''
+        ${builtins.readFile (
+          builtins.fetchurl {
+            url = "https://www.cloudflare.com/ips-v4";
+            sha256 = "0ywy9sg7spafi3gm9q5wb59lbiq0swvf0q3iazl0maq1pj1nsb7h";
+          }
+        )}
+        ${builtins.readFile (
+          builtins.fetchurl {
+            url = "https://www.cloudflare.com/ips-v6";
+            sha256 = "1ad09hijignj6zlqvdjxv7rjj8567z357zfavv201b9vx3ikk7cy";
+          }
+        )}''
+    )}
     real_ip_header CF-Connecting-IP;
   '';
   services.nginx.recommendedBrotliSettings = true;
@@ -180,14 +205,20 @@ in {
       { import = "(data)/crawlers/marginalia.yaml"; }
       { import = "(data)/crawlers/mojeekbot.yaml"; }
       { import = "(data)/common/keep-internet-working.yaml"; }
-      { name = "generic-browser"; user_agent_regex = "Mozilla|Opera"; action = "CHALLENGE"; }
+      {
+        name = "generic-browser";
+        user_agent_regex = "Mozilla|Opera";
+        action = "CHALLENGE";
+      }
     ];
     dnsbl = false;
   };
 
-  /*locations."/dns-query".extraConfig = ''
-    grpc_pass grpc://127.0.0.1:53453;
-  '';*/
+  /*
+    locations."/dns-query".extraConfig = ''
+      grpc_pass grpc://127.0.0.1:53453;
+    '';
+  */
 
   # TODO: firefox sync?
 }

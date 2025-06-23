@@ -1,16 +1,25 @@
-{ config, pkgs, lib, ... }:
+{
+  config,
+  pkgs,
+  lib,
+  ...
+}:
 let
   supportTerminal = term: builtins.elem term config.terminals;
-  getTerminalBin = term: {
-    alacritty = "${pkgs.alacritty}/bin/alacritty";
-    foot = "${pkgs.foot}/bin/footclient";
-    kitty = "${pkgs.kitty}/bin/kitty";
-    urxvt = "${pkgs.rxvt-unicode-emoji}/bin/urxvt";
-  }.${term} or (throw "Terminal not found");
+  getTerminalBin =
+    term:
+    {
+      alacritty = "${pkgs.alacritty}/bin/alacritty";
+      foot = "${pkgs.foot}/bin/footclient";
+      kitty = "${pkgs.kitty}/bin/kitty";
+      urxvt = "${pkgs.rxvt-unicode-emoji}/bin/urxvt";
+    }
+    .${term} or (throw "Terminal not found");
   color = builtins.elemAt config.colors.base;
   hex = x: if builtins.isFunction x then (y: "#" + (x y)) else ("#" + x);
   shell = lib.mkIf config.termShell.enable (lib.mkDefault config.termShell.path);
-in {
+in
+{
   imports = [ ./options.nix ];
   terminalBin = getTerminalBin (builtins.head config.terminals);
   terminalBinX = getTerminalBin (lib.lists.findFirst (term: term != "foot") null config.terminals);
@@ -199,21 +208,21 @@ in {
     };
   };
   xdg.configFile."fontconfig/conf.d/10-kitty-fonts.conf" =
-    lib.mkIf
-      (supportTerminal "kitty" && config.programs.kitty.font.name == "Noto Sans Mono") {
-      text = ''
-        <?xml version="1.0"?>
-        <!DOCTYPE fontconfig SYSTEM "fonts.dtd">
-        <fontconfig>
-        <match target="scan">
-          <test name="family">
-            <string>Noto Sans Mono</string>
-          </test>
-          <edit name="spacing">
-            <int>90</int>
-          </edit>
-        </match>
-        </fontconfig>
-      '';
-    };
+    lib.mkIf (supportTerminal "kitty" && config.programs.kitty.font.name == "Noto Sans Mono")
+      {
+        text = ''
+          <?xml version="1.0"?>
+          <!DOCTYPE fontconfig SYSTEM "fonts.dtd">
+          <fontconfig>
+          <match target="scan">
+            <test name="family">
+              <string>Noto Sans Mono</string>
+            </test>
+            <edit name="spacing">
+              <int>90</int>
+            </edit>
+          </match>
+          </fontconfig>
+        '';
+      };
 }

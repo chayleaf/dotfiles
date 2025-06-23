@@ -1,6 +1,7 @@
-{ lib
-, config
-, ...
+{
+  lib,
+  config,
+  ...
 }:
 
 let
@@ -11,14 +12,24 @@ in
     phone.rndis.enable = lib.mkEnableOption "rndis";
   };
   config = lib.mkIf cfg.rndis.enable {
-    boot.initrd.kernelModules = [ "configfs" "libcomposite" ];
-    boot.initrd.availableKernelModules = [ "usb_f_rndis" "usb_f_ncm" ];
+    boot.initrd.kernelModules = [
+      "configfs"
+      "libcomposite"
+    ];
+    boot.initrd.availableKernelModules = [
+      "usb_f_rndis"
+      "usb_f_ncm"
+    ];
 
     boot.specialFileSystems = {
       "/sys/kernel/config" = {
         device = "configfs";
         fsType = "configfs";
-        options = [ "nosuid" "noexec" "nodev" ];
+        options = [
+          "nosuid"
+          "noexec"
+          "nodev"
+        ];
       };
     };
 

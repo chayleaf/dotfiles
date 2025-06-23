@@ -1,16 +1,29 @@
-{ config
-, pkgs
-, inputs
-, ... }:
+{
+  config,
+  pkgs,
+  inputs,
+  ...
+}:
 
 let
   cfg = config.server;
-in {
+in
+{
   imports = [ inputs.nixos-mailserver.nixosModules.default ];
 
   impermanence.directories = [
-    { directory = config.mailserver.dkimKeyDirectory; user = "opendkim"; group = "opendkim"; mode = "0755"; }
-    { directory = config.mailserver.mailDirectory; user = "virtualMail"; group = "virtualMail"; mode = "0700"; }
+    {
+      directory = config.mailserver.dkimKeyDirectory;
+      user = "opendkim";
+      group = "opendkim";
+      mode = "0755";
+    }
+    {
+      directory = config.mailserver.mailDirectory;
+      user = "virtualMail";
+      group = "virtualMail";
+      mode = "0700";
+    }
   ];
 
   # roundcube
@@ -23,7 +36,10 @@ in {
   services.roundcube = {
     enable = true;
     package = pkgs.roundcube.withPlugins (plugins: [ plugins.persistent_login ]);
-    dicts = with pkgs.aspellDicts; [ en ru ];
+    dicts = with pkgs.aspellDicts; [
+      en
+      ru
+    ];
     hostName = "mail.${cfg.domainName}";
     maxAttachmentSize = 100;
     plugins = [ "persistent_login" ];
@@ -57,7 +73,8 @@ in {
       passwd = builtins.toFile "dovecot2-local-passwd" ''
         noreply@${cfg.domainName}:{plain}${cfg.unhashedNoreplyPassword}::::::allow_nets=local,127.0.0.0/8,::1
       '';
-    in ''
+    in
+    ''
       passdb {
         driver = passwd-file
         args = ${passwd}

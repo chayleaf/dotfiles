@@ -1,13 +1,16 @@
-{ config
-, options
-, lib
-, pkgs
-, ... }:
+{
+  config,
+  options,
+  lib,
+  pkgs,
+  ...
+}:
 
 let
   cfg = config.vfio;
   enableIvshmem = cfg.lookingGlass.enable && (builtins.length cfg.lookingGlass.ivshmem) > 0;
-in {
+in
+{
   options.vfio = with lib; {
     enable = mkOption {
       type = types.bool;
@@ -49,23 +52,34 @@ in {
             description = "Enable Looking Glass integration";
           };
           ivshmem = mkOption {
-            type = with types; listOf (submodule {
-              options = {
-                size = mkOption {
-                  type = types.int;
-                  default = 32;
-                  description = "IVSHMEM size in MB: https://looking-glass.io/docs/B6/install/#determining-memory";
+            type =
+              with types;
+              listOf (submodule {
+                options = {
+                  size = mkOption {
+                    type = types.int;
+                    default = 32;
+                    description = "IVSHMEM size in MB: https://looking-glass.io/docs/B6/install/#determining-memory";
+                  };
+                  owner = mkOption {
+                    type = types.str;
+                    description = "IVSHMEM device owner";
+                  };
                 };
-                owner = mkOption {
-                  type = types.str;
-                  description = "IVSHMEM device owner";
-                };
-              };
-            });
-            default = if builtins.length cfg.libvirtdGroup == 1 then [
-              { owner = builtins.head cfg.libvirtdGroup; }
-            ] else [ ];
-            example = [ { size = 32; owner = "user"; } ];
+              });
+            default =
+              if builtins.length cfg.libvirtdGroup == 1 then
+                [
+                  { owner = builtins.head cfg.libvirtdGroup; }
+                ]
+              else
+                [ ];
+            example = [
+              {
+                size = 32;
+                owner = "user";
+              }
+            ];
             description = "IVSHMEM/kvmfr config (multiple devices can be created: /dev/kvmfr0, /dev/kvmfr1, and so on)";
           };
         };
@@ -106,18 +120,25 @@ in {
           modprobe vfio
           modprobe vfio_iommu_type1
           modprobe vfio_pci
-        ${if cfg.nvidiaGpu then "" else ''
-        else
-          modprobe amdgpu''}
+        ${
+          if cfg.nvidiaGpu then
+            ""
+          else
+            ''
+              else
+                modprobe amdgpu''
+        }
         fi
       '';
-      initrd.kernelModules = [
-        (if cfg.intelCpu then "kvm-intel" else "kvm-amd")
-      ] ++ lib.optionals cfg.passGpuAtBoot [
-        "vfio"
-        "vfio_iommu_type1"
-        "vfio_pci"
-      ];
+      initrd.kernelModules =
+        [
+          (if cfg.intelCpu then "kvm-intel" else "kvm-amd")
+        ]
+        ++ lib.optionals cfg.passGpuAtBoot [
+          "vfio"
+          "vfio_iommu_type1"
+          "vfio_pci"
+        ];
       initrd.availableKernelModules = lib.mkIf (!cfg.passGpuAtBoot) [
         "vfio"
         "vfio_iommu_type1"
@@ -125,15 +146,18 @@ in {
       ];
       # kvmfrOverlay is defined in pkgs/default.nix
       # I use it to keep looking-glass and kvmfr's version pinned
-      extraModulePackages =
-        lib.mkIf enableIvshmem [ ((pkgs.kvmfrOverlay or lib.id) config.boot.kernelPackages.kvmfr) ];
+      extraModulePackages = lib.mkIf enableIvshmem [
+        ((pkgs.kvmfrOverlay or lib.id) config.boot.kernelPackages.kvmfr)
+      ];
       extraModprobeConfig = ''
-          options vfio-pci ids=${builtins.concatStringsSep "," cfg.pciIDs} disable_idle_d3=1
-          options kvm ignore_msrs=1
-          ${lib.optionalString enableIvshmem ''
-          options kvmfr static_size_mb=${builtins.concatStringsSep "," (map (x: toString x.size) cfg.lookingGlass.ivshmem)}
-          ''}
-        '';
+        options vfio-pci ids=${builtins.concatStringsSep "," cfg.pciIDs} disable_idle_d3=1
+        options kvm ignore_msrs=1
+        ${lib.optionalString enableIvshmem ''
+          options kvmfr static_size_mb=${
+            builtins.concatStringsSep "," (map (x: toString x.size) cfg.lookingGlass.ivshmem)
+          }
+        ''}
+      '';
       kernelParams = [
         (if cfg.intelCpu then "intel_iommu=on" else "amd_iommu=on")
         "iommu=pt"
@@ -142,21 +166,22 @@ in {
         "vhost-net"
       ] ++ lib.optional enableIvshmem "kvmfr";
     };
-    services.udev.extraRules = lib.mkIf enableIvshmem
-      (builtins.concatStringsSep
-        ""
-        (lib.imap0
-          (i: ivshmem: ''
-            SUBSYSTEM=="kvmfr", KERNEL=="kvmfr${toString i}", OWNER="${ivshmem.owner}", GROUP="kvm", MODE="0660"
-          '')
-          cfg.lookingGlass.ivshmem));
-    hardware = {
-      graphics.enable = true;
-    } // lib.optionalAttrs (cfg.enable && !cfg.nvidiaGpu && options?hardware.amdgpu.loadInInitrd) {
-      # disable early KMS so GPU can be properly unbound
-      # can't use mkif because the option may not even exist
-      amdgpu.loadInInitrd = false;
-    };
+    services.udev.extraRules = lib.mkIf enableIvshmem (
+      builtins.concatStringsSep "" (
+        lib.imap0 (i: ivshmem: ''
+          SUBSYSTEM=="kvmfr", KERNEL=="kvmfr${toString i}", OWNER="${ivshmem.owner}", GROUP="kvm", MODE="0660"
+        '') cfg.lookingGlass.ivshmem
+      )
+    );
+    hardware =
+      {
+        graphics.enable = true;
+      }
+      // lib.optionalAttrs (cfg.enable && !cfg.nvidiaGpu && options ? hardware.amdgpu.loadInInitrd) {
+        # disable early KMS so GPU can be properly unbound
+        # can't use mkif because the option may not even exist
+        amdgpu.loadInInitrd = false;
+      };
     # needed for virt-manager
     programs.dconf.enable = true;
     virtualisation.libvirtd = {

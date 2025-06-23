@@ -1,7 +1,8 @@
-{ pkgs
-, lib
-, inputs,
-...
+{
+  pkgs,
+  lib,
+  inputs,
+  ...
 }:
 
 {
@@ -15,15 +16,17 @@
     inputs.nur.modules.homeManager.default
   ];
 
-  nixpkgs.config.allowUnfreePredicate = pkg: builtins.elem (lib.getName pkg) [
-    "steam-run"
-    "steam"
-    "steam-original"
-    "steam-runtime"
-    "steam-unwrapped"
-    "steamcmd"
-    "osu-lazer-bin"
-  ];
+  nixpkgs.config.allowUnfreePredicate =
+    pkg:
+    builtins.elem (lib.getName pkg) [
+      "steam-run"
+      "steam"
+      "steam-original"
+      "steam-runtime"
+      "steam-unwrapped"
+      "steamcmd"
+      "osu-lazer-bin"
+    ];
 
   home.stateVersion = "22.11";
   home.username = "user";
@@ -50,27 +53,45 @@
     krita
     xournalpp
     blender-hip
-    kdePackages.kdenlive glaxnimate mediainfo
-    ghidra (cutter.withPlugins (p: with p; [ sigdb rz-ghidra ]))
-    openrgb piper
-    steam-run steam
+    kdePackages.kdenlive
+    glaxnimate
+    mediainfo
+    ghidra
+    (cutter.withPlugins (
+      p: with p; [
+        sigdb
+        rz-ghidra
+      ]
+    ))
+    openrgb
+    piper
+    steam-run
+    steam
     # faf-client
     #(osu-lazer-bin.override {
-      #command_prefix = "env SDL_VIDEODRIVER=wayland ${obs-studio-plugins.obs-vkcapture}/bin/obs-gamecapture";
+    #command_prefix = "env SDL_VIDEODRIVER=wayland ${obs-studio-plugins.obs-vkcapture}/bin/obs-gamecapture";
     #})
     taisei
     techmino
     (wrapOBS {
-      plugins = with obs-studio-plugins; [ wlrobs obs-vkcapture ];
+      plugins = with obs-studio-plugins; [
+        wlrobs
+        obs-vkcapture
+      ];
     })
     easyeffects
     # wineWowPackages.waylandFull
     winetricks
     # protontricks # proton-caller
     # bottles
-    virt-manager looking-glass-client
-    clang_latest mold
-    rustc rustfmt cargo clippy
+    virt-manager
+    looking-glass-client
+    clang_latest
+    mold
+    rustc
+    rustfmt
+    cargo
+    clippy
     lalrpop
     tio
     tdesktop

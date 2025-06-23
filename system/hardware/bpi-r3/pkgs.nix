@@ -1,32 +1,50 @@
-{ pkgs
-, lib
-, sources
-, ... }:
+{
+  pkgs,
+  lib,
+  sources,
+  ...
+}:
 
 let
-  mkArmTrustedFirmwareBpiR3 = { bootDevice, uboot ? null }: pkgs.buildArmTrustedFirmware rec {
-    inherit (sources.atf-bpir3) src;
-    patches = [ ./bpi-r3-atf-backport-mkimage-support.patch ];
-    extraMakeFlags = assert builtins.elem bootDevice [
-      "nor" "snand" "spim-nand" "emmc" "sdmmc" "ram"
-    ]; [
-      "BOOT_DEVICE=${bootDevice}"
-      "DRAM_USE_DDR4=1"
-      "USE_MKIMAGE=1"
-      "MKIMAGE=${pkgs.ubootTools}/bin/mkimage"
-      "all"
-      "fip"
-    ] ++ lib.optionals (uboot != null) [
-      "BL33=${uboot}/u-boot.bin"
-    ];
-    extraMeta.platforms = [ "aarch64-linux" ];
-    platform = "mt7986";
-    filesToInstall = [
-      "build/${platform}/release/bl2.img"
-      "build/${platform}/release/fip.bin"
-    ];
-    nativeBuildInputs = with pkgs; [ /*pkgsCross.arm-embedded.stdenv.cc*/ dtc ];
-  };
+  mkArmTrustedFirmwareBpiR3 =
+    {
+      bootDevice,
+      uboot ? null,
+    }:
+    pkgs.buildArmTrustedFirmware rec {
+      inherit (sources.atf-bpir3) src;
+      patches = [ ./bpi-r3-atf-backport-mkimage-support.patch ];
+      extraMakeFlags =
+        assert builtins.elem bootDevice [
+          "nor"
+          "snand"
+          "spim-nand"
+          "emmc"
+          "sdmmc"
+          "ram"
+        ];
+        [
+          "BOOT_DEVICE=${bootDevice}"
+          "DRAM_USE_DDR4=1"
+          "USE_MKIMAGE=1"
+          "MKIMAGE=${pkgs.ubootTools}/bin/mkimage"
+          "all"
+          "fip"
+        ]
+        ++ lib.optionals (uboot != null) [
+          "BL33=${uboot}/u-boot.bin"
+        ];
+      extraMeta.platforms = [ "aarch64-linux" ];
+      platform = "mt7986";
+      filesToInstall = [
+        "build/${platform}/release/bl2.img"
+        "build/${platform}/release/fip.bin"
+      ];
+      nativeBuildInputs = with pkgs; [
+        # pkgsCross.arm-embedded.stdenv.cc
+        dtc
+      ];
+    };
   # sd/emmc
   # -- CONFIG_USE_BOOTCOMMAND/CONFIG_BOOTCOMMAND - distroboot stuff (override default boot command)
   # -- CONFIG_BOOTDELAY - autoboot timeout
@@ -38,10 +56,12 @@ let
   # CONFIG_ZSTD - allow zstd initrd
   mkUbootConfig = storage: ''
     CONFIG_AUTOBOOT=y
-    CONFIG_BOOTCOMMAND="${builtins.replaceStrings [ "\n" ] [ "; " ] ''
+    CONFIG_BOOTCOMMAND="${
+      builtins.replaceStrings [ "\n" ] [ "; " ] ''
         setenv boot_prefixes /@boot/ /@/ /boot/ /
         run distro_bootcmd
-    ''};"
+      ''
+    };"
     CONFIG_BOOTSTD_DEFAULTS=y
     CONFIG_BOOTSTD_FULL=y
     CONFIG_CMD_BTRFS=y
@@ -60,7 +80,8 @@ let
     hash = "sha256-tqp9fnGPQFeNGrkU/A6AusDEz7neh2KiR9HWbR7+WTY=";
   };
 
-in rec {
+in
+rec {
   sd.uboot = pkgs.buildUBoot {
     defconfig = "mt7986a_bpir3_sd_defconfig";
     extraConfig = mkUbootConfig "sd";
@@ -80,8 +101,14 @@ in rec {
     patches = [ ./mt7986-default-bootcmd.patch ];
     filesToInstall = [ "u-boot.bin" ];
   };
-  sd.armTrustedFirmware = mkArmTrustedFirmwareBpiR3 { inherit (sd) uboot; bootDevice = "sdmmc"; };
-  emmc.armTrustedFirmware = mkArmTrustedFirmwareBpiR3 { inherit (emmc) uboot; bootDevice = "emmc"; };
+  sd.armTrustedFirmware = mkArmTrustedFirmwareBpiR3 {
+    inherit (sd) uboot;
+    bootDevice = "sdmmc";
+  };
+  emmc.armTrustedFirmware = mkArmTrustedFirmwareBpiR3 {
+    inherit (emmc) uboot;
+    bootDevice = "emmc";
+  };
   combinedStuff = pkgs.stdenvNoCC.mkDerivation {
     name = "bpi-r3-stuff";
     unpackPhase = "true";
@@ -120,10 +147,12 @@ in rec {
     ignoreConfigErrors = false;
     # there's probably more enabled-by-default configs that are better left disabled, but whatever
     structuredExtraConfig = with lib.kernel; {
-      /* "Select this option if you are building a kernel for a server or
-          scientific/computation system, or if you want to maximize the
-          raw processing power of the kernel, irrespective of scheduling
-          latencies." */
+      /*
+        "Select this option if you are building a kernel for a server or
+         scientific/computation system, or if you want to maximize the
+         raw processing power of the kernel, irrespective of scheduling
+         latencies."
+      */
       PREEMPT_NONE = yes;
       # disable the other preempts
       PREEMPT_VOLUNTARY = lib.mkForce no;
@@ -295,7 +324,7 @@ in rec {
       PINCTRL_MT7986 = yes;
       PWM_MEDIATEK = yes;
       REGULATOR_MT6380 = yes;
-      MT76_CORE  = module;
+      MT76_CORE = module;
       MT76_LEDS = yes;
       MT76_CONNAC_LIB = module;
       MT7915E = module;
@@ -307,49 +336,120 @@ in rec {
 
       # keys that are unused in this case
       # used because i got bitten by config keys changing once
-      SND_AC97_POWER_SAVE_DEFAULT.optional = lib.mkForce true; SND_HDA_POWER_SAVE_DEFAULT.optional = lib.mkForce true;
-      SND_USB_AUDIO_MIDI_V2.tristate = lib.mkForce null; SND_HDA_CODEC_CS8409.tristate = lib.mkForce null;
-      DRM_DISPLAY_DP_AUX_CEC.tristate = lib.mkForce null; DRM_DISPLAY_DP_AUX_CHARDEV.tristate = lib.mkForce null;
-      DRM_ACCEL.tristate = lib.mkForce null; DRM_AMD_ACP.tristate = lib.mkForce null; DRM_AMD_SECURE_DISPLAY.tristate = lib.mkForce null;
-      DRM_DP_CEC.tristate = lib.mkForce null; DRM_NOUVEAU_SVM.tristate = lib.mkForce null; MEM_SOFT_DIRTY.tristate = lib.mkForce null;
-      PM_TRACE.tristate = lib.mkForce null; RAS_CEC.tristate = lib.mkForce null; SND_AC97_POWER_SAVE_DEFAULT.tristate = lib.mkForce null;
-      AGP.tristate = lib.mkForce null; ACPI_HOTPLUG_CPU.tristate = lib.mkForce null; CEPH_FSCACHE.tristate = lib.mkForce null;
-      CIFS_FSCACHE.tristate = lib.mkForce null; DRM_NOUVEAU_GSP_DEFAULT.tristate = lib.mkForce null; FSCACHE_STATS.tristate = lib.mkForce null;
-      "9P_FSCACHE".tristate = lib.mkForce null; CROS_EC_ISHTP.tristate = lib.mkForce null; CROS_EC_LPC.tristate = lib.mkForce null;
-      DRM_AMDGPU_CIK.tristate = lib.mkForce null; DRM_AMDGPU_SI.tristate = lib.mkForce null; DRM_AMDGPU_USERPTR.tristate = lib.mkForce null;
-      DRM_AMD_DC_FP.tristate = lib.mkForce null; DRM_AMD_DC_SI.tristate = lib.mkForce null; DRM_DP_AUX_CHARDEV.tristate = lib.mkForce null;
-      DRM_FBDEV_EMULATION.tristate = lib.mkForce null; DRM_GMA500.tristate = lib.mkForce null; DRM_LEGACY.tristate = lib.mkForce null;
-      DRM_LOAD_EDID_FIRMWARE.tristate = lib.mkForce null; DRM_SIMPLEDRM.tristate = lib.mkForce null; DRM_VBOXVIDEO.tristate = lib.mkForce null;
-      DRM_VC4_HDMI_CEC.tristate = lib.mkForce null; FB_3DFX_ACCEL.tristate = lib.mkForce null; FB_ATY_CT.tristate = lib.mkForce null;
-      FB_ATY_GX.tristate = lib.mkForce null; FB_EFI.tristate = lib.mkForce null; FB_NVIDIA_I2C.tristate = lib.mkForce null;
-      FB_RIVA_I2C.tristate = lib.mkForce null; FB_SAVAGE_ACCEL.tristate = lib.mkForce null; FB_SAVAGE_I2C.tristate = lib.mkForce null;
-      FB_SIMPLE.tristate = lib.mkForce null; FB_SIS_300.tristate = lib.mkForce null; FB_SIS_315.tristate = lib.mkForce null;
-      FB_VESA.tristate = lib.mkForce null; FONTS.tristate = lib.mkForce null; FONT_8x8.tristate = lib.mkForce null;
-      FONT_TER16x32.tristate = lib.mkForce null; FRAMEBUFFER_CONSOLE.tristate = lib.mkForce null;
+      SND_AC97_POWER_SAVE_DEFAULT.optional = lib.mkForce true;
+      SND_HDA_POWER_SAVE_DEFAULT.optional = lib.mkForce true;
+      SND_USB_AUDIO_MIDI_V2.tristate = lib.mkForce null;
+      SND_HDA_CODEC_CS8409.tristate = lib.mkForce null;
+      DRM_DISPLAY_DP_AUX_CEC.tristate = lib.mkForce null;
+      DRM_DISPLAY_DP_AUX_CHARDEV.tristate = lib.mkForce null;
+      DRM_ACCEL.tristate = lib.mkForce null;
+      DRM_AMD_ACP.tristate = lib.mkForce null;
+      DRM_AMD_SECURE_DISPLAY.tristate = lib.mkForce null;
+      DRM_DP_CEC.tristate = lib.mkForce null;
+      DRM_NOUVEAU_SVM.tristate = lib.mkForce null;
+      MEM_SOFT_DIRTY.tristate = lib.mkForce null;
+      PM_TRACE.tristate = lib.mkForce null;
+      RAS_CEC.tristate = lib.mkForce null;
+      SND_AC97_POWER_SAVE_DEFAULT.tristate = lib.mkForce null;
+      AGP.tristate = lib.mkForce null;
+      ACPI_HOTPLUG_CPU.tristate = lib.mkForce null;
+      CEPH_FSCACHE.tristate = lib.mkForce null;
+      CIFS_FSCACHE.tristate = lib.mkForce null;
+      DRM_NOUVEAU_GSP_DEFAULT.tristate = lib.mkForce null;
+      FSCACHE_STATS.tristate = lib.mkForce null;
+      "9P_FSCACHE".tristate = lib.mkForce null;
+      CROS_EC_ISHTP.tristate = lib.mkForce null;
+      CROS_EC_LPC.tristate = lib.mkForce null;
+      DRM_AMDGPU_CIK.tristate = lib.mkForce null;
+      DRM_AMDGPU_SI.tristate = lib.mkForce null;
+      DRM_AMDGPU_USERPTR.tristate = lib.mkForce null;
+      DRM_AMD_DC_FP.tristate = lib.mkForce null;
+      DRM_AMD_DC_SI.tristate = lib.mkForce null;
+      DRM_DP_AUX_CHARDEV.tristate = lib.mkForce null;
+      DRM_FBDEV_EMULATION.tristate = lib.mkForce null;
+      DRM_GMA500.tristate = lib.mkForce null;
+      DRM_LEGACY.tristate = lib.mkForce null;
+      DRM_LOAD_EDID_FIRMWARE.tristate = lib.mkForce null;
+      DRM_SIMPLEDRM.tristate = lib.mkForce null;
+      DRM_VBOXVIDEO.tristate = lib.mkForce null;
+      DRM_VC4_HDMI_CEC.tristate = lib.mkForce null;
+      FB_3DFX_ACCEL.tristate = lib.mkForce null;
+      FB_ATY_CT.tristate = lib.mkForce null;
+      FB_ATY_GX.tristate = lib.mkForce null;
+      FB_EFI.tristate = lib.mkForce null;
+      FB_NVIDIA_I2C.tristate = lib.mkForce null;
+      FB_RIVA_I2C.tristate = lib.mkForce null;
+      FB_SAVAGE_ACCEL.tristate = lib.mkForce null;
+      FB_SAVAGE_I2C.tristate = lib.mkForce null;
+      FB_SIMPLE.tristate = lib.mkForce null;
+      FB_SIS_300.tristate = lib.mkForce null;
+      FB_SIS_315.tristate = lib.mkForce null;
+      FB_VESA.tristate = lib.mkForce null;
+      FONTS.tristate = lib.mkForce null;
+      FONT_8x8.tristate = lib.mkForce null;
+      FONT_TER16x32.tristate = lib.mkForce null;
+      FRAMEBUFFER_CONSOLE.tristate = lib.mkForce null;
       FRAMEBUFFER_CONSOLE_DEFERRED_TAKEOVER.tristate = lib.mkForce null;
-      FRAMEBUFFER_CONSOLE_DETECT_PRIMARY.tristate = lib.mkForce null; FRAMEBUFFER_CONSOLE_ROTATION.tristate = lib.mkForce null;
-      HMM_MIRROR.tristate = lib.mkForce null; HSA_AMD.tristate = lib.mkForce null; HYPERVISOR_GUEST.tristate = lib.mkForce null;
-      INFINIBAND_IPOIB.tristate = lib.mkForce null; INFINIBAND_IPOIB_CM.tristate = lib.mkForce null;
-      IP_MROUTE_MULTIPLE_TABLES.tristate = lib.mkForce null; JOYSTICK_PSXPAD_SPI_FF.tristate = lib.mkForce null;
-      KERNEL_ZSTD.tristate = lib.mkForce null; KEYBOARD_APPLESPI.tristate = lib.mkForce null; KVM_ASYNC_PF.tristate = lib.mkForce null;
-      KVM_GENERIC_DIRTYLOG_READ_PROTECT.tristate = lib.mkForce null; KVM_GUEST.tristate = lib.mkForce null; KVM_MMIO.tristate = lib.mkForce null;
-      KVM_VFIO.tristate = lib.mkForce null; LOGO.tristate = lib.mkForce null; MICROCODE.tristate = lib.mkForce null;
-      MOUSE_PS2_VMMOUSE.tristate = lib.mkForce null; MTRR_SANITIZER.tristate = lib.mkForce null; NFS_FSCACHE.tristate = lib.mkForce null;
+      FRAMEBUFFER_CONSOLE_DETECT_PRIMARY.tristate = lib.mkForce null;
+      FRAMEBUFFER_CONSOLE_ROTATION.tristate = lib.mkForce null;
+      HMM_MIRROR.tristate = lib.mkForce null;
+      HSA_AMD.tristate = lib.mkForce null;
+      HYPERVISOR_GUEST.tristate = lib.mkForce null;
+      INFINIBAND_IPOIB.tristate = lib.mkForce null;
+      INFINIBAND_IPOIB_CM.tristate = lib.mkForce null;
+      IP_MROUTE_MULTIPLE_TABLES.tristate = lib.mkForce null;
+      JOYSTICK_PSXPAD_SPI_FF.tristate = lib.mkForce null;
+      KERNEL_ZSTD.tristate = lib.mkForce null;
+      KEYBOARD_APPLESPI.tristate = lib.mkForce null;
+      KVM_ASYNC_PF.tristate = lib.mkForce null;
+      KVM_GENERIC_DIRTYLOG_READ_PROTECT.tristate = lib.mkForce null;
+      KVM_GUEST.tristate = lib.mkForce null;
+      KVM_MMIO.tristate = lib.mkForce null;
+      KVM_VFIO.tristate = lib.mkForce null;
+      LOGO.tristate = lib.mkForce null;
+      MICROCODE.tristate = lib.mkForce null;
+      MOUSE_PS2_VMMOUSE.tristate = lib.mkForce null;
+      MTRR_SANITIZER.tristate = lib.mkForce null;
+      NFS_FSCACHE.tristate = lib.mkForce null;
       PINCTRL_BAYTRAIL.tristate = lib.mkForce null;
-      PINCTRL_CHERRYVIEW.tristate = lib.mkForce null; PM_ADVANCED_DEBUG.tristate = lib.mkForce null; PM_TRACE_RTC.tristate = lib.mkForce null;
-      SND_AC97_POWER_SAVE.tristate = lib.mkForce null; SND_DYNAMIC_MINORS.tristate = lib.mkForce null;
-      SND_HDA_INPUT_BEEP.tristate = lib.mkForce null; SND_HDA_PATCH_LOADER.tristate = lib.mkForce null;
-      SND_HDA_RECONFIG.tristate = lib.mkForce null; SND_OSSEMUL.tristate = lib.mkForce null; SND_USB_CAIAQ_INPUT.tristate = lib.mkForce null;
-      VFIO_PCI_VGA.tristate = lib.mkForce null; VGA_SWITCHEROO.tristate = lib.mkForce null; X86_AMD_PLATFORM_DEVICE.tristate = lib.mkForce null;
-      X86_CHECK_BIOS_CORRUPTION.tristate = lib.mkForce null; X86_MCE.tristate = lib.mkForce null;
-      X86_PLATFORM_DRIVERS_DELL.tristate = lib.mkForce null; X86_PLATFORM_DRIVERS_HP.tristate = lib.mkForce null;
-      JOYSTICK_XPAD_FF.tristate = lib.mkForce null; JOYSTICK_XPAD_LEDS.tristate = lib.mkForce null; KEXEC_JUMP.tristate = lib.mkForce null;
-      PERF_EVENTS_AMD_BRS.tristate = lib.mkForce null; HVC_XEN.tristate = lib.mkForce null; HVC_XEN_FRONTEND.tristate = lib.mkForce null;
-      PARAVIRT_SPINLOCKS.tristate = lib.mkForce null; PCI_XEN.tristate = lib.mkForce null; SWIOTLB_XEN.tristate = lib.mkForce null;
-      VBOXGUEST.tristate = lib.mkForce null; XEN_BACKEND.tristate = lib.mkForce null; XEN_BALLOON.tristate = lib.mkForce null;
-      XEN_BALLOON_MEMORY_HOTPLUG.tristate = lib.mkForce null; XEN_DOM0.tristate = lib.mkForce null; XEN_EFI.tristate = lib.mkForce null;
-      XEN_HAVE_PVMMU.tristate = lib.mkForce null; XEN_MCE_LOG.tristate = lib.mkForce null; XEN_PVH.tristate = lib.mkForce null;
-      XEN_PVHVM.tristate = lib.mkForce null; XEN_SAVE_RESTORE.tristate = lib.mkForce null; XEN_SYS_HYPERVISOR.tristate = lib.mkForce null;
+      PINCTRL_CHERRYVIEW.tristate = lib.mkForce null;
+      PM_ADVANCED_DEBUG.tristate = lib.mkForce null;
+      PM_TRACE_RTC.tristate = lib.mkForce null;
+      SND_AC97_POWER_SAVE.tristate = lib.mkForce null;
+      SND_DYNAMIC_MINORS.tristate = lib.mkForce null;
+      SND_HDA_INPUT_BEEP.tristate = lib.mkForce null;
+      SND_HDA_PATCH_LOADER.tristate = lib.mkForce null;
+      SND_HDA_RECONFIG.tristate = lib.mkForce null;
+      SND_OSSEMUL.tristate = lib.mkForce null;
+      SND_USB_CAIAQ_INPUT.tristate = lib.mkForce null;
+      VFIO_PCI_VGA.tristate = lib.mkForce null;
+      VGA_SWITCHEROO.tristate = lib.mkForce null;
+      X86_AMD_PLATFORM_DEVICE.tristate = lib.mkForce null;
+      X86_CHECK_BIOS_CORRUPTION.tristate = lib.mkForce null;
+      X86_MCE.tristate = lib.mkForce null;
+      X86_PLATFORM_DRIVERS_DELL.tristate = lib.mkForce null;
+      X86_PLATFORM_DRIVERS_HP.tristate = lib.mkForce null;
+      JOYSTICK_XPAD_FF.tristate = lib.mkForce null;
+      JOYSTICK_XPAD_LEDS.tristate = lib.mkForce null;
+      KEXEC_JUMP.tristate = lib.mkForce null;
+      PERF_EVENTS_AMD_BRS.tristate = lib.mkForce null;
+      HVC_XEN.tristate = lib.mkForce null;
+      HVC_XEN_FRONTEND.tristate = lib.mkForce null;
+      PARAVIRT_SPINLOCKS.tristate = lib.mkForce null;
+      PCI_XEN.tristate = lib.mkForce null;
+      SWIOTLB_XEN.tristate = lib.mkForce null;
+      VBOXGUEST.tristate = lib.mkForce null;
+      XEN_BACKEND.tristate = lib.mkForce null;
+      XEN_BALLOON.tristate = lib.mkForce null;
+      XEN_BALLOON_MEMORY_HOTPLUG.tristate = lib.mkForce null;
+      XEN_DOM0.tristate = lib.mkForce null;
+      XEN_EFI.tristate = lib.mkForce null;
+      XEN_HAVE_PVMMU.tristate = lib.mkForce null;
+      XEN_MCE_LOG.tristate = lib.mkForce null;
+      XEN_PVH.tristate = lib.mkForce null;
+      XEN_PVHVM.tristate = lib.mkForce null;
+      XEN_SAVE_RESTORE.tristate = lib.mkForce null;
+      XEN_SYS_HYPERVISOR.tristate = lib.mkForce null;
     };
   };
   linuxPackages = pkgs.linuxPackagesFor linux;

@@ -1,15 +1,21 @@
-{ pkgs
-, lib
-, inputs
-, pkgs' ? pkgs
-, isOverlay ? true
-, ...
+{
+  pkgs,
+  lib,
+  inputs,
+  pkgs' ? pkgs,
+  isOverlay ? true,
+  ...
 }:
 
 let
   inherit (pkgs') callPackage;
   sources = import ./_sources/generated.nix {
-    inherit (pkgs) fetchgit fetchurl fetchFromGitHub dockerTools;
+    inherit (pkgs)
+      fetchgit
+      fetchurl
+      fetchFromGitHub
+      dockerTools
+      ;
   };
   nur = import inputs.nur {
     inherit pkgs;
@@ -20,7 +26,9 @@ in
 {
   inherit (inputs.nix-gaming.packages.${pkgs.system}) faf-client osu-lazer-bin;
   inherit (inputs.osu-wine.packages.${pkgs.system}) osu-wine;
-  matrix-appservice-discord = pkgs.callPackage ./matrix-appservice-discord { inherit (pkgs) matrix-appservice-discord; };
+  matrix-appservice-discord = pkgs.callPackage ./matrix-appservice-discord {
+    inherit (pkgs) matrix-appservice-discord;
+  };
 
   krita = pkgs.callPackage ./krita { inherit (pkgs) krita; };
 
@@ -32,30 +40,34 @@ in
   buffyboard = pkgs.callPackage ./buffyboard { };
   clang-tools_latest = pkgs.clang-tools_16;
   clang_latest = pkgs.clang_16;
-  /*ghidra = pkgs.ghidra.overrideAttrs (old: {
-    patches = old.patches ++ [ ./ghidra-stdcall.patch ];
-  });*/
+  /*
+    ghidra = pkgs.ghidra.overrideAttrs (old: {
+      patches = old.patches ++ [ ./ghidra-stdcall.patch ];
+    });
+  */
   # gimp = callPackage ./gimp { inherit (pkgs) gimp; };
   home-daemon = callPackage ./home-daemon { };
   # pin version
-  /*looking-glass-client = pkgs.looking-glass-client.overrideAttrs (old: rec {
-    version = "B6";
-    postUnpack = ''
-      echo ${src.rev} > source/VERSION
-      export sourceRoot="source/client"
-    '';
-    src = pkgs.fetchFromGitHub {
-      owner = "gnif";
-      repo = "LookingGlass";
-      rev = "B6";
-      sha256 = "sha256-6vYbNmNJBCoU23nVculac24tHqH7F4AZVftIjL93WJU=";
-      fetchSubmodules = true;
-    };
-    patches = [ ];
-  });
-  kvmfrOverlay = kvmfr: (kvmfr.override { inherit (pkgs') looking-glass-client; }).overrideAttrs (old: {
-    patches = [ ./looking-glass.patch ];
-  });*/
+  /*
+    looking-glass-client = pkgs.looking-glass-client.overrideAttrs (old: rec {
+      version = "B6";
+      postUnpack = ''
+        echo ${src.rev} > source/VERSION
+        export sourceRoot="source/client"
+      '';
+      src = pkgs.fetchFromGitHub {
+        owner = "gnif";
+        repo = "LookingGlass";
+        rev = "B6";
+        sha256 = "sha256-6vYbNmNJBCoU23nVculac24tHqH7F4AZVftIjL93WJU=";
+        fetchSubmodules = true;
+      };
+      patches = [ ];
+    });
+    kvmfrOverlay = kvmfr: (kvmfr.override { inherit (pkgs') looking-glass-client; }).overrideAttrs (old: {
+      patches = [ ./looking-glass.patch ];
+    });
+  */
   mobile-config-firefox = callPackage ./mobile-config-firefox { };
   ping-exporter = callPackage ./ping-exporter { };
   proton-ge = pkgs.stdenvNoCC.mkDerivation {
@@ -67,11 +79,13 @@ in
   };
   rofi-steam-game-list = callPackage ./rofi-steam-game-list { };
   # scanservjs = callPackage ./scanservjs { };
-  searxng = pkgs'.python3.pkgs.toPythonModule (pkgs.searxng.overrideAttrs (old: {
-    inherit (sources.searxng) src;
-    version = "unstable-" + sources.searxng.date;
-    postInstall = builtins.replaceStrings [ "/botdetection" ] [ "" ] old.postInstall;
-  }));
+  searxng = pkgs'.python3.pkgs.toPythonModule (
+    pkgs.searxng.overrideAttrs (old: {
+      inherit (sources.searxng) src;
+      version = "unstable-" + sources.searxng.date;
+      postInstall = builtins.replaceStrings [ "/botdetection" ] [ "" ] old.postInstall;
+    })
+  );
   cthulock = callPackage ./cthulock { };
   schlock = callPackage ./schlock { };
   sxmo-swaylock = callPackage ./sxmo-swaylock { };
@@ -84,17 +98,57 @@ in
 
   qemu_7 = callPackage ./qemu/7.nix {
     stdenv = pkgs'.ccacheStdenv;
-    inherit (pkgs.darwin.apple_sdk.frameworks) CoreServices Cocoa Hypervisor vmnet;
+    inherit (pkgs.darwin.apple_sdk.frameworks)
+      CoreServices
+      Cocoa
+      Hypervisor
+      vmnet
+      ;
     inherit (pkgs.darwin.stubs) rez setfile;
     inherit (pkgs.darwin) sigtool;
   };
   qemu_7_kvm = lib.lowPrio (pkgs'.qemu_7.override { hostCpuOnly = true; });
-  qemu_7_full = lib.lowPrio (pkgs'.qemu_7.override { smbdSupport = true; cephSupport = true; glusterfsSupport = true; });
-  qemu_7_xen = lib.lowPrio (pkgs'.qemu_7.override { hostCpuOnly = true; xenSupport = true; xen = pkgs.xen-slim; });
-  qemu_7_xen-light = lib.lowPrio (pkgs'.qemu_7.override { hostCpuOnly = true; xenSupport = true; xen = pkgs.xen-light; });
-  qemu_7_xen_4_15 = lib.lowPrio (pkgs'.qemu_7.override { hostCpuOnly = true; xenSupport = true; xen = pkgs.xen_4_15-slim; });
-  qemu_7_xen_4_15-light = lib.lowPrio (pkgs'.qemu_7.override { hostCpuOnly = true; xenSupport = true; xen = pkgs.xen_4_15-light; });
-  qemu_7_test = lib.lowPrio (pkgs'.qemu_7.override { hostCpuOnly = true; nixosTestRunner = true; });
+  qemu_7_full = lib.lowPrio (
+    pkgs'.qemu_7.override {
+      smbdSupport = true;
+      cephSupport = true;
+      glusterfsSupport = true;
+    }
+  );
+  qemu_7_xen = lib.lowPrio (
+    pkgs'.qemu_7.override {
+      hostCpuOnly = true;
+      xenSupport = true;
+      xen = pkgs.xen-slim;
+    }
+  );
+  qemu_7_xen-light = lib.lowPrio (
+    pkgs'.qemu_7.override {
+      hostCpuOnly = true;
+      xenSupport = true;
+      xen = pkgs.xen-light;
+    }
+  );
+  qemu_7_xen_4_15 = lib.lowPrio (
+    pkgs'.qemu_7.override {
+      hostCpuOnly = true;
+      xenSupport = true;
+      xen = pkgs.xen_4_15-slim;
+    }
+  );
+  qemu_7_xen_4_15-light = lib.lowPrio (
+    pkgs'.qemu_7.override {
+      hostCpuOnly = true;
+      xenSupport = true;
+      xen = pkgs.xen_4_15-light;
+    }
+  );
+  qemu_7_test = lib.lowPrio (
+    pkgs'.qemu_7.override {
+      hostCpuOnly = true;
+      nixosTestRunner = true;
+    }
+  );
   # TODO: when https://gitlab.com/virtio-fs/virtiofsd/-/issues/96 is fixed remove this
   virtiofsd = callPackage ./qemu/virtiofsd.nix {
     qemu = pkgs'.qemu_7;
@@ -107,12 +161,41 @@ in
     qemu = pkgs'.qemu_7_ccache;
     stdenv = pkgs'.ccacheStdenv;
   };
-  ccachePkgs = import ./ccache.nix { inherit pkgs pkgs' lib sources; };
+  ccachePkgs = import ./ccache.nix {
+    inherit
+      pkgs
+      pkgs'
+      lib
+      sources
+      ;
+  };
 
   # hardware stuff
-  hw.bpi-r3 = import ../system/hardware/bpi-r3/pkgs.nix { inherit pkgs pkgs' lib sources; };
-  hw.oneplus-enchilada = import ../system/hardware/oneplus-enchilada/pkgs.nix { inherit inputs pkgs pkgs' lib sources; };
-  hw.kobo-clara = import ../system/hardware/kobo-clara/pkgs.nix { inherit pkgs pkgs' lib sources; }; 
+  hw.bpi-r3 = import ../system/hardware/bpi-r3/pkgs.nix {
+    inherit
+      pkgs
+      pkgs'
+      lib
+      sources
+      ;
+  };
+  hw.oneplus-enchilada = import ../system/hardware/oneplus-enchilada/pkgs.nix {
+    inherit
+      inputs
+      pkgs
+      pkgs'
+      lib
+      sources
+      ;
+  };
+  hw.kobo-clara = import ../system/hardware/kobo-clara/pkgs.nix {
+    inherit
+      pkgs
+      pkgs'
+      lib
+      sources
+      ;
+  };
   # wlroots = throw "a";
   # sway-unwrapped = throw "a";
 }

@@ -1,11 +1,12 @@
-{ lib
-, stdenv
-, fetchurl
-, callPackage
-, makeWrapper
-, makeDesktopItem
-, love
-, luajit
+{
+  lib,
+  stdenv,
+  fetchurl,
+  callPackage,
+  makeWrapper,
+  makeDesktopItem,
+  love,
+  luajit,
 }:
 
 let
@@ -39,7 +40,10 @@ stdenv.mkDerivation rec {
   };
 
   nativeBuildInputs = [ makeWrapper ];
-  buildInputs = [ love ccloader ];
+  buildInputs = [
+    love
+    ccloader
+  ];
 
   dontUnpack = true;
 

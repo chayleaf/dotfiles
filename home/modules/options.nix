@@ -1,5 +1,6 @@
 { lib, config, ... }:
-with lib; {
+with lib;
+{
   options.minimal = mkOption {
     type = types.bool;
     default = false;
@@ -67,26 +68,76 @@ with lib; {
       type = types.int;
       description = "opacity percentage (read-only)";
     };
-    black = mkOption { type = types.str; description = "read-only"; };
-    red = mkOption { type = types.str; description = "read-only"; };
-    green = mkOption { type = types.str; description = "read-only"; };
-    yellow = mkOption { type = types.str; description = "read-only"; };
-    blue = mkOption { type = types.str; description = "read-only"; };
-    magenta = mkOption { type = types.str; description = "read-only"; };
-    cyan = mkOption { type = types.str; description = "read-only"; };
-    white = mkOption { type = types.str; description = "read-only"; };
-    brBlack = mkOption { type = types.str; description = "read-only"; };
-    brRed = mkOption { type = types.str; description = "read-only"; };
-    brGreen = mkOption { type = types.str; description = "read-only"; };
-    brYellow = mkOption { type = types.str; description = "read-only"; };
-    brBlue = mkOption { type = types.str; description = "read-only"; };
-    brMagenta = mkOption { type = types.str; description = "read-only"; };
-    brCyan = mkOption { type = types.str; description = "read-only"; };
-    brWhite = mkOption { type = types.str; description = "read-only"; };
+    black = mkOption {
+      type = types.str;
+      description = "read-only";
+    };
+    red = mkOption {
+      type = types.str;
+      description = "read-only";
+    };
+    green = mkOption {
+      type = types.str;
+      description = "read-only";
+    };
+    yellow = mkOption {
+      type = types.str;
+      description = "read-only";
+    };
+    blue = mkOption {
+      type = types.str;
+      description = "read-only";
+    };
+    magenta = mkOption {
+      type = types.str;
+      description = "read-only";
+    };
+    cyan = mkOption {
+      type = types.str;
+      description = "read-only";
+    };
+    white = mkOption {
+      type = types.str;
+      description = "read-only";
+    };
+    brBlack = mkOption {
+      type = types.str;
+      description = "read-only";
+    };
+    brRed = mkOption {
+      type = types.str;
+      description = "read-only";
+    };
+    brGreen = mkOption {
+      type = types.str;
+      description = "read-only";
+    };
+    brYellow = mkOption {
+      type = types.str;
+      description = "read-only";
+    };
+    brBlue = mkOption {
+      type = types.str;
+      description = "read-only";
+    };
+    brMagenta = mkOption {
+      type = types.str;
+      description = "read-only";
+    };
+    brCyan = mkOption {
+      type = types.str;
+      description = "read-only";
+    };
+    brWhite = mkOption {
+      type = types.str;
+      description = "read-only";
+    };
   };
   config.colors.hexAlpha =
-    let hex = lib.trivial.toHexString (lib.trivial.min 255 (builtins.floor (config.colors.alpha * 256.0)));
-    in if (builtins.stringLength hex) == 2 then hex else "0${hex}";
+    let
+      hex = lib.trivial.toHexString (lib.trivial.min 255 (builtins.floor (config.colors.alpha * 256.0)));
+    in
+    if (builtins.stringLength hex) == 2 then hex else "0${hex}";
   config.colors.percentAlpha = builtins.floor (config.colors.alpha * 100.0);
   config.colors.black = builtins.elemAt config.colors.base 0;
   config.colors.red = builtins.elemAt config.colors.base 1;

@@ -1,6 +1,7 @@
-{ pkgs
-, inputs,
-...
+{
+  pkgs,
+  inputs,
+  ...
 }:
 
 {
@@ -17,7 +18,10 @@
   home.stateVersion = "23.11";
   home.username = "user";
   home.homeDirectory = "/home/user";
-  terminals = [ "foot" "kitty" ];
+  terminals = [
+    "foot"
+    "kitty"
+  ];
   wayland.windowManager.sway.enable = true;
   services.kdeconnect.enable = true;
   home.packages = with pkgs; [

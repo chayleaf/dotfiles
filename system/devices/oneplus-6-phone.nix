@@ -1,5 +1,6 @@
-{ config
-, ...
+{
+  config,
+  ...
 }:
 
 let
@@ -34,20 +35,43 @@ in
       enable = true;
       port = 22;
       authorizedKeys = config.users.users.root.openssh.authorizedKeys.keys;
-      hostKeys = [ "/secrets/initrd/ssh_host_ed25519_key" "/secrets/initrd/ssh_host_rsa_key" ];
+      hostKeys = [
+        "/secrets/initrd/ssh_host_ed25519_key"
+        "/secrets/initrd/ssh_host_rsa_key"
+      ];
     };
   };
 
-  fileSystems = let
-    neededForBoot = true;
-  in {
-    "/" =     { device = "none"; fsType = "tmpfs"; inherit neededForBoot;
-                options = [ "defaults" "size=2G" "mode=755" ]; };
-    "/persist" =
-              { device = parts.root; fsType = "btrfs"; inherit neededForBoot;
-                options = [ "discard=async" "compress=zstd:15" ]; };
-    "/boot" = { device = parts.boot; fsType = "vfat"; inherit neededForBoot; };
-  };
+  fileSystems =
+    let
+      neededForBoot = true;
+    in
+    {
+      "/" = {
+        device = "none";
+        fsType = "tmpfs";
+        inherit neededForBoot;
+        options = [
+          "defaults"
+          "size=2G"
+          "mode=755"
+        ];
+      };
+      "/persist" = {
+        device = parts.root;
+        fsType = "btrfs";
+        inherit neededForBoot;
+        options = [
+          "discard=async"
+          "compress=zstd:15"
+        ];
+      };
+      "/boot" = {
+        device = parts.boot;
+        fsType = "vfat";
+        inherit neededForBoot;
+      };
+    };
 
   zramSwap.enable = true;
 
@@ -55,10 +79,21 @@ in
     enable = true;
     path = /persist;
     directories = [
-      { directory = /home/${config.common.mainUsername}; user = config.common.mainUsername; group = "users"; mode = "0700"; }
-      { directory = /root; mode = "0700"; }
+      {
+        directory = /home/${config.common.mainUsername};
+        user = config.common.mainUsername;
+        group = "users";
+        mode = "0700";
+      }
+      {
+        directory = /root;
+        mode = "0700";
+      }
       { directory = /nix; }
-      { directory = /secrets; mode = "0000"; }
+      {
+        directory = /secrets;
+        mode = "0000";
+      }
     ];
   };
 }

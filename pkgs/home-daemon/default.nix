@@ -1,8 +1,9 @@
-{ lib
-, rustPlatform
-, nix-gitignore
-, pkg-config
-, alsa-lib
+{
+  lib,
+  rustPlatform,
+  nix-gitignore,
+  pkg-config,
+  alsa-lib,
 }:
 
 rustPlatform.buildRustPackage {

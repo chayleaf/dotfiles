@@ -1,6 +1,7 @@
-{ lib
-, stdenv
-, fetchFromGitLab
+{
+  lib,
+  stdenv,
+  fetchFromGitLab,
 }:
 
 stdenv.mkDerivation rec {
@@ -14,7 +15,10 @@ stdenv.mkDerivation rec {
     hash = "sha256-JEfgB+dqfy97n4FC2N6eHDV0aRFAhmFujYJHYa3kENE=";
   };
 
-  makeFlags = [ "DESTDIR=$(out)" "FIREFOX_DIR=/lib/firefox" ];
+  makeFlags = [
+    "DESTDIR=$(out)"
+    "FIREFOX_DIR=/lib/firefox"
+  ];
 
   postInstall = ''
     rm -rf "$out/usr"

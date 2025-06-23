@@ -1,8 +1,10 @@
-{ lib
-, pkgs
-, config
-, inputs
-, ... }:
+{
+  lib,
+  pkgs,
+  config,
+  inputs,
+  ...
+}:
 
 /*
   # for old kernel versions
@@ -43,7 +45,7 @@
     kernelParams = [ "amdgpu.ppfeaturemask=0xffffffff" ];
     # TODO: switch back to latest
     kernelPackages = pkgs.linuxPackages_latest;
-    /*kernelPackages = zenKernelPackages "6.1.9" "0fsmcjsawxr32fxhpp6sgwfwwj8kqymy0rc6vh4qli42fqmwdjgv";*/
+    # kernelPackages = zenKernelPackages "6.1.9" "0fsmcjsawxr32fxhpp6sgwfwwj8kqymy0rc6vh4qli42fqmwdjgv";
   };
 
   # for testing different zen kernel versions:
@@ -51,10 +53,12 @@
   #   zen619.configuration.boot.kernelPackages = zenKernelPackages "6.1.9" "0fsmcjsawxr32fxhpp6sgwfwwj8kqymy0rc6vh4qli42fqmwdjgv";
   # };
 
-  nixpkgs.config.allowUnfreePredicate = pkg: builtins.elem (lib.getName pkg) [
-    "steam-original"
-    "steam-unwrapped"
-  ];
+  nixpkgs.config.allowUnfreePredicate =
+    pkg:
+    builtins.elem (lib.getName pkg) [
+      "steam-original"
+      "steam-unwrapped"
+    ];
   hardware = {
     flipperzero.enable = true;
     opentabletdriver.enable = true;
@@ -67,7 +71,7 @@
   # see modules/vfio.nix
   vfio.enable = true;
   vfio.libvirtdGroup = [ config.common.mainUsername ];
-  
+
   # because libvirtd's nat is broken for some reason...
   networking.nat = {
     enable = true;
@@ -89,10 +93,16 @@
   networking.firewall.allowedUDPPorts = [ 27015 ];
   # kde connect
   networking.firewall.allowedTCPPortRanges = [
-    { from = 1714; to = 1764; }
+    {
+      from = 1714;
+      to = 1764;
+    }
   ];
   networking.firewall.allowedUDPPortRanges = [
-    { from = 1714; to = 1764; }
+    {
+      from = 1714;
+      to = 1764;
+    }
   ];
   networking.wireless.iwd.enable = true;
 
@@ -102,23 +112,25 @@
   services.mullvad-vpn.package = pkgs.mullvad-vpn;
 
   # System76 scheduler (not actually a scheduler, just a renice daemon) for improved responsiveness
-  /*services.dbus.packages = [ pkgs.system76-scheduler ];
-  systemd.services.system76-scheduler = {
-    description = "Automatically configure CPU scheduler for responsiveness on AC";
-    wantedBy = [ "multi-user.target" ];
-    serviceConfig = {
-      Type = "dbus";
-      BusName= "com.system76.Scheduler";
-      ExecStart = "${pkgs.system76-scheduler}/bin/system76-scheduler daemon";
-      ExecReload = "${pkgs.system76-scheduler}/bin/system76-scheduler daemon reload";
+  /*
+    services.dbus.packages = [ pkgs.system76-scheduler ];
+    systemd.services.system76-scheduler = {
+      description = "Automatically configure CPU scheduler for responsiveness on AC";
+      wantedBy = [ "multi-user.target" ];
+      serviceConfig = {
+        Type = "dbus";
+        BusName= "com.system76.Scheduler";
+        ExecStart = "${pkgs.system76-scheduler}/bin/system76-scheduler daemon";
+        ExecReload = "${pkgs.system76-scheduler}/bin/system76-scheduler daemon reload";
+      };
     };
-  };
-  environment.etc."system76-scheduler/assignments.ron".source =
-    "${pkgs.system76-scheduler}/etc/system76-scheduler/assignments.ron";
-  environment.etc."system76-scheduler/config.ron".source =
-    "${pkgs.system76-scheduler}/etc/system76-scheduler/config.ron";
-  environment.etc."system76-scheduler/exceptions.ron".source =
-    "${pkgs.system76-scheduler}/etc/system76-scheduler/exceptions.ron";*/
+    environment.etc."system76-scheduler/assignments.ron".source =
+      "${pkgs.system76-scheduler}/etc/system76-scheduler/assignments.ron";
+    environment.etc."system76-scheduler/config.ron".source =
+      "${pkgs.system76-scheduler}/etc/system76-scheduler/config.ron";
+    environment.etc."system76-scheduler/exceptions.ron".source =
+      "${pkgs.system76-scheduler}/etc/system76-scheduler/exceptions.ron";
+  */
   services.system76-scheduler.enable = true;
   services.system76-scheduler.assignments = {
     games.matchers = [ "osu!" ];
@@ -171,8 +183,12 @@
     {
       hostName = "darwin-build-box.nix-community.org";
       protocol = "ssh-ng";
-      systems = [ "aarch64-darwin" "x86_64-darwin" ];
-      supportedFeatures = inputs.nix-community-infra.darwinConfigurations.darwin01.config.nix.settings.system-features;
+      systems = [
+        "aarch64-darwin"
+        "x86_64-darwin"
+      ];
+      supportedFeatures =
+        inputs.nix-community-infra.darwinConfigurations.darwin01.config.nix.settings.system-features;
       sshKey = "/secrets/community-builder-key";
       sshUser = "chayleaf";
       publicHostKey = "c3NoLWVkMjU1MTkgQUFBQUMzTnphQzFsWkRJMU5URTVBQUFBSUZ6OEZYU1ZFZGY4RnZETWZib3hoQjVWalNlN3kyV2dTYTA5cTFMNHQwOTkgCg==";
@@ -186,7 +202,8 @@
   environment.systemPackages = with pkgs; [
     comma
     neovim
-    man-pages man-pages-posix
+    man-pages
+    man-pages-posix
     distrobox
   ];
   documentation.dev.enable = true;

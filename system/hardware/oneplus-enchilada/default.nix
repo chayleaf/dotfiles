@@ -1,9 +1,10 @@
-{ pkgs
-, pkgs-kernel
-, lib
-, config
-, inputs
-, ...
+{
+  pkgs,
+  pkgs-kernel,
+  lib,
+  config,
+  inputs,
+  ...
 }:
 
 let
@@ -25,7 +26,12 @@ in
     {
       nixpkgs.overlays = [
         (self: super: {
-          inherit (self.hw.oneplus-enchilada) pd-mapper qrtr rmtfs tqftpserv;
+          inherit (self.hw.oneplus-enchilada)
+            pd-mapper
+            qrtr
+            rmtfs
+            tqftpserv
+            ;
         })
       ];
       hardware.enableRedistributableFirmware = true;
@@ -38,7 +44,10 @@ in
       environment.systemPackages = [ hw.alsa-ucm-conf ];
       systemd.services.q6voiced = {
         description = "QDSP6 driver daemon";
-        after = [ "ModemManager.service" "dbus.socket" ];
+        after = [
+          "ModemManager.service"
+          "dbus.socket"
+        ];
         wantedBy = [ "ModemManager.service" ];
         requires = [ "dbus.socket" ];
         serviceConfig.ExecStart = "${hw.q6voiced}/bin/q6voiced hw:0,6";
@@ -46,15 +55,17 @@ in
       # TODO when testing PipeWire instead of PulseAudio, the following is needed:
       # https://gitlab.freedesktop.org/pipewire/wireplumber/-/blob/master/docs/rst/daemon/configuration/migration.rst
       # https://gitlab.com/postmarketOS/pmaports/-/tree/master/device/community/soc-qcom-sdm845/
-      /*systemd.user.services.wireplumber.environment.WIREPLUMBER_CONFIG_DIR = pkgs.runCommand "wireplumber-config" {} ''
-        cp -a "${pkgs.wireplumber}/share/wireplumber" "$out"
-        chmod +w "$out" "$out/wireplumber.conf.d"
-        ln -s ${pkgs.fetchurl {
-          url = "https://gitlab.com/postmarketOS/pmaports/-/raw/a82d8636562805d71e16e93f7571cc1f6ddbeb45/device/community/soc-qcom-sdm845/51-qcom-sdm845.conf";
-          hash = "sha256-EM2I9hwTYnK5FepB4RBI5t8sIFQ/uqN5AuTwGepzjB0=";
-        }} "$out/wireplumber.conf.d/51-qcom-sdm845.conf"
-      '';
-      systemd.services.wireplumber.environment.WIREPLUMBER_CONFIG_DIR = config.systemd.user.services.wireplumber.environment.WIREPLUMBER_CONFIG_DIR;*/
+      /*
+        systemd.user.services.wireplumber.environment.WIREPLUMBER_CONFIG_DIR = pkgs.runCommand "wireplumber-config" {} ''
+          cp -a "${pkgs.wireplumber}/share/wireplumber" "$out"
+          chmod +w "$out" "$out/wireplumber.conf.d"
+          ln -s ${pkgs.fetchurl {
+            url = "https://gitlab.com/postmarketOS/pmaports/-/raw/a82d8636562805d71e16e93f7571cc1f6ddbeb45/device/community/soc-qcom-sdm845/51-qcom-sdm845.conf";
+            hash = "sha256-EM2I9hwTYnK5FepB4RBI5t8sIFQ/uqN5AuTwGepzjB0=";
+          }} "$out/wireplumber.conf.d/51-qcom-sdm845.conf"
+        '';
+        systemd.services.wireplumber.environment.WIREPLUMBER_CONFIG_DIR = config.systemd.user.services.wireplumber.environment.WIREPLUMBER_CONFIG_DIR;
+      */
       networking.modemmanager.enable = !config.networking.networkmanager.enable;
       services.udev.extraRules = ''
         SUBSYSTEM=="input", KERNEL=="event*", ENV{ID_INPUT}=="1", SUBSYSTEMS=="input", ATTRS{name}=="spmi_haptics", TAG+="uaccess", ENV{FEEDBACKD_TYPE}="vibra"
@@ -71,7 +82,10 @@ in
       boot.kernelPackages = lib.mkForce (pkgs-kernel.linuxPackagesFor hw-kernel.linux);
       hardware.deviceTree.enable = true;
       hardware.deviceTree.name = "qcom/sdm845-oneplus-enchilada.dtb";
-      systemd.services.ModemManager.serviceConfig.ExecStart = [ "" "${pkgs.modemmanager}/bin/ModemManager --test-quick-suspend-resume" ];
+      systemd.services.ModemManager.serviceConfig.ExecStart = [
+        ""
+        "${pkgs.modemmanager}/bin/ModemManager --test-quick-suspend-resume"
+      ];
       # loglevel=7 console=ttyMSM0,115200 is a way to delay boot
       # see https://gitlab.freedesktop.org/drm/msm/-/issues/46
       boot.consoleLogLevel = 7;
@@ -80,20 +94,34 @@ in
         "console=tty0"
         "dtb=/${config.hardware.deviceTree.name}"
       ];
-      boot.loader.systemd-boot.extraFiles.${config.hardware.deviceTree.name} = "${config.hardware.deviceTree.package}/${config.hardware.deviceTree.name}";
-      nixpkgs.config.allowUnfreePredicate = pkg: builtins.elem (lib.getName pkg) [
-        "firmware-oneplus-sdm845"
-        "firmware-oneplus-sdm845-xz"
-      ];
+      boot.loader.systemd-boot.extraFiles.${config.hardware.deviceTree.name} =
+        "${config.hardware.deviceTree.package}/${config.hardware.deviceTree.name}";
+      nixpkgs.config.allowUnfreePredicate =
+        pkg:
+        builtins.elem (lib.getName pkg) [
+          "firmware-oneplus-sdm845"
+          "firmware-oneplus-sdm845-xz"
+        ];
       system.build.uboot = pkgs.ubootImage;
       boot.initrd.includeDefaultModules = false;
       boot.initrd.availableKernelModules = [
         "sd_mod"
         "usbhid"
-        "ehci_hcd" "ohci_hcd" "xhci_hcd" "uhci_hcd"
-        "ehci_pci" "ohci_pci" "xhci_pci"
-        "hid_generic" "hid_lenovo" "hid_apple" "hid_roccat"
-        "hid_logitech_hidpp" "hid_logitech_dj" "hid_microsoft" "hid_cherry"
+        "ehci_hcd"
+        "ohci_hcd"
+        "xhci_hcd"
+        "uhci_hcd"
+        "ehci_pci"
+        "ohci_pci"
+        "xhci_pci"
+        "hid_generic"
+        "hid_lenovo"
+        "hid_apple"
+        "hid_roccat"
+        "hid_logitech_hidpp"
+        "hid_logitech_dj"
+        "hid_microsoft"
+        "hid_cherry"
       ];
       boot.initrd.kernelModules = [
         "i2c_qcom_geni"
@@ -107,13 +135,21 @@ in
       common.gettyAutologin = true;
     })
     (lib.mkIf cfg.adb.enable {
-      boot.initrd.kernelModules = [ "configfs" "libcomposite" "g_ffs" ];
+      boot.initrd.kernelModules = [
+        "configfs"
+        "libcomposite"
+        "g_ffs"
+      ];
 
       boot.specialFileSystems = {
         "/sys/kernel/config" = {
           device = "configfs";
           fsType = "configfs";
-          options = [ "nosuid" "noexec" "nodev" ];
+          options = [
+            "nosuid"
+            "noexec"
+            "nodev"
+          ];
         };
       };
 

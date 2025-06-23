@@ -1,10 +1,12 @@
-{ stdenv
-, replaceVars
-, fetchFromGitHub
-, mpv-unwrapped
-, port ? 8080
-, secondary ? false
-, ... }:
+{
+  stdenv,
+  replaceVars,
+  fetchFromGitHub,
+  mpv-unwrapped,
+  port ? 8080,
+  secondary ? false,
+  ...
+}:
 
 stdenv.mkDerivation {
   pname = "subserv-mpv-plugin";

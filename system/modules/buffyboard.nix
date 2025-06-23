@@ -1,7 +1,8 @@
-{ config
-, lib
-, pkgs
-, ...
+{
+  config,
+  lib,
+  pkgs,
+  ...
 }:
 
 let
@@ -12,7 +13,10 @@ in
     enable = lib.mkEnableOption "buffyboard";
   };
   config = lib.mkIf cfg.buffyboard.enable {
-    boot.initrd.kernelModules = [ "uinput" "evdev" ];
+    boot.initrd.kernelModules = [
+      "uinput"
+      "evdev"
+    ];
     boot.initrd.extraUtilsCommands = ''
       copy_bin_and_libs ${pkgs.buffyboard}/bin/buffyboard
       cp -a ${pkgs.libinput.out}/share $out/
@@ -40,11 +44,25 @@ in
       };
     };
     security.sudo.extraRules = [
-      { groups = [ "users" ];
+      {
+        groups = [ "users" ];
         commands = [
-          { command = "/run/current-system/sw/bin/systemctl stop buffyboard"; options = [ "SETENV" "NOPASSWD" ]; }
-          { command = "/run/current-system/sw/bin/systemctl start buffyboard"; options = [ "SETENV" "NOPASSWD" ]; }
-        ]; }
+          {
+            command = "/run/current-system/sw/bin/systemctl stop buffyboard";
+            options = [
+              "SETENV"
+              "NOPASSWD"
+            ];
+          }
+          {
+            command = "/run/current-system/sw/bin/systemctl start buffyboard";
+            options = [
+              "SETENV"
+              "NOPASSWD"
+            ];
+          }
+        ];
+      }
     ];
   };
 }

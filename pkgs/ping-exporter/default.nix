@@ -1,6 +1,7 @@
-{ lib
-, fetchFromGitHub
-, rustPlatform
+{
+  lib,
+  fetchFromGitHub,
+  rustPlatform,
 }:
 
 rustPlatform.buildRustPackage rec {
@@ -18,7 +19,10 @@ rustPlatform.buildRustPackage rec {
 
   meta = with lib; {
     description = "A ping exporter for Prometheus";
-    license = with lib.licenses; [ mit asl20 ];
+    license = with lib.licenses; [
+      mit
+      asl20
+    ];
     maintainers = with lib.maintainers; [ chayleaf ];
   };
 }

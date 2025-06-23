@@ -1,12 +1,13 @@
-{ lib
-, stdenv
-, fetchFromGitLab
-, meson
-, ninja
-, pkg-config
-, libinput
-, libxkbcommon
-, libevdev
+{
+  lib,
+  stdenv,
+  fetchFromGitLab,
+  meson,
+  ninja,
+  pkg-config,
+  libinput,
+  libxkbcommon,
+  libevdev,
 }:
 
 stdenv.mkDerivation {

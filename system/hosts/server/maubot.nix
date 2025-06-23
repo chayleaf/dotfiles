@@ -1,19 +1,24 @@
-{ config
-, lib
-, pkgs
-, ... }:
+{
+  config,
+  lib,
+  pkgs,
+  ...
+}:
 
 let
   cfg = config.server;
-in {
-  services.nginx.virtualHosts."matrix.${cfg.domainName}".locations = let
-    inherit (config.services.maubot) settings;
-  in {
-    "^~ /_matrix/maubot/" = {
-      proxyPass = "http://${lib.quoteListenAddr settings.server.hostname}:${toString settings.server.port}";
-      proxyWebsockets = true;
+in
+{
+  services.nginx.virtualHosts."matrix.${cfg.domainName}".locations =
+    let
+      inherit (config.services.maubot) settings;
+    in
+    {
+      "^~ /_matrix/maubot/" = {
+        proxyPass = "http://${lib.quoteListenAddr settings.server.hostname}:${toString settings.server.port}";
+        proxyWebsockets = true;
+      };
     };
-  };
   services.maubot.enable = true;
   services.maubot.settings = {
     database = "postgresql://maubot@localhost/maubot";
