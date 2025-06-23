@@ -5,7 +5,7 @@
 let
   cfg = config.server;
 in {
-  services.postgresql.extraPlugins = with config.services.postgresql.package.pkgs; [ tsja ];
+  services.postgresql.extensions = with config.services.postgresql.package.pkgs; [ tsja ];
 
   services.akkoma = let
     inherit ((pkgs.formats.elixirConf { }).lib) mkRaw;

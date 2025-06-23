@@ -72,7 +72,7 @@ in {
     };
   };*/
 
-  environment.systemPackages = with pkgs; [ matrix-synapse-tools.rust-synapse-compress-state ];
+  environment.systemPackages = with pkgs; [ rust-synapse-compress-state ];
 
   services.matrix-synapse = {
     enable = true;

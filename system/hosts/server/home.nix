@@ -100,7 +100,7 @@ in {
 
   services.harmonia = {
     enable = true;
-    signKeyPath = "/secrets/cache-priv-key.pem";
+    signKeyPaths = [ "/secrets/cache-priv-key.pem" ];
     settings.bind = "[::1]:5000";
   };
   nix.settings.allowed-users = [ "nix-serve" "harmonia" ] ++ lib.optionals config.services.hydra.enable [ "hydra" "hydra-www" ];
@@ -142,6 +142,7 @@ in {
   services.hydra = {
     # TODO
     # enable = true;
+    package = pkgs.hydra;
     hydraURL = "home.${cfg.domainName}/hydra";
     listenHost = "127.0.0.1";
     minimumDiskFree = 30;

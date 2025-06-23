@@ -24,15 +24,24 @@ in {
       ./nix-plugins-fix.patch
     ];
   });
+  nix-eval-jobs = (pkgs.nix-eval-jobs.override {
+    nix = nixForNixPlugins;
+  }).overrideAttrs (old:{
+    doCheck = false;
+    src = old.src.override {
+      rev = "889ea1406736b53cf165b6c28398aae3969418d1";
+      hash = "sha256-3wwtKpS5tUBdjaGeSia7CotonbiRB6K5Kp0dsUt3nzU=";
+    };
+  });
   hydra = (pkgs.hydra.override {
     nix = nixForNixPlugins;
   }).overrideAttrs (old: {
     # version = "2023-12-01";
     # who cares about tests amirite
     doCheck = false;
-    # src = old.src.override {
-    #   rev = "4d1c8505120961f10897b8fe9a070d4e193c9a13";
-    #   hash = "sha256-vXTuE83GL15mgZHegbllVAsVdDFcWWSayPfZxTJN5ys=";
-    # };
+    src = old.src.override {
+      rev = "9ad8ac586c76ef78401a2e0279ad2be28a557505";
+      hash = "sha256-3RffcSar9FrKggwHW4WZ1NdQ3vRzFG0grWaQkG3czdc=";
+    };
   });
 }
