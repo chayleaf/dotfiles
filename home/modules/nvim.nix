@@ -376,6 +376,9 @@ in*/
                   };
                 };*/
                 fsautocomplete = { };
+                hls = {
+                  filetypes = [ "haskell" "lhaskell" "cabal" ];
+                };
                 # https://github.com/python-lsp/python-lsp-server/blob/develop/CONFIGURATION.md
                 pylsp = {
                   settings.pylsp = {
@@ -493,6 +496,7 @@ in*/
       csharp-ls
       fsautocomplete
       fantomas
+      haskell-language-server
     ];
     # extraPython3Packages = pyPkgs: with pyPkgs; [
     # ];

@@ -100,6 +100,7 @@
     nodejs
     nodePackages.npm
     yarn
+    (ghc.withPackages (p: with p; [cabal-install]))
   ];
   xdg.configFile."looking-glass/client.ini".text = ''
     [app]
