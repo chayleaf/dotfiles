@@ -37,14 +37,14 @@
   };
   linux =
     (pkgs.buildLinux rec {
-      version = "6.9.0";
+      version = "6.13.0";
       modDirVersion = lib.versions.pad 3 version;
 
       src = pkgs.fetchFromGitHub {
         owner = "akemnade";
         repo = "linux";
-        rev = "4b0c49001732b93f6787c44e090b8e8f72e6fe6a";
-        hash = "sha256-rCiznEHDqrOW+CEI1I9HdHNSsVYCb7iJGE+7PKJ8H6A=";
+        rev = "09bacc073f275377698322258cf9e2cd19aecc97";
+        hash = "sha256-+ftpE0RoSJCN6Siok2jcpq7dyqvJL+9HynAK5V4KAuE=";
       };
 
       defconfig = "kobo_defconfig";

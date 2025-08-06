@@ -99,6 +99,27 @@ in
       };
     };
   };
+  services.gitea-actions-runner = {
+    package = pkgs.forgejo-actions-runner;
+    instances.main = {
+      enable = true;
+      hostPackages = with pkgs; [
+        bash
+        coreutils
+        curl
+        gawk
+        gitMinimal
+        gnused
+        nodejs
+        wget
+        (python3.withPackages (p: [ p.requests p.beautifulsoup4 ]))
+      ];
+      labels = [ "native:host" ];
+      name = "git.${cfg.domainName}";
+      tokenFile = "/secrets/forgejo_actions_token";
+      url = "https://git.${cfg.domainName}";
+    };
+  };
 
   systemd.services.forgejo = {
     wants = [ "redis-forgejo.service" ];

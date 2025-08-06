@@ -168,7 +168,7 @@
     home-manager.enable = true;
     # i only use this as a login shell
     bash = {
-      enable = !config.minimal;
+      enable = true;
       initExtra = ''
         bind -x '"\C-r": __atuin_history'
         export ATUIN_NOBIND=true
@@ -398,15 +398,18 @@
       fuse
       file
       jq
-      python3Full
       killall
       comma
-      nix-output-monitor
       unzip
       p7zip
     ]
     ++ lib.optionals (!config.minimal) [
+      nix-output-monitor
       appimage-run
       unrar-wrapper
+      python3Full
+    ]
+    ++ lib.optionals config.minimal [
+      python3
     ];
 }

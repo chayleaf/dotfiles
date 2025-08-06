@@ -24,7 +24,7 @@ in
       '';
     };
 
-  services.searx.enable = true;
+  services.searx.enable = false;
   services.searx.package = pkgs.searxng;
   services.searx.runInUwsgi = true;
   services.searx.uwsgiConfig =

@@ -322,9 +322,11 @@
       };
 
       # some packages require a pointer theme
-      home.pointerCursor.gtk.enable = true;
-      home.pointerCursor.package = pkgs.vanilla-dmz;
-      home.pointerCursor.name = "Vanilla-DMZ";
+      home.pointerCursor = {
+        gtk.enable = true;
+        package = pkgs.vanilla-dmz;
+        name = "Vanilla-DMZ";
+      };
       home.packages = with pkgs; [
         grim
         slurp

@@ -6,11 +6,11 @@
 }:
 
 {
-  services.playerctld.enable = config.wayland.windowManager.sway.enable;
+  services.playerctld.enable = config.wayland.windowManager.sway.enable && !config.minimal;
   programs.waybar = {
-    enable = config.wayland.windowManager.sway.enable;
+    enable = config.wayland.windowManager.sway.enable && !config.minimal;
     package = pkgs.waybar.override {
-      withMediaPlayer = true;
+      withMediaPlayer = !config.minimal;
     };
     /*
       ).overrideAttrs (old: {
@@ -146,8 +146,8 @@
           ++ lib.optional (!config.phone.enable) "cpu"
           ++ [
             "tray"
-            (if config.phone.enable then "pulseaudio" else "wireplumber")
           ]
+          ++ lib.optional (!config.minimal) (if config.phone.enable then "pulseaudio" else "wireplumber")
           ++ lib.optional (!config.phone.enable) "clock"
           ++ [ "sway/language" ]
           ++ lib.optional config.phone.enable "battery";

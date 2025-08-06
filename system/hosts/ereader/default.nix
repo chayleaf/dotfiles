@@ -32,6 +32,7 @@
     wantedBy = [ "multi-user.target" ];
   };
 
+  security.loginDefs.settings.LOGIN_TIMEOUT = 300;
   phone.buffyboard.enable = true;
   phone.rndis.enable = true;
   common.minimal = true;
@@ -40,6 +41,7 @@
   services.sshd.enable = true;
   services.tlp.enable = true;
   users.defaultUserShell = pkgs.bash;
+  services.speechd.enable = false;
 
   # kde connect
   networking.firewall.allowedTCPPortRanges = [
@@ -58,8 +60,13 @@
   # services.xserver.displayManager.startx.enable = true;
   # services.xserver.windowManager.awesome.enable = true;
   programs.sway.enable = true;
+  programs.sway.extraPackages = [ ];
+  programs.sway.xwayland.enable = false;
   xdg.portal.enable = lib.mkForce false;
   xdg.portal.wlr.enable = lib.mkForce false;
 
   services.upower.enable = true;
+  services.pipewire.enable = false;
+  environment.pathsToLink = [ "/share/fonts" ];
+  environment.systemPackages = with pkgs; [ patchelf SDL2 ];
 }

@@ -40,10 +40,11 @@ in
             withAlsa = false;
             withJack = false;
             withMp3lame = false;
-            withOgg = false;
             withOpus = false;
             withPulse = false;
+            withSoxr = false;
             withSpeex = false;
+            withV4l2 = false;
             withVaapi = false;
             withVdpau = false;
             withVorbis = false;
@@ -52,24 +53,46 @@ in
       {
         ffmpeg = overrideFfmpeg super.ffmpeg;
         waybar = super.waybar.override {
-          hyprlandSupport = false;
+          cavaSupport = false;
+          gpsSupport = false;
           jackSupport = false;
           mpdSupport = false;
           mprisSupport = false;
+          niriSupport = false;
           pipewireSupport = false;
           pulseSupport = false;
           sndioSupport = false;
-          cavaSupport = false;
           wireplumberSupport = false;
         };
         awesome = super.awesome.overrideAttrs (old: {
           # broken cross tests
           doCheck = false;
         });
-        # ffmpeg isnt actually used in wlroots anymore, remove the useless dependency
-        wlroots_0_17 = super.wlroots_0_17.overrideAttrs (old: {
-          buildInputs = builtins.filter (x: x.pname != "ffmpeg") old.buildInputs;
+        v4l-utils = super.v4l-utils.override {
+          withGUI = false;
+        };
+        vanilla-dmz = super.vanilla-dmz.overrideAttrs (old: {
+          buildInputs = [ ];
+          nativeBuildInputs = [ pkgs.xorg.xcursorgen ];
         });
+        vim-full = super.vim-full.override {
+          guiSupport = false;
+          luaSupport = false;
+          pythonSupport = false;
+          rubySupport = false;
+          cscopeSupport = false;
+          netbeansSupport = false;
+          sodiumSupport = false;
+        };
+        wlroots_0_19 = super.wlroots_0_19.override {
+          enableXWayland = false;
+        };
+        sway-unwrapped = super.sway-unwrapped.override {
+          enableXWayland = false;
+        };
+        sway = super.sway.override {
+          enableXWayland = false;
+        };
         # heif/avif support isnt worth an extra rust dependency
         imagemagick = super.imagemagick.override {
           libheifSupport = false;
@@ -78,8 +101,9 @@ in
           enableHEIFCodec = false;
         };
         # no audio, so no need to bring in the audio libs
-        SDL2 = super.SDL2.override {
+        sdl3 = super.sdl3.override {
           alsaSupport = false;
+          jackSupport = false;
           pipewireSupport = false;
           pulseaudioSupport = false;
         };
@@ -103,15 +127,6 @@ in
             ++ lib.optional (
               self.stdenv.hostPlatform != self.stdenv.buildPlatform
             ) "texinfo_cv_sys_iconv_converts_euc_cn=yes";
-        });
-        koreader = super.koreader.overrideAttrs (old: {
-          src = self.fetchurl {
-            url = "https://github.com/koreader/koreader/releases/download/v${old.version}/koreader-${old.version}-armhf.deb";
-            hash = "sha256-LgeWQcHm5Qq/7MUuidjily0WsOFZAWGWeO52jNHWKMw=";
-          };
-          meta = old.meta // {
-            platforms = [ "armv7l-linux" ];
-          };
         });
       }
     )

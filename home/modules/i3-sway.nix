@@ -74,15 +74,19 @@ let
     ${swaylock-start}
     ${lib.optionalString (config.phone.enable && config.phone.suspend)
       # suspend if nothing is playing and no ssh sessions are active
-      ''
-        if ${pkgs.playerctl}/bin/playerctl -a status | ${pkgs.gnugrep}/bin/grep Playing >/dev/null; then
-          exit
-        fi
-        if ${pkgs.coreutils}/bin/who -u | ${pkgs.gnugrep}/bin/grep "pts.*(" >/dev/null; then
-          exit
-        fi
-        /run/current-system/sw/bin/systemctl suspend
-      ''
+      (
+        lib.optionalString (!config.minimal) ''
+          if ${pkgs.playerctl}/bin/playerctl -a status | ${pkgs.gnugrep}/bin/grep Playing >/dev/null; then
+            exit
+          fi
+        ''
+        + ''
+          if ${pkgs.coreutils}/bin/who -u | ${pkgs.gnugrep}/bin/grep "pts.*(" >/dev/null; then
+            exit
+          fi
+          /run/current-system/sw/bin/systemctl suspend
+        ''
+      )
     }
   '';
   barConfig = {
@@ -206,7 +210,7 @@ let
         text = "#${config.colors.foreground}";
       };
     };
-    floating.criteria = [
+    floating.criteria = lib.mkIf (!config.minimal) [
       {
         class = "Anki";
         title = "Add";
@@ -294,7 +298,8 @@ in
         package = pkgs.mako.overrideAttrs (old: {
           patches =
             old.patches or [ ]
-            ++ lib.optionals config.phone.enable (
+            # TODO
+            ++ lib.optionals (config.phone.enable && false) (
               lib.mapAttrsToList (k: v: ../../pkgs/mako/${k}) (builtins.readDir ../../pkgs/mako)
             );
         });
@@ -351,6 +356,7 @@ in
       '';
       wayland.windowManager.sway = {
         wrapperFeatures.gtk = true;
+        xwayland = !config.minimal;
         package =
           let
             cfg = config.wayland.windowManager.sway;
@@ -368,7 +374,7 @@ in
                     })
                   */
                 ]
-                ++ lib.optionals config.phone.enable (
+                ++ lib.optionals (config.phone.enable && !config.minimal) (
                   lib.mapAttrsToList (k: v: ../../pkgs/sway/${k}) (
                     lib.filterAttrs (k: v: lib.hasInfix "-mobile-" k) (builtins.readDir ../../pkgs/sway)
                   )
@@ -383,7 +389,7 @@ in
         '';
         checkConfig = false;
         config = commonConfig // {
-          bars = [
+          bars = lib.optionals config.programs.waybar.enable [
             {
               command = toString (
                 pkgs.writeShellScript "run-waybar" ''
@@ -403,46 +409,58 @@ in
             }
           ];
           terminal = config.terminalBin;
-          window = commonConfig.window // {
-            commands =
-              lib.optionals config.phone.enable [
-                {
-                  command = "floating off; fullscreen off";
-                  criteria = {
-                    floating = true;
-                  };
-                }
-                {
-                  command = "fullscreen off";
-                  criteria = {
-                    tiling = true;
-                  };
-                }
-              ]
-              ++ [
-                {
-                  command = "floating on; move workspace current";
-                  criteria = {
-                    app_id = "^org.keepassxc.KeePassXC$";
-                    title = "^KeePassXC - (?:Browser |ブラウザーの)?(?:Access Request|アクセス要求)$";
-                  };
-                }
-                {
-                  command = "floating on; border normal";
-                  criteria = {
-                    class = "ghidra-Ghidra";
-                    title = "\\[CodeBrowser.*\\]$";
-                  };
-                }
+          window = lib.mkMerge [
+            commonConfig.window
+            {
+              commands = lib.mkMerge [
+                (lib.mkIf config.phone.enable [
+                  {
+                    command = "floating off; fullscreen off";
+                    criteria = {
+                      floating = true;
+                    };
+                  }
+                  {
+                    command = "fullscreen off";
+                    criteria = {
+                      tiling = true;
+                    };
+                  }
+                  {
+                    command = "fullscreen on";
+                    criteria = {
+                      app_id = "^KOReader$";
+                    };
+                  }
+                ])
+                (lib.mkIf (!config.minimal) [
+                  {
+                    command = "floating on; border normal";
+                    criteria = {
+                      class = "ghidra-Ghidra";
+                      title = "\\[CodeBrowser.*\\]$";
+                    };
+                  }
+                ])
+                [
+                  {
+                    command = "floating on; move workspace current";
+                    criteria = {
+                      app_id = "^org.keepassxc.KeePassXC$";
+                      title = "^KeePassXC - (?:Browser |ブラウザーの)?(?:Access Request|アクセス要求)$";
+                    };
+                  }
+                ]
               ];
-          };
+            }
+          ];
           assigns = {
             "2" = [
               { app_id = "org.telegram.desktop"; }
               { app_id = "nheko"; }
             ];
             "3" = [ { app_id = "org.keepassxc.KeePassXC"; } ];
-            "4" = [
+            "4" = lib.mkIf (!config.minimal) [
               { class = "Steam"; }
               { class = "steam"; }
             ];
@@ -569,7 +587,7 @@ in
             };
           };
           menu = "${rofiSway}/bin/rofi -show drun";
-          workspaceLayout = "tabbed";
+          workspaceLayout = lib.mkIf (!config.minimal) "tabbed";
         };
         # export WLR_RENDERER=vulkan
         extraSessionCommands =

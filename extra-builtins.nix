@@ -7,12 +7,12 @@
       pkgs: name: path:
       let
         archive = exec [
-          "${pkgs.bash}/bin/bash"
+          "${pkgs.buildPackages.bash}/bin/bash"
           "-c"
           ''
             cd /secrets/nixos
             echo '"'"$(
-              ${pkgs.gnutar}/bin/tar -I ${pkgs.zstd}/bin/zstd --exclude-vcs \
+              ${pkgs.buildPackages.gnutar}/bin/tar -I ${pkgs.buildPackages.zstd}/bin/zstd --exclude-vcs \
                 --transform='s#'${pkgs.lib.escapeShellArg path}'#!#' \
                 -c -- ${pkgs.lib.escapeShellArg path} | base64 -w0
             )"'"'
@@ -28,13 +28,13 @@
         allowedReferences = [ ];
         passAsFile = [ "archive" ];
         inherit name archive;
-        inherit (pkgs) system;
-        builder = "${pkgs.bash}/bin/bash";
+        inherit (pkgs.buildPackages) system;
+        builder = "${pkgs.buildPackages.bash}/bin/bash";
         args = [
           "-c"
           ''
-            ${pkgs.coreutils}/bin/base64 -d "$archivePath" |
-              ${pkgs.gnutar}/bin/tar -P --transform="s#!#$out#" -I ${pkgs.zstd}/bin/zstd -x
+            ${pkgs.buildPackages.coreutils}/bin/base64 -d "$archivePath" |
+              ${pkgs.buildPackages.gnutar}/bin/tar -P --transform="s#!#$out#" -I ${pkgs.buildPackages.zstd}/bin/zstd -x
           ''
         ];
       };

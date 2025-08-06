@@ -68,6 +68,7 @@ in
       patches = [ ./looking-glass.patch ];
     });
   */
+  koreader2 = callPackage ./koreader2 { };
   mobile-config-firefox = callPackage ./mobile-config-firefox { };
   ping-exporter = callPackage ./ping-exporter { };
   proton-ge = pkgs.stdenvNoCC.mkDerivation {

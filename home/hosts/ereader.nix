@@ -1,5 +1,6 @@
 {
   pkgs,
+  lib,
   inputs,
   ...
 }:
@@ -12,6 +13,7 @@
   ];
 
   phone.enable = true;
+  phone.suspend = false;
   minimal = true;
   home.stateVersion = "23.11";
   home.username = "user";
@@ -24,10 +26,29 @@
   # services.kdeconnect.enable = true;
   home.packages = with pkgs; [
     # TODO fix
-    koreader
-    (calibre.override {
-      speechSupport = false;
-    })
+    koreader2
+    #(calibre.override {
+    #  speechSupport = false;
+    #})
     wvkbd
   ];
+  wayland.windowManager.sway.config.startup = [
+    {
+      command = toString (
+        pkgs.writeShellScript "run-koreader" ''
+          while true; do
+            ${lib.getExe pkgs.koreader2}
+            sleep 5
+          done
+        ''
+      );
+    }
+  ];
+  services.swayidle.enable = lib.mkForce false;
+  programs.bash.profileExtra = ''
+    if [ -z "$WAYLAND_DISPLAY" ] && [ -n "$XDG_VTNR" ] && [ "$XDG_VTNR" -eq 1 ]; then
+      systemctl stop buffyboard
+      sway
+    fi
+  '';
 }

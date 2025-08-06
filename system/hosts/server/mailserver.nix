@@ -61,7 +61,7 @@ in
     hierarchySeparator = "/";
   };
 
-  mailserver.stateVersion = 1;
+  mailserver.stateVersion = 3;
   # Only allow local connections to noreply account
   mailserver.loginAccounts."noreply@${cfg.domainName}" = {
     # password is set in private.nix

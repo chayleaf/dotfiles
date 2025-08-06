@@ -167,12 +167,14 @@ in
           lockfile = "/tmp/login-once.lock";
         in
         with pkgs;
+        # skip "weird" ttys like serial
+        # only do it for /dev/tty1 and similar
         writeShellScript "login-once" ''
-          if [ -f '${lockfile}' ]; then
-            exec ${shadow}/bin/login $@
-          else
-            ${coreutils}/bin/touch '${lockfile}'
+          if [ ! -f '${lockfile}' ] && [[ $(${coreutils}/bin/tty) == /dev/tty? ]]; then
+            ${coreutils}/bin/tty > '${lockfile}'
             exec ${shadow}/bin/login -f user
+          else
+            exec ${shadow}/bin/login $@
           fi
         '';
     })
@@ -217,6 +219,7 @@ in
     })
 
     (lib.mkIf (!cfg.minimal) {
+      environment.pathsToLink = [ "/share/fonts" ];
       nix.nixPath = [ "/etc/nix/inputs" ];
       services.pipewire = {
         enable = lib.mkDefault true;

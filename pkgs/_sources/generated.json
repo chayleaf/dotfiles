@@ -22,24 +22,24 @@
         "pinned": false,
         "src": {
             "name": null,
-            "sha256": "sha256-E8vC08GLPBF9Q5kR2xDl2dD/svX9KMJ84M2fpc1NJ4o=",
+            "sha256": "sha256-9Qjv86WQD4a8RNGk55C/tEWzSKApgmLQToaWAxx+9HA=",
             "type": "url",
-            "url": "https://github.com/GloriousEggroll/proton-ge-custom/releases/download/GE-Proton10-4/GE-Proton10-4.tar.gz"
+            "url": "https://github.com/GloriousEggroll/proton-ge-custom/releases/download/GE-Proton10-10/GE-Proton10-10.tar.gz"
         },
-        "version": "GE-Proton10-4"
+        "version": "GE-Proton10-10"
     },
     "searxng": {
         "cargoLocks": null,
-        "date": "2025-06-12",
+        "date": "2025-07-29",
         "extract": null,
         "name": "searxng",
         "passthru": null,
         "pinned": false,
         "src": {
-            "sha256": "sha256-216c10p/IqXa+abtrnoRJn0domi+rIym+otxmIqJ9IE=",
+            "sha256": "sha256-AmKX88Akrc1KzW/0C7nXs62YD8x25p8kBj7nXd+WUc8=",
             "type": "tarball",
-            "url": "https://github.com/searxng/searxng/archive/0b877f1fb890b345c116e76b5744bfe4263b5c2e.tar.gz"
+            "url": "https://github.com/searxng/searxng/archive/6b9e12e4c1b3c5012d8a4149093b84cff6fa4887.tar.gz"
         },
-        "version": "0b877f1fb890b345c116e76b5744bfe4263b5c2e"
+        "version": "6b9e12e4c1b3c5012d8a4149093b84cff6fa4887"
     }
 }
