@@ -39,7 +39,8 @@
   common.binaryCache.enable = true;
   services.dbus.enable = true;
   services.sshd.enable = true;
-  services.tlp.enable = true;
+  # seems to use more battery than it saves because of the CPU usage
+  # services.tlp.enable = true;
   users.defaultUserShell = pkgs.bash;
   services.speechd.enable = false;
 
@@ -68,5 +69,5 @@
   services.upower.enable = true;
   services.pipewire.enable = false;
   environment.pathsToLink = [ "/share/fonts" ];
-  environment.systemPackages = with pkgs; [ patchelf SDL2 ];
+  environment.systemPackages = with pkgs; [ patchelf powertop ];
 }

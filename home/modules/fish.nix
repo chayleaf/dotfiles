@@ -5,6 +5,7 @@
 }:
 
 {
+  home.shell.enableFishIntegration = true;
   programs.fish =
     let
       nom-compat = pkgs.runCommand "any-shell-nom-compat" { } ''

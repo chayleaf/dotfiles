@@ -207,7 +207,8 @@
         };
       };
       services.gammastep.enable = true;
-      programs.ncmpcpp.enable = true;
+      # TODO
+      programs.ncmpcpp.enable = false;
       services.mpd = {
         enable = true;
         network.startWhenNeeded = true;

@@ -38,9 +38,9 @@
   home.sessionVariables = {
     STEAM_EXTRA_COMPAT_TOOLS_PATHS = "${pkgs.proton-ge}";
     CARGO_PROFILE_DEV_INCREMENTAL = "true";
-    # RUSTC_LINKER = "${pkgs.clang_latest}/bin/clang";
+    # RUSTC_LINKER = "${pkgs.llvmPackages_latest.clang}/bin/clang";
     # RUSTFLAGS = "-C link-arg=--ld-path=${pkgs.mold}/bin/mold";
-    CARGO_TARGET_X86_64_UNKNOWN_LINUX_GNU_LINKER = "${pkgs.clang_latest}/bin/clang";
+    CARGO_TARGET_X86_64_UNKNOWN_LINUX_GNU_LINKER = "${pkgs.llvmPackages_latest.clang}/bin/clang";
     CARGO_TARGET_X86_64_UNKNOWN_LINUX_GNU_RUSTFLAGS = "-C link-arg=--ld-path=${pkgs.mold}/bin/mold";
   };
   home.packages = with pkgs; [
@@ -86,7 +86,7 @@
     # bottles
     virt-manager
     looking-glass-client
-    clang_latest
+    llvmPackages_latest.clang
     mold
     rustc
     rustfmt
@@ -97,7 +97,7 @@
     tdesktop
     osu-wine
     dotnet-sdk_9
-    nodejs
+    # nodejs
     nodePackages.npm
     yarn
     (ghc.withPackages (p: with p; [cabal-install]))

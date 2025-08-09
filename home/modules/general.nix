@@ -35,7 +35,11 @@
     gca = "git commit --amend";
     gm = "git merge";
   };
+  home.sessionVariables = {
+    PYTHON_BASIC_REPL = "1";
+  };
 
+  home.shell.enableBashIntegration = true;
   programs = {
     atuin = {
       enable = true;

@@ -9,10 +9,11 @@ let
   getTerminalBin =
     term:
     {
-      alacritty = "${pkgs.alacritty}/bin/alacritty";
+      alacritty = lib.getExe pkgs.alacritty;
       foot = "${pkgs.foot}/bin/footclient";
-      kitty = "${pkgs.kitty}/bin/kitty";
-      urxvt = "${pkgs.rxvt-unicode-emoji}/bin/urxvt";
+      kitty = lib.getExe pkgs.kitty;
+      urxvt = lib.getExe pkgs.rxvt-unicode-emoji;
+      ghostty = lib.getExe pkgs.ghostty;
     }
     .${term} or (throw "Terminal not found");
   color = builtins.elemAt config.colors.base;

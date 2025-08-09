@@ -478,11 +478,11 @@ in*/
       nodePackages_latest.bash-language-server shellcheck
       nodePackages_latest.typescript-language-server
       # nodePackages_latest.svelte-language-server
-      clang-tools_latest
+      llvmPackages_latest.clang-tools
       nodePackages_latest.vscode-langservers-extracted
       nil
-      marksman
       nixfmt-rfc-style
+      marksman
       taplo
       ripgrep
       (python3.withPackages (p: with p; [

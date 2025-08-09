@@ -38,8 +38,7 @@ in
   });
 
   buffyboard = pkgs.callPackage ./buffyboard { };
-  clang-tools_latest = pkgs.clang-tools_16;
-  clang_latest = pkgs.clang_16;
+  llvmPackages_latest = pkgs.llvmPackages_21;
   /*
     ghidra = pkgs.ghidra.overrideAttrs (old: {
       patches = old.patches ++ [ ./ghidra-stdcall.patch ];
