@@ -1,5 +1,14 @@
 { pkgs, lib, ... }:
 let
+  helix = pkgs.helix.overrideAttrs (old: {
+    patches = (old.patches or [ ]) ++ [
+      (pkgs.fetchpatch {
+        name = "change-number-selection-behavior.patch";
+        url = "https://github.com/helix-editor/helix/commit/b8d067015a69635a8ff0cc66e152750434688299.patch";
+        hash = "sha256-1Z/prgF/LVakUPC0OZkE/0amc8M8SkV3JygK9vbdEuI=";
+      })
+    ];
+  });
   wrapHelix =
     {
       extraPackages ? [ ],
@@ -11,7 +20,7 @@ let
         rm $out/bin/hx
         makeWrapper ${
           lib.escapeShellArgs [
-            "${pkgs.helix}/bin/hx"
+            "${helix}/bin/hx"
             "${placeholder "out"}/bin/hx"
             "--suffix"
             "PATH"
@@ -22,10 +31,10 @@ let
       '';
       buildInputs = [ pkgs.makeWrapper ];
       preferLocalBuild = true;
-      name = "helix${pkgs.helix.version}";
-      paths = [ pkgs.helix ];
-      passthru.unwrapped = pkgs.helix;
-      inherit (pkgs.helix) meta version;
+      name = "helix${helix.version}";
+      paths = [ helix ];
+      passthru.unwrapped = helix;
+      inherit (helix) meta version;
     };
 in
 {
@@ -38,6 +47,7 @@ in
         shellcheck
         nodePackages.typescript-language-server
         llvmPackages_latest.clang-tools
+        llvmPackages_latest.lldb
         nodePackages.vscode-langservers-extracted
         nil
         nixfmt-rfc-style

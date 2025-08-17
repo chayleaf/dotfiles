@@ -501,7 +501,7 @@ in*/
     # extraPython3Packages = pyPkgs: with pyPkgs; [
     # ];
     viAlias = true;
-    vimAlias = true;
+    vimAlias = false;
     vimdiffAlias = true;
 
     extraConfigLua = compile "main" (
