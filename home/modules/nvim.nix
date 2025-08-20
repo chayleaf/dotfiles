@@ -219,7 +219,8 @@ in*/
             ];
           }
         )); }
-      { settings.plugins.lspkind.enable = true; }
+      { plugin = ps.lspkind-nvim;
+        settings.plugins.lspkind.enable = false; }
       { settings.plugins.cmp_luasnip.enable = true; }
       { settings.plugins.cmp-nvim-lsp.enable = true; }
       { plugin = ps.nvim-autopairs;

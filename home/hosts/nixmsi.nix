@@ -36,7 +36,8 @@
   wayland.windowManager.sway.enable = true;
   services.kdeconnect.enable = true;
   home.sessionVariables = {
-    STEAM_EXTRA_COMPAT_TOOLS_PATHS = "${pkgs.proton-ge}";
+    # TODO
+    # STEAM_EXTRA_COMPAT_TOOLS_PATHS = "${pkgs.proton-ge}";
     CARGO_PROFILE_DEV_INCREMENTAL = "true";
     # RUSTC_LINKER = "${pkgs.llvmPackages_latest.clang}/bin/clang";
     # RUSTFLAGS = "-C link-arg=--ld-path=${pkgs.mold}/bin/mold";

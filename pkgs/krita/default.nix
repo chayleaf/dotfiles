@@ -14,5 +14,5 @@
 }).overrideAttrs
   (old: {
     patched = true;
-    buildInputs = old.buildInputs ++ [ python3Packages.requests ];
+    buildInputs = old.buildInputs ++ (with python3Packages; [ requests ]);
   })
