@@ -67,6 +67,11 @@ in
       patches = [ ./looking-glass.patch ];
     });
   */
+  pds = pkgs.pds.overrideAttrs (old: {
+    postInstall = (old.posInstall or "") + ''
+      substituteInPlace $out/lib/pds/node_modules/@atproto/pds/dist/api/com/atproto/identity/resolveHandle.js --replace-fail " || handle === host.slice(1)" ""
+    '';
+  });
   koreader2 = callPackage ./koreader2 { };
   mobile-config-firefox = callPackage ./mobile-config-firefox { };
   ping-exporter = callPackage ./ping-exporter { };

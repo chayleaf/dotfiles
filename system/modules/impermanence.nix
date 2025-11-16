@@ -142,6 +142,14 @@ in
                 mode = "0700";
               }
             ]
+            ++ lib.optionals config.services.pds.enable [
+              {
+                directory = /var/lib/pds;
+                user = "pds";
+                group = "pds";
+                mode = "0700";
+              }
+            ]
             ++ lib.optionals config.services.botamusique.enable [
               {
                 directory = /var/lib/private/botamusique;

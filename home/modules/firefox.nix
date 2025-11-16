@@ -33,7 +33,7 @@
           (with pkgs.nur.repos.rycee.firefox-addons; [
             cookies-txt
             don-t-fuck-with-paste
-            greasemonkey
+            violentmonkey
             keepassxc-browser
             libredirect
             localcdn

@@ -1,6 +1,7 @@
 {
   config,
   pkgs,
+  lib,
   ...
 }:
 
@@ -8,6 +9,23 @@ let
   cfg = config.server;
 in
 {
+  services.pds = {
+    enable = true;
+    settings = {
+      #PDS_SERVICE_HANDLE_DOMAINS = ".${cfg.domainName}";
+      PDS_HOSTNAME = cfg.domainName;
+      PDS_PORT = 3085;
+      PDS_HOST = "::1";
+    };
+    environmentFiles = [ "/secrets/pds.env" ];
+  };
+
+  services.nginx.virtualHosts.${cfg.domainName} = {
+    locations."/xrpc".proxyPass = "http://${lib.quoteListenAddr config.services.pds.settings.PDS_HOST}:${toString config.services.pds.settings.PDS_PORT}";
+    locations."/xrpc".proxyWebsockets = true;
+    locations."/.well-known/atproto-did".proxyPass = "http://${lib.quoteListenAddr config.services.pds.settings.PDS_HOST}:${toString config.services.pds.settings.PDS_PORT}";
+  };
+
   services.postgresql.extensions = with config.services.postgresql.package.pkgs; [ tsja ];
 
   services.akkoma =
