@@ -253,13 +253,7 @@ in*/
         ]; }
       { plugin = ps.nvim-lspconfig;
         settings.plugins.lsp.enable = false;
-        config = (
-          let lsp = name: builtins.seq
-            # ensure an lsp exists (otherwise lspconfig will still create an empty config for some reason)
-            (REQ "lspconfig.configs.${name}")
-            # metatables, son! they harden in response to physical trauma
-            (REQ' (PROP (require "lspconfig") name));
-          in [
+        config = [
           # See `:help vim.diagnostic.*` for documentation on any of the below functions
           (kmSetNs {
             "<space>e" = {
@@ -347,7 +341,7 @@ in*/
             (on_attach_rust: client: bufnr: [
               (vim.api.nvim_buf_create_user_command bufnr "RustAndroid" (opts: [
                 (vim.lsp.set_log_level "debug")
-                ((lsp "rust_analyzer").setup {
+                (vim.lsp.config "rust_analyzer" {
                   on_attach = on_attach_rust;
                   inherit capabilities;
                   settings = vim.tbl_deep_extend
@@ -355,15 +349,19 @@ in*/
                     config.rustAnalyzerAndroidSettings
                     rust_settings;
                 })
+                (vim.lsp.enable "rust_analyzer" true)
               ]) {})
               (on_attach client bufnr)
             ])
             # BEGIN
-            (let setupLsp = name: args: (lsp name).setup ({
-              inherit on_attach capabilities;
-              settings = { };
-            } // args);
-            in on_attach_rust: [
+            (let setupLsp = name: args: [
+              (vim.lsp.config name ({
+                inherit on_attach capabilities;
+                settings = { };
+              } // args))
+              (vim.lsp.enable name true)
+            ];
+            in on_attach_rust: (builtins.concatLists
               # (vim.lsp.set_log_level "debug")
               # see https://github.com/neovim/nvim-lspconfig/blob/master/doc/configs.md
               (lib.mapAttrsToList setupLsp {
@@ -404,9 +402,9 @@ in*/
                   settings = rust_settings;
                 };
               })
-            ]) # END
+            )) # END
           )) # END
-        ]); }
+        ]; }
       { settings.plugins.which-key.enable = true;
         settings.globalOpts.timeout = true;
         settings.globalOpts.timeoutlen = 500; }

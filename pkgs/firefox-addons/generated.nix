@@ -21,31 +21,6 @@
         platforms = platforms.all;
       };
     };
-    "rikaitan" = buildFirefoxXpiAddon {
-      pname = "rikaitan";
-      version = "25.7.21.0";
-      addonId = "tatsu@autistici.org";
-      url = "https://addons.mozilla.org/firefox/downloads/file/4546014/rikaitan-25.7.21.0.xpi";
-      sha256 = "8a71d8810a6a547ffb6676bb4ab46bced7c0a3559335eea3343629590359b059";
-      meta = with lib;
-      {
-        homepage = "https://rikaitan.github.io/";
-        description = "Japanese dictionary with Anki integration and flashcard creation support.";
-        license = licenses.gpl3;
-        mozPermissions = [
-          "storage"
-          "clipboardWrite"
-          "unlimitedStorage"
-          "declarativeNetRequest"
-          "scripting"
-          "contextMenus"
-          "http://*/*"
-          "https://*/*"
-          "file://*/*"
-        ];
-        platforms = platforms.all;
-      };
-    };
     "youtube-nonstop" = buildFirefoxXpiAddon {
       pname = "youtube-nonstop";
       version = "0.9.2";

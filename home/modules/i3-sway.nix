@@ -8,11 +8,6 @@
 let
   modifier = if config.phone.enable then "Mod1" else "Mod4";
   rofiSway = config.programs.rofi.finalPackage;
-  rofiI3 =
-    if config.wayland.windowManager.sway.enable then
-      pkgs.rofi.override { plugins = config.programs.rofi.plugins; }
-    else
-      pkgs.rofi;
   audioNext = pkgs.writeShellScript "playerctl-next" ''
     ${pkgs.playerctl}/bin/playerctl next
     PLAYER=$(${pkgs.playerctl}/bin/playerctl -l | ${pkgs.coreutils}/bin/head -n 1)
@@ -167,7 +162,7 @@ let
               ${pkgs.procps}/bin/pkill -x nheko
               ${pkgs.nheko}/bin/nheko&
               ${pkgs.procps}/bin/pkill -x telegram-desktop
-              ${pkgs.tdesktop}/bin/telegram-desktop -startintray&
+              ${pkgs.telegram-desktop}/bin/telegram-desktop -startintray&
               # and final sleep just in case
               sleep 1
             ''}
@@ -326,9 +321,9 @@ in
                   }
                 )
               ];
-              menu = "${rofiI3}/bin/rofi -show drun";
+              menu = "${rofiSway}/bin/rofi -show drun";
               keybindings = genKeybindings options.xsession.windowManager.i3 {
-                "${modifier}+c" = "exec ${rofiI3}/bin/rofi -show calc -no-show-match -no-sort -no-persist-history";
+                "${modifier}+c" = "exec ${rofiSway}/bin/rofi -show calc -no-show-match -no-sort -no-persist-history";
                 XF86AudioRaiseVolume = lib.mkIf (!config.minimal) "exec ${pkgs.pamixer}/bin/pamixer --increase 5";
                 XF86AudioLowerVolume = lib.mkIf (!config.minimal) "exec ${pkgs.pamixer}/bin/pamixer --decrease 5";
                 XF86AudioMute = lib.mkIf (!config.minimal) "exec ${pkgs.pamixer}/bin/pamixer --toggle-mute";
@@ -673,9 +668,9 @@ in
       programs.rofi = {
         enable = true;
         font = "Noto Sans Mono 16";
-        package = lib.mkIf config.wayland.windowManager.sway.enable (
-          pkgs.rofi-wayland.override {
-            rofi-unwrapped = pkgs.rofi-wayland-unwrapped.overrideAttrs (old: {
+        package = lib.mkIf config.phone.enable (
+          pkgs.rofi.override {
+            rofi-unwrapped = pkgs.rofi-unwrapped.overrideAttrs (old: {
               patches =
                 old.patches or [ ]
                 ++ (lib.mapAttrsToList (k: v: ../../pkgs/rofi-wayland/${k}) (

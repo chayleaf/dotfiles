@@ -183,7 +183,7 @@ in
       supportedFeatures = [
         "benchmark"
         "big-parallel"
-        "ca-derivations"
+        # "ca-derivations"
         "local"
         "kvm"
         "nixos-test"
@@ -205,7 +205,7 @@ in
       supportedFeatures = [
         "benchmark"
         "big-parallel"
-        "ca-derivations"
+        # "ca-derivations"
         "kvm"
         "nixos-test"
       ];

@@ -26,6 +26,8 @@
         source /etc/fish/config.fish
       '';
       interactiveShellInit = ''
+        # THIS SHOULDN'T BE NECESSARY WHY
+        set fish_complete_path ${config.home.profileDirectory}/share/fish/completions $fish_complete_path
         # ${config.programs.atuin.package}/bin/atuin init fish | source
         set -gx ATUIN_SESSION (atuin uuid)
         function _atuin_preexec --on-event fish_preexec

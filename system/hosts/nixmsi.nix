@@ -196,9 +196,6 @@
       publicHostKey = "c3NoLWVkMjU1MTkgQUFBQUMzTnphQzFsWkRJMU5URTVBQUFBSUZ6OEZYU1ZFZGY4RnZETWZib3hoQjVWalNlN3kyV2dTYTA5cTFMNHQwOTkgCg==";
     }
   ];
-  services.udev.packages = [
-    pkgs.android-udev-rules
-  ];
   services.avahi.enable = true;
   services.avahi.nssmdns4 = true;
   environment.systemPackages = with pkgs; [

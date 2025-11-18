@@ -72,7 +72,7 @@
     #(osu-lazer-bin.override {
     #command_prefix = "env SDL_VIDEODRIVER=wayland ${obs-studio-plugins.obs-vkcapture}/bin/obs-gamecapture";
     #})
-    taisei
+    # taisei
     techmino
     (wrapOBS {
       plugins = with obs-studio-plugins; [
@@ -95,7 +95,7 @@
     clippy
     lalrpop
     tio
-    tdesktop
+    telegram-desktop
     osu-wine
     dotnet-sdk_9
     # nodejs

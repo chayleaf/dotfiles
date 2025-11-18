@@ -1,0 +1,65 @@
+diff --git a/lix/libexpr/primops.cc b/lix/libexpr/primops.cc
+index 2fae74194..8fd8d31dc 100644
+--- a/lix/libexpr/primops.cc
++++ b/lix/libexpr/primops.cc
+@@ -2810,6 +2810,47 @@ Value EvalBuiltins::prepareNixPath(const SearchPath & searchPath)
+     return v;
+ }
+ 
++struct ExtraBuiltinsSettings : Config {
++    Setting<Path> extraBuiltinsFile{this,
++        settings.nixConfDir + "/extra-builtins.nix",
++            "extra-builtins-file",
++            "The path to a nix expression defining extra expression-language level builtins."};
++};
++static ExtraBuiltinsSettings extraBuiltinsSettings;
++static GlobalConfig::Register rp(&extraBuiltinsSettings);
++static void prim_extraBuiltins(EvalState & state, Value ** args, Value & v)
++{
++    static auto extraBuiltinsFile = CanonPath(extraBuiltinsSettings.extraBuiltinsFile.to_string());
++    state.ctx.paths.allowPath(extraBuiltinsFile.abs());
++    try {
++        auto fun = state.ctx.mem.allocValue();
++        state.evalFile(extraBuiltinsFile, *fun);
++        auto attrs = state.ctx.buildBindings(2);
++        auto sExec = state.ctx.symbols.create("exec");
++        static PrimOp exec {
++            .name = "exec",
++            .arity = 1,
++            .fun = prim_exec,
++        };
++        static PrimOp importNative {
++            .name = "__importNative",
++            .arity = 2,
++            .fun = prim_importNative,
++        };
++        attrs.alloc(sExec).mkPrimOp(&exec);
++        auto sImportNative = state.ctx.symbols.create("importNative");
++        attrs.alloc(sImportNative).mkPrimOp(&importNative);
++        auto arg = state.ctx.mem.allocValue();
++        arg->mkAttrs(attrs);
++        v.mkApp(fun, arg);
++        state.forceValue(v, noPos);
++    } catch (SysError & e) {
++        if (e.errNo != ENOENT)
++            throw;
++        v.mkNull();
++    }
++}
++
+ void EvalBuiltins::createBaseEnv(const SearchPath & searchPath, const Path & storeDir)
+ {
+     env.up = 0;
+@@ -2830,6 +2871,12 @@ void EvalBuiltins::createBaseEnv(const SearchPath & searchPath, const Path & sto
+             .arity = 1,
+             .fun = prim_exec,
+         });
++    } else {
++        addPrimOp({
++            .name = "__extraBuiltins",
++            .arity = 0,
++            .fun = prim_extraBuiltins,
++        });
+     }
+ 
+     if (RegisterPrimOp::primOps)

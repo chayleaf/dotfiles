@@ -13,6 +13,9 @@ let
 in
 {
   inherit unpatchedNixForNixPlugins nixForNixPlugins;
+  patchedLix = pkgs.lix.overrideAttrs (old: {
+    patches = (old.patches or []) ++ [ ./lix-extra-builtins.patch ];
+  });
   # Various patches to change Nix version of existing packages so they don't error out because of nix-plugins in nix.conf
   nix-plugins =
     (pkgs.nix-plugins.override { nixVersions = patchedNixVersions; }).overrideAttrs

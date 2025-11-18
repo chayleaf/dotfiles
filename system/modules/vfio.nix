@@ -190,9 +190,6 @@ in
       onShutdown = "shutdown";
       qemu = {
         package = pkgs.qemu_kvm;
-        ovmf.enable = true;
-        # Full is needed for TPM and secure boot emulation
-        ovmf.packages = [ pkgs.OVMFFull.fd ];
         # TPM emulation
         swtpm.enable = true;
         verbatimConfig = ''

@@ -401,7 +401,7 @@
                             (
                               { pkgs, lib, ... }:
                               {
-                                nix.package = lib.mkDefault pkgs.nixForNixPlugins;
+                                nix.package = lib.mkDefault pkgs.patchedLix;
                               }
                             )
                           ];

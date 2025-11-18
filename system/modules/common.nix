@@ -60,7 +60,7 @@ in
           auto-optimise-store = true;
           use-xdg-base-directories = true;
           experimental-features = [
-            "ca-derivations"
+            # "ca-derivations"
             "flakes"
             "nix-command"
             "no-url-literals"
@@ -235,15 +235,10 @@ in
     })
 
     (lib.mkIf (!cfg.useNixPlugins) {
-      nix.package = pkgs.unpatchedNixForNixPlugins;
+      nix.package = pkgs.lix;
     })
     (lib.mkIf cfg.useNixPlugins {
-      nix.package = pkgs.nixForNixPlugins;
-      nix.settings.plugin-files-2 = "${
-        pkgs.nix-plugins.override {
-          nixVersions = builtins.mapAttrs (k: v: config.nix.package) pkgs.nixVersions;
-        }
-      }/lib/nix/plugins/libnix-extra-builtins.so";
+      nix.package = pkgs.patchedLix;
       environment.systemPackages = with pkgs; [
         unixtools.xxd
       ];

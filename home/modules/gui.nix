@@ -41,8 +41,7 @@
       programs.nnn.extraPackages =
         with pkgs;
         [
-          # drag & drop
-          xdragon
+          dragon-drop
           # xembed
           tabbed
           # for preview
@@ -53,7 +52,7 @@
           zathura # libreoffice
           fontpreview
           djvulibre
-          poppler_utils
+          poppler-utils
         ]
         ++ lib.optionals (!config.programs.mpv.enable) [ mpv ];
       programs.mpv = {
@@ -254,7 +253,7 @@
             fcitx5-lua
             fcitx5-gtk
             fcitx5-mozc
-            fcitx5-configtool
+            qt6Packages.fcitx5-configtool
             fcitx5-qt
           ];
         };
@@ -337,8 +336,7 @@
         noto-fonts
         noto-fonts-cjk-sans
         noto-fonts-cjk-serif
-        noto-fonts-emoji
-        noto-fonts-extra
+        noto-fonts-color-emoji
         # no idea why this is necessary
         (pkgs.runCommand "nerd-fonts-symbols-only" { } ''
           mkdir -p "$out"

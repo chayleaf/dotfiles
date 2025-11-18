@@ -27,7 +27,7 @@
   home.packages = with pkgs; [
     squeekboard
     techmino
-    tdesktop
+    telegram-desktop
     nodejs
     nodePackages.npm
     yarn

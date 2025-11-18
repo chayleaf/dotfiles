@@ -18,7 +18,7 @@
     enableSshSupport = true;
     maxCacheTtl = 72000;
     maxCacheTtlSsh = 72000;
-    pinentryPackage = if config.minimal then pkgs.pinentry.tty else pkgs.pinentry.qt;
+    pinentryPackage = if config.minimal then pkgs.pinentry-tty else pkgs.pinentry-qt;
   };
   home.shellAliases = {
     s = "sudo -A";
@@ -180,14 +180,14 @@
     };
     git = {
       enable = !config.minimal;
-      package = pkgs.gitAndTools.gitFull;
+      package = pkgs.gitFull;
       delta.enable = true;
       extraConfig = {
         commit.gpgsign = true;
         # disable the atrocious gui password prompt
         core.askPass = "";
         # ...and prefer getting passwords from libsecret (and storing them there)
-        credential.helper = "${pkgs.gitAndTools.gitFull}/bin/git-credential-libsecret";
+        credential.helper = "${pkgs.gitFull}/bin/git-credential-libsecret";
         init.defaultBranch = "master";
         # no need for git pust -u origin <branch>
         push.autoSetupRemote = true;
@@ -411,7 +411,7 @@
       nix-output-monitor
       appimage-run
       unrar-wrapper
-      python3Full
+      python3
     ]
     ++ lib.optionals config.minimal [
       python3
