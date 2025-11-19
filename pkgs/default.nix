@@ -33,9 +33,9 @@ in
   krita = pkgs.callPackage ./krita { inherit (pkgs) krita; };
 
   inherit (inputs.unbound-rust-mod.packages.${pkgs.system}) unbound-mod;
-  unbound-full = pkgs.unbound-full.overrideAttrs (old: {
-    configureFlags = old.configureFlags ++ [ "--with-dynlibmodule" ];
-  });
+  # unbound-full = pkgs.unbound-full.overrideAttrs (old: {
+  #   configureFlags = old.configureFlags ++ [ "--with-dynlibmodule" ];
+  # });
 
   buffyboard = pkgs.callPackage ./buffyboard { };
   llvmPackages_latest = pkgs.llvmPackages_21;

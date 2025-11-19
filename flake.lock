@@ -806,11 +806,11 @@
         ]
       },
       "locked": {
-        "lastModified": 1750711266,
-        "narHash": "sha256-VPP+wzes2jSBSE19ZwLu8b/WGz5PDKjhwozXleUpCfw=",
+        "lastModified": 1763533732,
+        "narHash": "sha256-iXSBJjxZNrQPHtaPXlwHAk/n5H4L4PID8cRDrD130Fo=",
         "owner": "chayleaf",
         "repo": "nixos-router",
-        "rev": "0cf86070433a69012d33fa21fe9a899247b15073",
+        "rev": "3455070b0aaadfa884c1e31df7aef732c17cf4ac",
         "type": "github"
       },
       "original": {
