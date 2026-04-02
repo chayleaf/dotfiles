@@ -101,9 +101,9 @@ in
       send_timeout 300;
     '';
     locations."/".proxyPass =
-      "http://${lib.quoteListenAddr config.services.hydra.listenHost}:${toString config.services.hydra.port}/";
+      "http://${lib.quoteListenAddr config.services.hydra-dev.listenHost}:${toString config.services.hydra-dev.port}/";
     locations."/static/".root =
-      lib.mkIf config.services.hydra.enable "${config.services.hydra.package}/libexec/hydra/root/";
+      lib.mkIf config.services.hydra-dev.enable "${config.services.hydra-dev.package}/libexec/hydra/root/";
   };
   users.users.nginx.extraGroups = [ "grafana" ];
 
@@ -117,7 +117,7 @@ in
       "nix-serve"
       "harmonia"
     ]
-    ++ lib.optionals config.services.hydra.enable [
+    ++ lib.optionals config.services.hydra-dev.enable [
       "hydra"
       "hydra-www"
     ];
@@ -156,9 +156,9 @@ in
     # zstd_types application/x-nix-archive;
   };
 
-  services.hydra = {
+  services.hydra-dev = {
     # TODO
-    # enable = true;
+    enable = true;
     package = pkgs.hydra;
     hydraURL = "home.${cfg.domainName}/hydra";
     listenHost = "127.0.0.1";
@@ -222,7 +222,7 @@ in
   nix.daemonCPUSchedPolicy = "idle";
   nix.daemonIOSchedClass = "idle";
   common.useNixPlugins = true;
-  systemd.services.hydra-evaluator = lib.mkIf config.services.hydra.enable {
+  systemd.services.hydra-evaluator = lib.mkIf config.services.hydra-dev.enable {
     # https://github.com/NixOS/hydra/issues/1186
     environment.GC_DONT_GC = "1";
     # serviceConfig.CPUQuota = "240%";

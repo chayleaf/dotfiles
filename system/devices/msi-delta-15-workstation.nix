@@ -6,7 +6,7 @@
 let
   uuids.efi = "D97E-A4D5";
   uuids.encroot = "a2c3c9ea-2c73-4786-bff7-5f0aa7097912";
-  uuids.root = "dc669123-d6d3-447f-9ce3-c22587e5fa6a";
+  uuids.root = "89392644-8a7d-426c-a3bb-c6fd7dead870";
   uuids.encdata = "f1447692-fa7c-4bd6-9cb5-e44c13fddfe3";
   uuids.data = "fa754b1e-ac83-4851-bf16-88efcd40b657";
   uuids.swap = "01c21ed8-0f40-4892-825d-81f5ddb9a0a2";
@@ -50,9 +50,12 @@ in
     };
     "/persist" = {
       device = parts.root;
-      fsType = "bcachefs";
+      fsType = "btrfs";
       neededForBoot = true;
-      options = [ "discard=1" ];
+      options = [
+        "discard=async"
+        "compress=zstd:15"
+      ];
     };
     "/boot" = {
       device = parts.efi;
@@ -87,6 +90,14 @@ in
 
   # dedupe
   services.beesd = {
+    filesystems.root = {
+      spec = "UUID=${uuids.root}";
+      hashTableSizeMB = 128;
+      extraOptions = [
+        "--loadavg-target"
+        "8.0"
+      ];
+    };
     filesystems.dataroot = {
       spec = "UUID=${uuids.data}";
       hashTableSizeMB = 256;

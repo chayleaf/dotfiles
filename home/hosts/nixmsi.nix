@@ -2,6 +2,7 @@
   pkgs,
   lib,
   inputs,
+  config,
   ...
 }:
 
@@ -12,6 +13,7 @@
     ../modules/i3-sway.nix
     ../modules/nvim.nix
     ../modules/helix.nix
+    ../modules/emacs.nix
     # ../modules/kakoune.nix
     inputs.nur.modules.homeManager.default
   ];
@@ -102,6 +104,8 @@
     nodePackages.npm
     yarn
     (ghc.withPackages (p: with p; [cabal-install]))
+    maple-mono.opentype
+    maple-mono.CN
   ];
   xdg.configFile."looking-glass/client.ini".text = ''
     [app]
@@ -112,4 +116,29 @@
     escapeKey=KEY_RIGHTALT
   '';
   programs.mpv.config.hwdec = lib.mkForce "vdpau";
+  programs.librewolf.profiles.chayleaf.settings = builtins.mapAttrs (k: lib.mkForce) {
+    "font.name.serif.x-western" = "Maple Mono";
+    "font.name.sans-serif.x-western" = "Maple Mono";
+    "font.name.monospace.x-western" = "Maple Mono";
+    "font.name.monospace.ja" = "Maple Mono CN";
+    "font.name.monospace.ko" = "Maple Mono CN";
+    "font.name.monospace.zh-CN" = "Maple Mono CN";
+    "font.name.monospace.zh-HK" = "Maple Mono CN";
+    "font.name.monospace.zh-TW" = "Maple Mono CN";
+    "font.name.serif.ja" = "Maple Mono CN";
+    "font.name.serif.ko" = "Maple Mono CN";
+    "font.name.serif.zh-CN" = "Maple Mono CN";
+    "font.name.serif.zh-HK" = "Maple Mono CN";
+    "font.name.serif.zh-TW" = "Maple Mono CN";
+    "font.name.sans-serif.ja" = "Maple Mono CN";
+    "font.name.sans-serif.ko" = "Maple Mono CN";
+    "font.name.sans-serif.zh-CN" = "Maple Mono CN";
+    "font.name.sans-serif.zh-HK" = "Maple Mono CN";
+    "font.name.sans-serif.zh-TW" = "Maple Mono CN";
+    "browser.display.use_document_fonts" = 0;
+  };
+  programs.librewolf.profiles.cn = {
+    id = 1;
+    inherit (config.programs.librewolf.profiles.chayleaf) extensions settings;
+  };
 }

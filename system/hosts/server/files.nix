@@ -112,7 +112,7 @@ in
         gnused
         nodejs
         wget
-        (python3.withPackages (p: [ p.requests p.beautifulsoup4 ]))
+        (python3.withPackages (p: [ p.requests p.beautifulsoup4 p.statsmodels ]))
       ];
       labels = [ "native:host" ];
       name = "git.${cfg.domainName}";

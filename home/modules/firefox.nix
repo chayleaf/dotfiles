@@ -42,7 +42,7 @@
             protondb-for-steam
             return-youtube-dislikes
             rust-search-extension
-            search-by-image
+            #search-by-image
             sponsorblock
             steam-database
             ublock-origin

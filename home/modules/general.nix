@@ -411,7 +411,7 @@
       nix-output-monitor
       appimage-run
       unrar-wrapper
-      python3
+      # python3
     ]
     ++ lib.optionals config.minimal [
       python3

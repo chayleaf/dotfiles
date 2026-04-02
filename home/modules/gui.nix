@@ -253,6 +253,7 @@
             fcitx5-lua
             fcitx5-gtk
             fcitx5-mozc
+            fcitx5-rime
             qt6Packages.fcitx5-configtool
             fcitx5-qt
           ];
@@ -279,7 +280,7 @@
       gtk = {
         enable = true;
         font.name = "Noto Sans";
-        font.size = 10;
+        font.size = 16;
         iconTheme = lib.mkIf (!config.minimal) {
           package = pkgs.papirus-icon-theme;
           name = "Papirus-Dark";

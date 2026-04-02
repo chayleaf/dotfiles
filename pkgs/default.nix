@@ -95,7 +95,7 @@ in
   schlock = callPackage ./schlock { };
   sxmo-swaylock = callPackage ./sxmo-swaylock { };
   swaylock-mobile = callPackage ./swaylock-mobile { };
-  techmino = callPackage ./techmino { };
+  #techmino = callPackage ./techmino { };
   wayland-proxy = callPackage ./wayland-proxy { };
 
   firefoxAddons = lib.recurseIntoAttrs (callPackage ./firefox-addons { inherit nur sources; });

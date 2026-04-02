@@ -9,6 +9,8 @@ import sys
 with open(os.path.expanduser("~/var/addresses.json"), "rt") as f:
     opts = json.loads(f.read())
 
+prefix: list[str] = ["proxychains4", "-f", "/home/user/.config/proxychains.conf"]
+
 
 def main():
     args = sys.argv
@@ -29,7 +31,7 @@ def main():
         ]
     )
     if act == "home":
-        attr_path = f'.#homeConfigurations.user@{cfg}.activation-script'
+        attr_path = f".#homeConfigurations.user@{cfg}.activation-script"
     else:
         attr_path = f".#nixosConfigurations.{cfg}.config.system.build.toplevel"
     copy_args = []
@@ -37,9 +39,11 @@ def main():
     if build_host is not None:
         build_host = addr if cfg == build_host else opts["addresses"][build_host]
         cmd = ["nix", "eval", "--json", attr_path + ".drvPath"] + args
-        ret = subprocess.run(cmd, check=True, encoding="utf-8", stdout=subprocess.PIPE)
+        ret = subprocess.run(
+            prefix + cmd, check=True, encoding="utf-8", stdout=subprocess.PIPE
+        )
         drv = json.loads(ret.stdout)
-        print('copying', drv, 'to build host')
+        print("copying", drv, "to build host")
         cmd = [
             "nix",
             "copy",
@@ -49,7 +53,7 @@ def main():
             "ssh-ng://root@" + build_host,
         ] + args
         subprocess.run(cmd, check=True)
-        print('building', drv)
+        print("building", drv)
         cmd = ["nix", "build", f"'{drv}^*'", "--no-link", "--json"] + args
         ret = subprocess.run(
             ["ssh", "root@" + build_host],
@@ -63,11 +67,13 @@ def main():
         else:
             copy_args.extend(["--from", "ssh-ng://root@" + build_host])
     else:
-        print('building', attr_path)
+        print("building", attr_path)
         cmd = ["nix", "build", attr_path, "--no-link", "--json"] + args
-        ret = subprocess.run(cmd, check=True, encoding="utf-8", stdout=subprocess.PIPE)
+        ret = subprocess.run(
+            prefix + cmd, check=True, encoding="utf-8", stdout=subprocess.PIPE
+        )
     ret = json.loads(ret.stdout)[0]["outputs"]["out"]
-    print('output', ret)
+    print("output", ret)
     cmds = []
     if act in ["build"]:
         return
@@ -75,17 +81,35 @@ def main():
         cmds.append(["nix-env", "-p", "/nix/var/nix/profiles/system", "--set", ret])
     if act != "home":
         cmds.append(
-            ["env", "NIXOS_INSTALL_BOOTLOADER=", ret + "/bin/switch-to-configuration", act]
+            [
+                "env",
+                "NIXOS_INSTALL_BOOTLOADER=",
+                ret + "/bin/switch-to-configuration",
+                act,
+            ]
         )
     if addr is None:
         for cmd in cmds:
-            print('running', *cmd)
+            print("running", *cmd)
             cmd = ["sudo", "-A"] + cmd
             subprocess.run(cmd, check=True)
     else:
         if do_copy:
-            print('copying', ret, 'to', addr)
-            print(*(["nix", "copy", ret, "--no-check-sigs", "--to", "ssh-ng://root@" + addr] + copy_args + args))
+            print("copying", ret, "to", addr)
+            print(
+                *(
+                    [
+                        "nix",
+                        "copy",
+                        ret,
+                        "--no-check-sigs",
+                        "--to",
+                        "ssh-ng://root@" + addr,
+                    ]
+                    + copy_args
+                    + args
+                )
+            )
             subprocess.run(
                 ["nix", "copy", ret, "--no-check-sigs", "--to", "ssh-ng://root@" + addr]
                 + copy_args
@@ -93,7 +117,7 @@ def main():
                 check=True,
             )
         if cmds:
-            print('running', cmds)
+            print("running", cmds)
             subprocess.run(
                 ["ssh", "root@" + addr],
                 input="\n".join(" ".join(cmd) for cmd in cmds) + "\n",

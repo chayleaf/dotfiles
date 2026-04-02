@@ -184,6 +184,21 @@
     },
     "flake-compat_3": {
       "locked": {
+        "lastModified": 1761640442,
+        "narHash": "sha256-AtrEP6Jmdvrqiv4x2xa5mrtaIp3OEe8uBYCDZDS+hu8=",
+        "owner": "nix-community",
+        "repo": "flake-compat",
+        "rev": "4a56054d8ffc173222d09dad23adf4ba946c8884",
+        "type": "github"
+      },
+      "original": {
+        "owner": "nix-community",
+        "repo": "flake-compat",
+        "type": "github"
+      }
+    },
+    "flake-compat_4": {
+      "locked": {
         "lastModified": 1761588595,
         "narHash": "sha256-XKUZz9zewJNUj46b4AJdiRZJAvSZ0Dqj2BNfXvFlJC4=",
         "owner": "NixOS",
@@ -197,7 +212,7 @@
         "type": "github"
       }
     },
-    "flake-compat_4": {
+    "flake-compat_5": {
       "flake": false,
       "locked": {
         "lastModified": 1761588595,
@@ -424,19 +439,25 @@
       }
     },
     "hydra": {
-      "flake": false,
+      "inputs": {
+        "flake-compat": "flake-compat_3",
+        "lix": "lix",
+        "nixpkgs": [
+          "nixpkgs"
+        ]
+      },
       "locked": {
-        "lastModified": 1762457028,
-        "narHash": "sha256-ifmzQS+u/dODQXmMVQLIb4AF4dkWI9s7VGYpV6x/Iq4=",
-        "owner": "NixOS",
-        "repo": "hydra",
-        "rev": "241ab718002ca5740b7e3f659d0fbd483ab40523",
-        "type": "github"
+        "lastModified": 1763746454,
+        "narHash": "sha256-YwK7adSmDLxEFFyLl9K479GBK6Gil3YkQx5+RBJVypQ=",
+        "ref": "refs/heads/main",
+        "rev": "b645541855e004a705f9b9f02564f2ba9c6909c8",
+        "revCount": 4321,
+        "type": "git",
+        "url": "https://git.lix.systems/lix-project/hydra.git"
       },
       "original": {
-        "owner": "NixOS",
-        "repo": "hydra",
-        "type": "github"
+        "type": "git",
+        "url": "https://git.lix.systems/lix-project/hydra.git"
       }
     },
     "hydra-queue-runner": {
@@ -453,6 +474,22 @@
         "owner": "helsinki-systems",
         "repo": "hydra-queue-runner",
         "rev": "32ae9390dbd7291e304b7c8a8f80d62565a3afeb",
+        "type": "github"
+      }
+    },
+    "hydra_2": {
+      "flake": false,
+      "locked": {
+        "lastModified": 1762457028,
+        "narHash": "sha256-ifmzQS+u/dODQXmMVQLIb4AF4dkWI9s7VGYpV6x/Iq4=",
+        "owner": "NixOS",
+        "repo": "hydra",
+        "rev": "241ab718002ca5740b7e3f659d0fbd483ab40523",
+        "type": "github"
+      },
+      "original": {
+        "owner": "NixOS",
+        "repo": "hydra",
         "type": "github"
       }
     },
@@ -515,6 +552,37 @@
       }
     },
     "lix": {
+      "inputs": {
+        "flake-compat": [
+          "hydra",
+          "flake-compat"
+        ],
+        "nix2container": "nix2container",
+        "nix_2_18": [
+          "hydra"
+        ],
+        "nixpkgs": [
+          "hydra",
+          "nixpkgs"
+        ],
+        "nixpkgs-regression": "nixpkgs-regression",
+        "pre-commit-hooks": "pre-commit-hooks"
+      },
+      "locked": {
+        "lastModified": 1763733543,
+        "narHash": "sha256-PhJ96woAqf2HsB6Cf0tMIiDwAPcl+Yd4HfGUjhpz1GQ=",
+        "ref": "refs/heads/main",
+        "rev": "8558cf781a17bd17ae93f3c5b5e49e0c7dfa7d5a",
+        "revCount": 18587,
+        "type": "git",
+        "url": "https://git.lix.systems/lix-project/lix"
+      },
+      "original": {
+        "type": "git",
+        "url": "https://git.lix.systems/lix-project/lix"
+      }
+    },
+    "lix_2": {
       "inputs": {
         "flake-compat": [
           "nix-community-infra",
@@ -598,10 +666,10 @@
         "buildbot-nix": "buildbot-nix",
         "disko": "disko",
         "empty": "empty",
-        "flake-compat": "flake-compat_3",
+        "flake-compat": "flake-compat_4",
         "flake-parts": "flake-parts",
         "hercules-ci-effects": "hercules-ci-effects",
-        "hydra": "hydra",
+        "hydra": "hydra_2",
         "hydra-queue-runner": "hydra-queue-runner",
         "lite-config": "lite-config",
         "nix-darwin": "nix-darwin",
@@ -715,13 +783,29 @@
         "type": "github"
       }
     },
+    "nix2container": {
+      "flake": false,
+      "locked": {
+        "lastModified": 1724996935,
+        "narHash": "sha256-njRK9vvZ1JJsP8oV2OgkBrpJhgQezI03S7gzskCcHos=",
+        "owner": "nlewo",
+        "repo": "nix2container",
+        "rev": "fa6bb0a1159f55d071ba99331355955ae30b3401",
+        "type": "github"
+      },
+      "original": {
+        "owner": "nlewo",
+        "repo": "nix2container",
+        "type": "github"
+      }
+    },
     "nixbsd": {
       "inputs": {
         "flake-compat": [
           "nix-community-infra",
           "flake-compat"
         ],
-        "lix": "lix",
+        "lix": "lix_2",
         "mini-tmpfiles": "mini-tmpfiles",
         "nixpkgs": [
           "nix-community-infra",
@@ -779,7 +863,7 @@
     "nixos-mailserver": {
       "inputs": {
         "blobs": "blobs",
-        "flake-compat": "flake-compat_4",
+        "flake-compat": "flake-compat_5",
         "git-hooks": "git-hooks",
         "nixpkgs": [
           "nixpkgs"
@@ -883,6 +967,22 @@
         "type": "github"
       }
     },
+    "nixpkgs-regression": {
+      "locked": {
+        "lastModified": 1643052045,
+        "narHash": "sha256-uGJ0VXIhWKGXxkeNnq4TvV3CIOkUJ3PAoLZ3HMzNVMw=",
+        "owner": "NixOS",
+        "repo": "nixpkgs",
+        "rev": "215d4d0fd80ca5163643b03a33fde804a29cc1e2",
+        "type": "github"
+      },
+      "original": {
+        "owner": "NixOS",
+        "repo": "nixpkgs",
+        "rev": "215d4d0fd80ca5163643b03a33fde804a29cc1e2",
+        "type": "github"
+      }
+    },
     "nixpkgs-update": {
       "inputs": {
         "mmdoc": [
@@ -942,11 +1042,11 @@
     },
     "nixpkgs_3": {
       "locked": {
-        "lastModified": 1763298511,
-        "narHash": "sha256-V5J9Cz4SfDYNJR98y4CD9PfJ1rezAJP5fhtTdYfOKb0=",
+        "lastModified": 1764253348,
+        "narHash": "sha256-5ei0Uo+9UTGXMyPsOMKgHx5B/yFZlsradkc5KIcKiwk=",
         "owner": "chayleaf",
         "repo": "nixpkgs",
-        "rev": "1c92927a5ad377c42b97618989b7a6d68ad4dfd7",
+        "rev": "812bc742a8eb4c9265a6acdb809c3bed2ee29633",
         "type": "github"
       },
       "original": {
@@ -1133,6 +1233,22 @@
         "type": "github"
       }
     },
+    "pre-commit-hooks": {
+      "flake": false,
+      "locked": {
+        "lastModified": 1733318908,
+        "narHash": "sha256-SVQVsbafSM1dJ4fpgyBqLZ+Lft+jcQuMtEL3lQWx2Sk=",
+        "owner": "cachix",
+        "repo": "git-hooks.nix",
+        "rev": "6f4e2a2112050951a314d2733a994fbab94864c6",
+        "type": "github"
+      },
+      "original": {
+        "owner": "cachix",
+        "repo": "git-hooks.nix",
+        "type": "github"
+      }
+    },
     "quadlet-nix": {
       "inputs": {
         "flake-parts": [
@@ -1163,6 +1279,7 @@
         "coop-fd": "coop-fd",
         "flake-compat": "flake-compat_2",
         "home-manager": "home-manager",
+        "hydra": "hydra",
         "impermanence": "impermanence",
         "mobile-nixos": "mobile-nixos",
         "nix-community-infra": "nix-community-infra",

@@ -192,7 +192,7 @@ impl Email<'static> {
                     stream.write_all(&p).await?;
                     Ok::<_, Box<dyn std::error::Error + Send + Sync>>(())
                 };
-                tokio::spawn(handle);
+                tokio::spawn(async move { handle.await.unwrap() });
             }
         };
 

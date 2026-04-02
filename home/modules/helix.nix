@@ -49,6 +49,7 @@ in
         llvmPackages_latest.clang-tools
         llvmPackages_latest.lldb
         nodePackages.vscode-langservers-extracted
+        typescript-go
         nil
         nixfmt-rfc-style
         marksman
@@ -69,7 +70,41 @@ in
         ]
       );
     };
-    # languages = [ ];
+    languages = {
+      language-server.typescript-go = {
+        command = "tsgo";
+        args = [
+          "--lsp"
+          "--stdio"
+        ];
+      };
+      language =
+        map
+          (x: {
+            name = x;
+            language-servers = [ "typescript-go" ];
+          })
+          [
+            "javascript"
+            "jsx"
+            "tsx"
+            "typescript"
+          ]
+        ++
+          map
+            (x: {
+              name = x;
+              language-servers = [
+                "typescript-go"
+                "vscode-eslint-language-server"
+                "ember-language-server"
+              ];
+            })
+            [
+              "gjs"
+              "gts"
+            ];
+    };
     themes.custom = {
       inherits = "base16_transparent";
 

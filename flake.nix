@@ -8,6 +8,10 @@
     nixpkgs.url = "github:chayleaf/nixpkgs/ci";
     nixvim.url = "github:nix-community/nixvim";
     nixos-hardware.url = "github:NixOS/nixos-hardware";
+    hydra = {
+      url = "git+https://git.lix.systems/lix-project/hydra.git";
+      inputs.nixpkgs.follows = "nixpkgs";
+    };
     nix-index-database = {
       url = "github:nix-community/nix-index-database";
       inputs.nixpkgs.follows = "nixpkgs";
