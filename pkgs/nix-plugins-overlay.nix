@@ -3,7 +3,7 @@
 let
   # TODO: remove after full update
   unpatchedNixForNixPlugins =
-    if pkgs ? nixVersions.nix_2_25 then pkgs.nixVersions.nix_2_24 else pkgs.nixVersions.nix_2_18;
+    if pkgs?nixVersions.nix_2_28 then pkgs.nixVersions.nix_2_28 else if pkgs ? nixVersions.nix_2_25 then pkgs.nixVersions.nix_2_24 else pkgs.nixVersions.nix_2_18;
   nixForNixPlugins = unpatchedNixForNixPlugins.overrideAttrs (old: {
     patches = (old.patches or [ ]) ++ [ ./rename-nix-plugin-files.patch ];
     # some tests fail on bcachefs due to insufficient permissions
@@ -14,6 +14,7 @@ in
 {
   inherit unpatchedNixForNixPlugins nixForNixPlugins;
   patchedLix = pkgs.lix.overrideAttrs (old: {
+    outputChecks = {};
     patches = (old.patches or []) ++ [ ./lix-extra-builtins.patch ];
   });
   # Various patches to change Nix version of existing packages so they don't error out because of nix-plugins in nix.conf
@@ -32,7 +33,7 @@ in
           ./nix-plugins-fix.patch
         ];
       });
-  nix-eval-jobs =
+  /*nix-eval-jobs =
     (pkgs.nix-eval-jobs.override {
       nix = nixForNixPlugins;
     }).overrideAttrs
@@ -42,8 +43,8 @@ in
           rev = "889ea1406736b53cf165b6c28398aae3969418d1";
           hash = "sha256-3wwtKpS5tUBdjaGeSia7CotonbiRB6K5Kp0dsUt3nzU=";
         };
-      });
-  hydra =
+      });*/
+  /*hydra =
     (pkgs.hydra.override {
       nix = nixForNixPlugins;
     }).overrideAttrs
@@ -55,5 +56,5 @@ in
           rev = "9ad8ac586c76ef78401a2e0279ad2be28a557505";
           hash = "sha256-3RffcSar9FrKggwHW4WZ1NdQ3vRzFG0grWaQkG3czdc=";
         };
-      });
+      });*/
 }

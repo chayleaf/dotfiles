@@ -142,7 +142,7 @@ in
                 mode = "0700";
               }
             ]
-            ++ lib.optionals config.services.pds.enable [
+            ++ lib.optionals config.services.bluesky-pds.enable [
               {
                 directory = /var/lib/pds;
                 user = "pds";

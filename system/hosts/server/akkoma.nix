@@ -9,7 +9,7 @@ let
   cfg = config.server;
 in
 {
-  services.pds = {
+  services.bluesky-pds = {
     enable = true;
     settings = {
       #PDS_SERVICE_HANDLE_DOMAINS = ".${cfg.domainName}";
@@ -21,9 +21,9 @@ in
   };
 
   services.nginx.virtualHosts.${cfg.domainName} = {
-    locations."/xrpc".proxyPass = "http://${lib.quoteListenAddr config.services.pds.settings.PDS_HOST}:${toString config.services.pds.settings.PDS_PORT}";
+    locations."/xrpc".proxyPass = "http://${lib.quoteListenAddr config.services.bluesky-pds.settings.PDS_HOST}:${toString config.services.bluesky-pds.settings.PDS_PORT}";
     locations."/xrpc".proxyWebsockets = true;
-    locations."/.well-known/atproto-did".proxyPass = "http://${lib.quoteListenAddr config.services.pds.settings.PDS_HOST}:${toString config.services.pds.settings.PDS_PORT}";
+    locations."/.well-known/atproto-did".proxyPass = "http://${lib.quoteListenAddr config.services.bluesky-pds.settings.PDS_HOST}:${toString config.services.bluesky-pds.settings.PDS_PORT}";
   };
 
   services.postgresql.extensions = with config.services.postgresql.package.pkgs; [ tsja ];

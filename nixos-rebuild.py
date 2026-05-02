@@ -3,13 +3,14 @@
 
 import json
 import os
+import shlex
 import subprocess
 import sys
 
 with open(os.path.expanduser("~/var/addresses.json"), "rt") as f:
     opts = json.loads(f.read())
 
-prefix: list[str] = ["proxychains4", "-f", "/home/user/.config/proxychains.conf"]
+prefix: list[str] = []  # "proxychains4", "-f", "/home/user/.config/proxychains.conf"]
 
 
 def main():
@@ -53,8 +54,9 @@ def main():
             "ssh-ng://root@" + build_host,
         ] + args
         subprocess.run(cmd, check=True)
-        print("building", drv)
-        cmd = ["nix", "build", f"'{drv}^*'", "--no-link", "--json"] + args
+        print("building", drv, "on", build_host, 'with', args)
+        cmd = ["nix", "build", f"{drv}^*", "--no-link", "--json"] + args
+        cmd = [shlex.quote(arg) for arg in cmd]
         ret = subprocess.run(
             ["ssh", "root@" + build_host],
             input=" ".join(cmd) + "\n",
@@ -67,7 +69,7 @@ def main():
         else:
             copy_args.extend(["--from", "ssh-ng://root@" + build_host])
     else:
-        print("building", attr_path)
+        print("building", attr_path, "locally")
         cmd = ["nix", "build", attr_path, "--no-link", "--json"] + args
         ret = subprocess.run(
             prefix + cmd, check=True, encoding="utf-8", stdout=subprocess.PIPE

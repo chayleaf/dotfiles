@@ -26,7 +26,7 @@ in
 
   services.searx.enable = false;
   services.searx.package = pkgs.searxng;
-  services.searx.runInUwsgi = true;
+  services.searx.configureUwsgi = true;
   services.searx.uwsgiConfig =
     let
       inherit (config.services.searx) settings;

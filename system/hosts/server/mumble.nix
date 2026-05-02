@@ -14,9 +14,10 @@ in
     textMsgLength = 0;
     registerName = "mumble.${cfg.domainName}";
     registerHostname = "mumble.${cfg.domainName}";
-    sslCa = config.security.acme.certs."mumble.${cfg.domainName}".directory + "/chain.pem";
-    sslCert = config.security.acme.certs."mumble.${cfg.domainName}".directory + "/fullchain.pem";
-    sslKey = config.security.acme.certs."mumble.${cfg.domainName}".directory + "/key.pem";
+    tls.useACMEHost = "mumble.${cfg.domainName}";
+    #tls.caPath = config.security.acme.certs."mumble.${cfg.domainName}".directory + "/chain.pem";
+    #tls.certPath = config.security.acme.certs."mumble.${cfg.domainName}".directory + "/fullchain.pem";
+    #tls.keyPath = config.security.acme.certs."mumble.${cfg.domainName}".directory + "/key.pem";
     # clientCertRequired = true;
     extraConfig = ''
       bandwidth=320000
@@ -49,7 +50,7 @@ in
     };
 
   services.botamusique = {
-    enable = true;
+    enable = false;
     settings = {
       youtube_dl = {
         cookiefile = "/var/lib/private/botamusique/cookie_ydl";

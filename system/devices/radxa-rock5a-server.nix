@@ -11,7 +11,7 @@
 
 let
   uuids.enc = "15945050-df48-418b-b736-827749b9262a";
-  uuids.swap = "5c7f9e4e-c245-4ccb-98a2-1211ea7008e8";
+  #uuids.swap = "5c7f9e4e-c245-4ccb-98a2-1211ea7008e8";
   uuids.boot = "0603-5955";
   uuids.bch0 = "9f10b9ac-3102-4816-8f2c-e0526c2aa65b";
   uuids.bch1 = "4ffed814-057c-4f9f-9a12-9d8ac6331e62";
@@ -196,11 +196,12 @@ in
       };
     };
 
-  swapDevices = [ { device = parts.swap; } ];
+  #swapDevices = [ { device = parts.swap; } ];
+  zramSwap.enable = true;
 
-  boot.kernel.sysctl = {
-    "vm.swappiness" = 10;
-  };
+  #boot.kernel.sysctl = {
+  #  "vm.swappiness" = 10;
+  #};
 
   impermanence = {
     enable = true;

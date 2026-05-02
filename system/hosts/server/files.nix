@@ -26,7 +26,7 @@ in
   };
   services.anubis.instances.forgejo = {
     user = "anubis-forgejo";
-    botPolicy.bots = [
+    policy.settings.bots = [
       { import = "(data)/apps/gitea-rss-feeds.yaml"; }
       # { import = "(data)/clients/git.yaml"; }
     ];
@@ -139,7 +139,7 @@ in
   };
   services.nextcloud = {
     enable = true;
-    package = pkgs.nextcloud31;
+    package = pkgs.nextcloud33;
     autoUpdateApps.enable = true;
     # TODO: use socket auth and remove the next line
     database.createLocally = false;

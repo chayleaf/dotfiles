@@ -101,13 +101,13 @@ in
       send_timeout 300;
     '';
     locations."/".proxyPass =
-      "http://${lib.quoteListenAddr config.services.hydra-dev.listenHost}:${toString config.services.hydra-dev.port}/";
+      "http://${lib.quoteListenAddr config.services.hydra.listenHost}:${toString config.services.hydra.port}/";
     locations."/static/".root =
-      lib.mkIf config.services.hydra-dev.enable "${config.services.hydra-dev.package}/libexec/hydra/root/";
+      lib.mkIf config.services.hydra.enable "${config.services.hydra.package}/libexec/hydra/root/";
   };
   users.users.nginx.extraGroups = [ "grafana" ];
 
-  services.harmonia = {
+  services.harmonia.cache = {
     enable = true;
     signKeyPaths = [ "/secrets/cache-priv-key.pem" ];
     settings.bind = "[::1]:5000";
@@ -117,13 +117,13 @@ in
       "nix-serve"
       "harmonia"
     ]
-    ++ lib.optionals config.services.hydra-dev.enable [
+    ++ lib.optionals config.services.hydra.enable [
       "hydra"
       "hydra-www"
     ];
   # make sure only hydra has access to this file
   # so normal nix evals don't have access to builtins
-  # nix.checkConfig = false;
+  nix.checkConfig = false;
   nix.settings.extra-builtins-file = "/secrets/nixos/extra-builtins.nix";
   # required for hydra which uses restricted mode
   nix.settings.allowed-uris = [
@@ -141,7 +141,7 @@ in
     enableACME = true;
     forceSSL = true;
     basicAuthFile = "/secrets/home_password";
-    locations."/".proxyPass = "http://${config.services.harmonia.settings.bind or "[::1]:5000"}";
+    locations."/".proxyPass = "http://${config.services.harmonia.cache.settings.bind or "[::1]:5000"}";
     locations."/".extraConfig = ''
       proxy_set_header Host $host;
       proxy_http_version 1.1;
@@ -156,7 +156,7 @@ in
     # zstd_types application/x-nix-archive;
   };
 
-  services.hydra-dev = {
+  services.hydra = {
     # TODO
     enable = true;
     package = pkgs.hydra;
@@ -172,7 +172,7 @@ in
       evaluator_pure_eval = 0
     '';
   };
-  # boot.binfmt.emulatedSystems = builtins.filter (x: x != pkgs.system) [ "aarch64-linux" "x86_64-linux" ];
+  # boot.binfmt.emulatedSystems = builtins.filter (x: x != pkgs.stdenv.hostPlatform.system) [ "aarch64-linux" "x86_64-linux" ];
   nix.buildMachines = [
     {
       # there were some bugs related to not specifying the machine
@@ -190,7 +190,7 @@ in
       ];
       systems = [
         "builtin"
-        pkgs.system
+        pkgs.stdenv.hostPlatform.system
       ];
     }
     {
@@ -216,13 +216,14 @@ in
     }
   ];
   nix.distributedBuilds = true;
-  # limit CI CPU usage to 30%
-  # systemd.services.nix-daemon.serviceConfig.CPUQuota = "240%";
+  # limit CI CPU usage to 50%
+  # (mostly to prevent overheating)
+  systemd.services.nix-daemon.serviceConfig.CPUQuota = "${toString (50 * 8)}%";
   systemd.services.nix-daemon.serviceConfig.Nice = "19";
   nix.daemonCPUSchedPolicy = "idle";
   nix.daemonIOSchedClass = "idle";
   common.useNixPlugins = true;
-  systemd.services.hydra-evaluator = lib.mkIf config.services.hydra-dev.enable {
+  systemd.services.hydra-evaluator = lib.mkIf config.services.hydra.enable {
     # https://github.com/NixOS/hydra/issues/1186
     environment.GC_DONT_GC = "1";
     # serviceConfig.CPUQuota = "240%";

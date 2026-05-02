@@ -21,18 +21,19 @@ let
     inherit pkgs;
     nurpkgs = pkgs;
   };
+  system = pkgs.stdenv.hostPlatform.system;
 in
 
 {
-  inherit (inputs.nix-gaming.packages.${pkgs.system}) faf-client osu-lazer-bin;
-  inherit (inputs.osu-wine.packages.${pkgs.system}) osu-wine;
+  inherit (inputs.nix-gaming.packages.${system}) faf-client osu-lazer-bin;
+  inherit (inputs.osu-wine.packages.${system}) osu-wine;
   matrix-appservice-discord = pkgs.callPackage ./matrix-appservice-discord {
     inherit (pkgs) matrix-appservice-discord;
   };
 
   krita = pkgs.callPackage ./krita { inherit (pkgs) krita; };
 
-  inherit (inputs.unbound-rust-mod.packages.${pkgs.system}) unbound-mod;
+  inherit (inputs.unbound-rust-mod.packages.${system}) unbound-mod;
   # unbound-full = pkgs.unbound-full.overrideAttrs (old: {
   #   configureFlags = old.configureFlags ++ [ "--with-dynlibmodule" ];
   # });

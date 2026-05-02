@@ -63,7 +63,6 @@ in
             # "ca-derivations"
             "flakes"
             "nix-command"
-            "no-url-literals"
           ];
         };
         gc = {
@@ -121,7 +120,7 @@ in
           tmux
           wget
         ]
-        ++ lib.optionals (!builtins.elem pkgs.system [ "armv7l-linux" ]) [
+        ++ lib.optionals (!builtins.elem pkgs.stdenv.hostPlatform.system [ "armv7l-linux" ]) [
           kitty.terminfo
           foot.terminfo
           # rxvt-unicode-unwrapped.terminfo
@@ -191,7 +190,7 @@ in
         set -g fish_cursor_replace underscore
       '';
       # this is supposed to default to false, but it doesn't because of nixos fish module
-      documentation.man.generateCaches = mkForceDefault false;
+      documentation.man.cache.enable = mkForceDefault false;
       # we don't need stuff like html files (NixOS manual and so on) on minimal machines
       documentation.doc.enable = lib.mkDefault false;
       # conflicts with bash module's mkDefault

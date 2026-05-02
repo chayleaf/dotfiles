@@ -119,7 +119,7 @@ in
   # NGINX
   services.nginx.enable = true;
   services.nginx.enableReload = true;
-  services.nginx.package = pkgs.nginxQuic;
+  #services.nginx.package = pkgs.nginxQuic;
   /*
     DNS over TLS
     services.nginx.streamConfig =
@@ -188,7 +188,7 @@ in
   };
 
   # TODO: update this on every anubis update lol
-  services.anubis.defaultOptions.botPolicy = {
+  services.anubis.defaultOptions.policy.settings = {
     bots = [
       { import = "(data)/common/allow-private-addresses.yaml"; }
       { import = "(data)/bots/ai-robots-txt.yaml"; }
