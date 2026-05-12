@@ -31,7 +31,7 @@ in
     inherit (pkgs) matrix-appservice-discord;
   };
 
-  krita = pkgs.callPackage ./krita { inherit (pkgs) krita; };
+  #krita = pkgs.callPackage ./krita { inherit (pkgs) krita; };
 
   inherit (inputs.unbound-rust-mod.packages.${system}) unbound-mod;
   # unbound-full = pkgs.unbound-full.overrideAttrs (old: {

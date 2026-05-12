@@ -43,12 +43,12 @@ in
     package = wrapHelix {
       extraPackages = with pkgs; [
         rust-analyzer
-        nodePackages.bash-language-server
+        bash-language-server
         shellcheck
-        nodePackages.typescript-language-server
+        typescript-language-server
         llvmPackages_latest.clang-tools
         llvmPackages_latest.lldb
-        nodePackages.vscode-langservers-extracted
+        vscode-langservers-extracted
         typescript-go
         nil
         nixfmt-rfc-style

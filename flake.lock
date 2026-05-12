@@ -656,11 +656,11 @@
     "mobile-nixos": {
       "flake": false,
       "locked": {
-        "lastModified": 1723685418,
-        "narHash": "sha256-ZDgzeknbWB7ZS4DfbQrYZC1iWcWnL5Zhr9c6iwP26yk=",
+        "lastModified": 1778458561,
+        "narHash": "sha256-q8G3JXk1GwzPup5rBiDQkCENgBxdQmqAjSfhkHjcUts=",
         "owner": "chayleaf",
         "repo": "mobile-nixos",
-        "rev": "71e6bb4a74b91f4a45cb5387670423a56bbfad36",
+        "rev": "65f7f7a3b7bcdb15c63acb87989fd229889acbf7",
         "type": "github"
       },
       "original": {
@@ -948,17 +948,17 @@
     },
     "nixpkgs-kernel": {
       "locked": {
-        "lastModified": 1723362943,
-        "narHash": "sha256-dFZRVSgmJkyM0bkPpaYRtG/kRMRTorUIDj8BxoOt1T4=",
+        "lastModified": 1767360883,
+        "narHash": "sha256-Nq1sjhBxmOqbgb+w5xAUKGP2Xq7MQ4HmWN6JQyHfp18=",
         "owner": "NixOS",
         "repo": "nixpkgs",
-        "rev": "a58bc8ad779655e790115244571758e8de055e3d",
+        "rev": "be4ee5cc75020fc3034e9f236f2227ae0129518e",
         "type": "github"
       },
       "original": {
         "owner": "NixOS",
         "repo": "nixpkgs",
-        "rev": "a58bc8ad779655e790115244571758e8de055e3d",
+        "rev": "be4ee5cc75020fc3034e9f236f2227ae0129518e",
         "type": "github"
       }
     },

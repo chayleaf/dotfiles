@@ -3,7 +3,7 @@
 
   inputs = {
     nix-community-infra.url = "github:nix-community/infra";
-    nixpkgs-kernel.url = "github:NixOS/nixpkgs/a58bc8ad779655e790115244571758e8de055e3d";
+    nixpkgs-kernel.url = "github:NixOS/nixpkgs/be4ee5cc75020fc3034e9f236f2227ae0129518e";
     nixpkgs-ereader.url = "github:NixOS/nixpkgs/dc9637876d0dcc8c9e5e22986b857632effeb727";
     nixpkgs.url = "github:chayleaf/nixpkgs/ci";
     nixvim.url = "github:nix-community/nixvim";

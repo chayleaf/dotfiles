@@ -10,7 +10,8 @@ import sys
 with open(os.path.expanduser("~/var/addresses.json"), "rt") as f:
     opts = json.loads(f.read())
 
-prefix: list[str] = []  # "proxychains4", "-f", "/home/user/.config/proxychains.conf"]
+prefix: list[str] = []
+prefix: list[str] = ["proxychains4", "-f", "/home/user/.config/proxychains.conf"]
 
 
 def main():

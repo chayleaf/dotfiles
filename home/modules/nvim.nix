@@ -474,11 +474,11 @@ in*/
     package = pkgs.neovim-unwrapped;
     extraPackages = with pkgs; [
       rust-analyzer
-      nodePackages_latest.bash-language-server shellcheck
-      nodePackages_latest.typescript-language-server
-      # nodePackages_latest.svelte-language-server
+      bash-language-server shellcheck
+      typescript-language-server
+      # svelte-language-server
       llvmPackages_latest.clang-tools
-      nodePackages_latest.vscode-langservers-extracted
+      vscode-langservers-extracted
       nil
       nixfmt-rfc-style
       marksman

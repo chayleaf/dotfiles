@@ -175,7 +175,7 @@ in
   };
   programs.kitty = {
     enable = supportTerminal "kitty";
-    font.name = "Noto Sans Mono";
+    font.name = "Maple Mono";
     font.size = 16;
     settings = {
       inherit shell;

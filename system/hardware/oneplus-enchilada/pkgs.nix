@@ -28,7 +28,6 @@ let
         with lib.kernel;
         {
           # fix build
-          LENOVO_YOGA_C630_EC = no;
           RPMSG_QCOM_GLINK_SMEM = yes;
           # for adb and stuff (doesn't have to be built-in, but it's easier that way)
           USB_FUNCTIONFS = yes;
@@ -61,10 +60,10 @@ let
           RMI4_CORE = module;
           RMI4_I2C = module;
           RMI4_F55 = yes;
+          QCOM_GPI_DMA = yes;
           # common sdm845
           HIBERNATION = lib.mkForce no;
           QCOM_RPROC_COMMON = yes;
-          FORCE_NR_CPUS = yes;
           NR_CPUS = lib.mkForce (freeform "8");
           SCSI_UFS_QCOM = yes;
           QCOM_GSBI = yes;
@@ -89,7 +88,6 @@ let
           I2C_QCOM_GENI = yes;
           LEDS_QCOM_FLASH = module;
           SLIMBUS = yes;
-          SLIM_QCOM_CTRL = yes;
           SLIM_QCOM_NGD_CTRL = yes;
           REMOTEPROC_CDEV = yes;
           BATTERY_QCOM_FG = module;
@@ -97,7 +95,6 @@ let
           QCOM_SPMI_RRADC = module;
           DRM = yes;
           DRM_MSM = yes;
-          VIDEO_VIVID = module;
           REGULATOR_QCOM_LABIBB = yes;
           BACKLIGHT_QCOM_WLED = yes;
           INPUT_QCOM_SPMI_HAPTICS = module;
@@ -117,7 +114,6 @@ let
           BT_BNEP = module;
           BT_BNEP_MC_FILTER = yes;
           BT_BNEP_PROTO_FILTER = yes;
-          BT_HS = yes;
           BT_LE = yes;
           QCOM_COINCELL = module;
           QCOM_FASTRPC = module;
@@ -139,7 +135,6 @@ let
           U_SERIAL_CONSOLE = yes;
           USB_ANNOUNCE_NEW_DEVICES = yes;
           BLK_INLINE_ENCRYPTION = yes;
-          PHY_QCOM_SNPS_EUSB2 = module;
           MFD_QCOM_RPM = yes;
           USB_DWC3_ULPI = yes;
           SCSI_UFS_CRYPTO = yes;
@@ -152,7 +147,6 @@ let
           CRYPTO_DEV_QCE = yes;
           DMA_CMA = yes;
           SM_GPUCC_6115 = yes;
-          USB_ONBOARD_HUB = no; # breaks USB on qualcomm rb2... which i don't need, but i guess this won't hurt either way
           INTERCONNECT_QCOM_QCM2290 = yes;
           BRIDGE_NETFILTER = module;
           NEW_LEDS = yes;
@@ -201,7 +195,6 @@ let
           NET_SCH_MQPRIO = no;
           NET_CLS_BASIC = no;
           NET_CLS_FLOWER = no;
-          NET_CLS_ACT = no;
           MDIO_BUS_MUX_MMIOREG = no;
           MDIO_BUS_MUX_MULTIPLEXER = no;
           SND_SOC_ES7134 = no;
@@ -354,7 +347,6 @@ let
           REGULATOR_FAN53555 = no;
           TOUCHSCREEN_ATMEL_MXT = no;
           RTC_DRV_HYM8563 = no;
-          MFD_SEC_CORE = no;
           PL330_DMA = no;
           GPIO_MB86S7X = no;
           MMC_SDHCI_F_SDH30 = no;
@@ -429,7 +421,6 @@ let
           MMC_DW_K3 = no;
           MMC_MTK = no;
           MMC_SDHCI_XENON = no;
-          MMC_SDHCI_AM654 = no;
           RTC_DRV_MAX77686 = no;
           RTC_DRV_RK808 = no;
           RTC_DRV_M41T80 = no;
@@ -480,7 +471,6 @@ let
           SCSI_SAS_ATA.tristate = lib.mkForce null;
           SUN8I_DE2_CCU.tristate = lib.mkForce null;
           TCG_TIS_SPI_CR50.tristate = lib.mkForce null;
-          USB_XHCI_TEGRA = lib.mkForce no;
           ZONE_DEVICE.tristate = lib.mkForce null;
           "9P_FSCACHE".tristate = lib.mkForce null;
           CROS_EC_ISHTP.tristate = lib.mkForce null;
@@ -573,6 +563,23 @@ let
           XEN_PVHVM.tristate = lib.mkForce null;
           XEN_SAVE_RESTORE.tristate = lib.mkForce null;
           XEN_SYS_HYPERVISOR.tristate = lib.mkForce null;
+          HSA_AMD_P2P.tristate = lib.mkForce null;
+          MHP_DEFAULT_ONLINE_TYPE_ONLINE_AUTO.tristate = lib.mkForce null;
+          MT798X_WMAC.tristate = lib.mkForce null;
+          PCI_P2PDMA.tristate = lib.mkForce null;
+          ROCKCHIP_DW_HDMI_QP.tristate = lib.mkForce null;
+          ROCKCHIP_DW_MIPI_DSI2.tristate = lib.mkForce null;
+          USB_DWC2_DUAL_ROLE.tristate = lib.mkForce null;
+          FSCACHE_STATS.tristate = lib.mkForce null;
+          CEPH_FSCACHE.tristate = lib.mkForce null;
+          CIFS_FSCACHE.tristate = lib.mkForce null;
+          DEVICE_PRIVATE.tristate = lib.mkForce null;
+          DRM_AMD_ACP.tristate = lib.mkForce null;
+          DRM_AMD_ISP.tristate = lib.mkForce null;
+          DRM_AMD_SECURE_DISPLAY.tristate = lib.mkForce null;
+          DRM_NOUVEAU_SVM.tristate = lib.mkForce null;
+          SATA_MOBILE_LPM_POLICY.freeform = lib.mkForce null;
+          SND_AC97_POWER_SAVE_DEFAULT.freeform = lib.mkForce null;
         }
         // structuredExtraConfig;
     };
@@ -697,6 +704,26 @@ in
   };
 
   linux = mkLinux {
+    linux = pkgs.linux_6_18;
+    kernelPatches = [
+      {
+        name = "linux_6_18";
+        patch = pkgs.fetchpatch {
+          url = "https://github.com/chayleaf/linux-sdm845/compare/v6.18.2...a49cccfa7c9c4c7eb0b44e7bca5bdb6783aed8c0.diff";
+          hash = "sha256-DdUlNZSiJ1u1kG07JqL7cUR3OGPJblot463NLfPjFE4=";
+        };
+      }
+      {
+        name = "config_fixes";
+        patch = ./config_fixes_611.patch;
+      }
+    ];
+    structuredExtraConfig = with lib.kernel; {
+      TOUCHSCREEN_STM_FTS_DOWNSTREAM = no;
+      TOUCHSCREEN_FTM4 = no;
+    };
+  };
+  linux_6_11 = mkLinux {
     linux = pkgs.linux_testing;
     kernelPatches = [
       {

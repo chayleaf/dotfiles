@@ -11,7 +11,7 @@
     ../modules/general.nix
     ../modules/firefox.nix
     ../modules/i3-sway.nix
-    ../modules/nvim.nix
+    #../modules/nvim.nix
     ../modules/helix.nix
     ../modules/emacs.nix
     # ../modules/kakoune.nix
@@ -55,7 +55,7 @@
     gimp3
     krita
     xournalpp
-    blender-hip
+    blender
     kdePackages.kdenlive
     glaxnimate
     mediainfo
@@ -98,14 +98,16 @@
     lalrpop
     tio
     telegram-desktop
-    osu-wine
+    #osu-wine
     dotnet-sdk_9
     # nodejs
-    nodePackages.npm
+    #npm
     yarn
     (ghc.withPackages (p: with p; [cabal-install]))
     maple-mono.opentype
     maple-mono.CN
+    # opam
+    pkg-config
   ];
   xdg.configFile."looking-glass/client.ini".text = ''
     [app]

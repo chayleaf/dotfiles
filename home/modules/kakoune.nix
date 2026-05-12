@@ -35,11 +35,11 @@ in
     package = wrapKakoune {
       extraPackages = with pkgs; [
         rust-analyzer
-        nodePackages.bash-language-server
+        bash-language-server
         shellcheck
-        nodePackages.typescript-language-server
+        typescript-language-server
         clang-tools_latest
-        nodePackages.vscode-langservers-extracted
+        vscode-langservers-extracted
         nil
         marksman
         taplo
