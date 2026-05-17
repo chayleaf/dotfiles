@@ -3,10 +3,13 @@
 
   inputs = {
     nix-community-infra.url = "github:nix-community/infra";
+    nix-community-infra.inputs.nixpkgs.follows = "nixpkgs";
+    nix-community-infra.inputs.nixpkgs-update.inputs.nixpkgs.follows = "nixpkgs";
     nixpkgs-kernel.url = "github:NixOS/nixpkgs/be4ee5cc75020fc3034e9f236f2227ae0129518e";
     nixpkgs-ereader.url = "github:NixOS/nixpkgs/dc9637876d0dcc8c9e5e22986b857632effeb727";
     nixpkgs.url = "github:chayleaf/nixpkgs/ci";
     nixvim.url = "github:nix-community/nixvim";
+    nixvim.inputs.nixpkgs.follows = "nixpkgs";
     nixos-hardware.url = "github:NixOS/nixos-hardware";
     hydra = {
       url = "git+https://git.lix.systems/lix-project/hydra.git";
@@ -25,7 +28,10 @@
       inputs.nixpkgs.follows = "nixpkgs";
     };
     impermanence.url = "github:nix-community/impermanence";
+    impermanence.inputs.nixpkgs.follows = "nixpkgs";
+    impermanence.inputs.home-manager.follows = "home-manager";
     nur.url = "github:nix-community/NUR";
+    nur.inputs.nixpkgs.follows = "nixpkgs";
     rust-overlay = {
       url = "github:oxalica/rust-overlay";
       inputs.nixpkgs.follows = "nixpkgs";
@@ -80,6 +86,7 @@
         # mobile-nixos = true;
         # nixos-router = true;
         # notnft = true;
+        notlua = true;
         # nixpkgs = true;
         # unbound-rust-mod = true;
       };

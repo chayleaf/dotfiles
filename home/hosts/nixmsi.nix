@@ -11,7 +11,7 @@
     ../modules/general.nix
     ../modules/firefox.nix
     ../modules/i3-sway.nix
-    #../modules/nvim.nix
+    ../modules/nvim.nix
     ../modules/helix.nix
     ../modules/emacs.nix
     # ../modules/kakoune.nix

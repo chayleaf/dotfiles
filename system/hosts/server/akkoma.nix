@@ -65,6 +65,7 @@ in
         limit = 5000;
         registrations_open = true;
         account_approval_required = true;
+        static_dir = "/var/lib/akkoma/static";
       };
       config.":pleroma"."Pleroma.Repo" = {
         adapter = mkRaw "Ecto.Adapters.Postgres";

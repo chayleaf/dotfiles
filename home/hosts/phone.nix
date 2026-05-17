@@ -30,7 +30,6 @@
     techmino
     telegram-desktop
     nodejs
-    nodePackages.npm
     yarn
     pavucontrol
     brightnessctl
