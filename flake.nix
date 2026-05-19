@@ -86,7 +86,7 @@
         # mobile-nixos = true;
         # nixos-router = true;
         # notnft = true;
-        notlua = true;
+        # notlua = true;
         # nixpkgs = true;
         # unbound-rust-mod = true;
       };
