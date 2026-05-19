@@ -1,0 +1,24 @@
+From cfd56966a41ca210c2acea852a74342e327cd03f Mon Sep 17 00:00:00 2001
+From: chayleaf <chayleaf-git@pavluk.org>
+Date: Tue, 19 May 2026 15:16:14 +0700
+Subject: [PATCH] mobile: fix build
+
+---
+ source/wayland/display.c | 1 +
+ 1 file changed, 1 insertion(+)
+
+diff --git a/source/wayland/display.c b/source/wayland/display.c
+index 16d82d43..7ac89fd8 100644
+--- a/source/wayland/display.c
++++ b/source/wayland/display.c
+@@ -39,6 +39,7 @@
+ #include <cairo.h>
+ #include <glib.h>
+ #include <glib/gstdio.h>
++#include <linux/input.h>
+ #include <wayland-client.h>
+ #include <wayland-cursor.h>
+ #include <xkbcommon/xkbcommon-compose.h>
+-- 
+2.53.0
+
