@@ -28,6 +28,9 @@ let
         with lib.kernel;
         {
           # fix build
+          SCSI_UFSHCD = yes;
+          SCSI_UFSHCD_PLATFORM = yes;
+          RPMB = yes;
           RPMSG_QCOM_GLINK_SMEM = yes;
           # for adb and stuff (doesn't have to be built-in, but it's easier that way)
           USB_FUNCTIONFS = yes;
@@ -47,12 +50,15 @@ let
           USB_F_HID = yes;
           USB_CONFIGFS = yes;
           USB_CONFIGFS_F_HID = yes;
-          REGULATOR_QCOM_USB_VBUS = module;
           LEDS_TRIGGER_ONESHOT = yes;
           LEDS_TRIGGER_BACKLIGHT = yes;
           LEDS_TRIGGER_ACTIVITY = yes;
+          LEDS_TRIGGER_PATTERN = module;
+          LEDS_TRIGGER_TIMER = module;
 
           # adapted from https://gitlab.com/sdm845-mainline/linux/-/blob/3e9f7c18a3f681b52b7ea87765be267cd1e8b870/arch/arm64/configs/sdm845.config
+          GPIO_SHARED_PROXY = yes;
+          QCOM_PD_MAPPER = no;
           # enchilada-specific
           DRM_PANEL_SAMSUNG_SOFEF00 = yes;
           BATTERY_BQ27XXX = module;
@@ -60,10 +66,12 @@ let
           RMI4_CORE = module;
           RMI4_I2C = module;
           RMI4_F55 = yes;
+          VIDEO_IMX371 = module;
+          VIDEO_IMX376 = module;
+          VIDEO_IMX519 = module;
+          VIDEO_LC898217XC = module;
           QCOM_GPI_DMA = yes;
           # common sdm845
-          HIBERNATION = lib.mkForce no;
-          QCOM_RPROC_COMMON = yes;
           NR_CPUS = lib.mkForce (freeform "8");
           SCSI_UFS_QCOM = yes;
           QCOM_GSBI = yes;
@@ -78,84 +86,81 @@ let
           QCOM_LMH = yes;
           SCHED_CLUSTER = yes;
           SND_SOC_QDSP6_Q6VOICE = module;
-          SCSI_UFS_BSG = yes;
           PHY_QCOM_QMP_PCIE = yes;
           BACKLIGHT_CLASS_DEVICE = yes;
           INTERCONNECT_QCOM_OSM_L3 = yes;
-          LEDS_TRIGGER_PATTERN = yes;
-          LEDS_CLASS_MULTICOLOR = module;
-          LEDS_QCOM_LPG = module;
           I2C_QCOM_GENI = yes;
-          LEDS_QCOM_FLASH = module;
+
           SLIMBUS = yes;
-          SLIM_QCOM_NGD_CTRL = yes;
           REMOTEPROC_CDEV = yes;
-          BATTERY_QCOM_FG = module;
+
+          BATTERY_PMI8998_FG = module;
           CHARGER_QCOM_SMB2 = module;
           QCOM_SPMI_RRADC = module;
+
           DRM = yes;
           DRM_MSM = yes;
+          REGULATOR_QCOM_REFGEN = yes;
+
           REGULATOR_QCOM_LABIBB = yes;
           BACKLIGHT_QCOM_WLED = yes;
+
           INPUT_QCOM_SPMI_HAPTICS = module;
-          PM_AUTOSLEEP = yes;
-          SCSI_SCAN_ASYNC = yes;
-          DMABUF_HEAPS = yes;
-          UDMABUF = yes;
-          DMABUF_HEAPS_CMA = yes;
-          DMABUF_HEAPS_SYSTEM = yes;
-          HZ_1000 = yes;
-          UCLAMP_TASK = yes;
-          UCLAMP_TASK_GROUP = yes;
+
+          QFMT_V2 = yes;
+
+          PHY_QCOM_QMP_USB = yes;
+
           RPMSG_CHAR = yes;
-          QCOM_Q6V5_ADSP = module;
-          BT_RFCOMM = module;
-          BT_RFCOMM_TTY = yes;
-          BT_BNEP = module;
-          BT_BNEP_MC_FILTER = yes;
-          BT_BNEP_PROTO_FILTER = yes;
-          BT_LE = yes;
-          QCOM_COINCELL = module;
-          QCOM_FASTRPC = module;
           QCOM_SPMI_VADC = yes;
           QCOM_SPMI_ADC5 = yes;
           PHY_QCOM_QMP = yes;
           PHY_QCOM_QUSB2 = yes;
           PHY_QCOM_QMP_UFS = yes;
-          TYPEC = yes;
           PHY_QCOM_QMP_COMBO = yes;
-          LEDS_CLASS_FLASH = yes;
+          MFD_QCOM_RPM = yes;
+          USB_DWC3_ULPI = yes;
+          PHY_QCOM_USB_HS = yes;
+          PHY_QCOM_USB_SNPS_FEMTO_V2 = yes;
+          CRYPTO_DEV_QCE = yes;
+          # end of sdm845 fragment
+
+          TYPEC = yes;
+          PM_AUTOSLEEP = yes;
+          PM_WAKELOCKS = yes;
+
+          SCSI_SCAN_ASYNC = yes;
+          DMABUF_HEAPS_SYSTEM = yes;
+          DMABUF_HEAPS_CMA = yes;
+          DMABUF_HEAPS = yes;
+          DMA_CMA = yes;
+          CMA = yes;
+          CMA_SIZE_MBYTES = lib.mkForce (freeform "256");
+
+          HZ_1000 = yes;
+
+          BT_BNEP = module;
+          BT_BNEP_MC_FILTER = yes;
+          BT_BNEP_PROTO_FILTER = yes;
+          BT_LE = yes;
+          BT_RFCOMM = module;
+          BT_RFCOMM_TTY = yes;
+
           TCP_CONG_WESTWOOD = yes;
           DEFAULT_WESTWOOD = yes;
+
           BLK_DEV_RAM = yes;
+          BLK_DEV_RAM_COUNT = freeform "16";
           BLK_DEV_RAM_SIZE = freeform "8192";
+
           CPU_FREQ_GOV_POWERSAVE = yes;
-          SYN_COOKIES = yes;
           INPUT_UINPUT = module;
           U_SERIAL_CONSOLE = yes;
           USB_ANNOUNCE_NEW_DEVICES = yes;
-          BLK_INLINE_ENCRYPTION = yes;
-          MFD_QCOM_RPM = yes;
-          USB_DWC3_ULPI = yes;
-          SCSI_UFS_CRYPTO = yes;
-          PHY_QCOM_USB_HS = yes;
-          PHY_QCOM_USB_SNPS_FEMTO_V2 = yes;
-          INTERCONNECT_QCOM_SM6115 = yes;
-          SM_DISPCC_6115 = yes;
-          FS_ENCRYPTION_INLINE_CRYPT = yes;
-          CRYPTO_USER_API_AEAD = yes;
-          CRYPTO_DEV_QCE = yes;
-          DMA_CMA = yes;
-          SM_GPUCC_6115 = yes;
-          INTERCONNECT_QCOM_QCM2290 = yes;
-          BRIDGE_NETFILTER = module;
-          NEW_LEDS = yes;
-          LEDS_CLASS = yes;
-          CMA = yes;
-          CMA_SIZE_MBYTES = lib.mkForce (freeform "256");
           # CONFIG END (essentially)
 
           # the rest of the config is just disabling unneeded stuff, feel free to ignore this
+          HIBERNATION = lib.mkForce no;
           ARCH_SPARX5 = no;
           ARCH_MA35 = no;
           ARCH_REALTEK = no;
@@ -204,7 +209,6 @@ let
           GPIO_DWAPB = no;
           COMMON_CLK_XGENE = no;
           SENSORS_ARM_SCPI = no;
-          TCG_TPM = no;
           BATTERY_SBS = no;
           REGULATOR_VCTRL = no;
           CAVIUM_ERRATUM_22375 = no;
@@ -580,6 +584,9 @@ let
           DRM_NOUVEAU_SVM.tristate = lib.mkForce null;
           SATA_MOBILE_LPM_POLICY.freeform = lib.mkForce null;
           SND_AC97_POWER_SAVE_DEFAULT.freeform = lib.mkForce null;
+          FS_DAX.tristate = lib.mkForce null;
+          ATA_SFF.tristate = lib.mkForce null;
+          ATA_BMDMA.tristate = lib.mkForce null;
         }
         // structuredExtraConfig;
     };
@@ -686,8 +693,8 @@ in
     src = pkgs.fetchFromGitLab {
       owner = "sdm845-mainline";
       repo = "firmware-oneplus-sdm845";
-      rev = "176ca713448c5237a983fb1f158cf3a5c251d775";
-      hash = "sha256-ZrBvYO+MY0tlamJngdwhCsI1qpA/2FXoyEys5FAYLj4=";
+      rev = "3e31a0c3e5a061645c09f805387b49fa9d35acbf";
+      hash = "sha256-DeOlhchDGi0Pso3w8ZlM7q3Tdkmt3Ji+GyEmepkISTE=";
     };
     installPhase = ''
       cp -a . "$out"
@@ -704,6 +711,23 @@ in
   };
 
   linux = mkLinux {
+    linux = pkgs.linux_testing;
+    kernelPatches = [
+      {
+        name = "linux_7_1";
+        patch = pkgs.fetchpatch {
+          url = "https://github.com/chayleaf/linux-sdm845/compare/848940c8eb6194e1d220c3cd1a9624c3d1612ebd...85f1df2a4ec71d7a91dd95a7a49f889d1595ffa8.diff";
+          hash = "sha256-ijLA6gEqlKTglnIBmv8DsMefF2ZYg9OsOKfRKtDrgsw=";
+        };
+      }
+      {
+        name = "config_fixes";
+        patch = ./config_fixes_611.patch;
+      }
+    ];
+    structuredExtraConfig = { };
+  };
+  linux_6_18 = mkLinux {
     linux = pkgs.linux_6_18;
     kernelPatches = [
       {

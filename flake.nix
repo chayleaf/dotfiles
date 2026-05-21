@@ -5,7 +5,7 @@
     nix-community-infra.url = "github:nix-community/infra";
     nix-community-infra.inputs.nixpkgs.follows = "nixpkgs";
     nix-community-infra.inputs.nixpkgs-update.inputs.nixpkgs.follows = "nixpkgs";
-    nixpkgs-kernel.url = "github:NixOS/nixpkgs/be4ee5cc75020fc3034e9f236f2227ae0129518e";
+    nixpkgs-kernel.url = "github:NixOS/nixpkgs/b5fae34d3c422c85dbde6fba8294379cdc2347e2";
     nixpkgs-ereader.url = "github:NixOS/nixpkgs/dc9637876d0dcc8c9e5e22986b857632effeb727";
     nixpkgs.url = "github:chayleaf/nixpkgs/ci";
     nixvim.url = "github:nix-community/nixvim";

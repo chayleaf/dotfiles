@@ -27,6 +27,22 @@ in
   };
 
   boot.initrd = {
+    # TODO: remove (needed to remove aes_generic for linux 7.1)
+    luks.cryptoModules = [
+      "aes"
+      "blowfish"
+      "twofish"
+      "serpent"
+      "cbc"
+      "xts"
+      "lrw"
+      "sha1"
+      "sha256"
+      "sha512"
+      "af_alg"
+      "algif_skcipher"
+      "cryptd"
+    ];
     luks.devices.cryptroot = {
       device = parts.enc;
       allowDiscards = true;
