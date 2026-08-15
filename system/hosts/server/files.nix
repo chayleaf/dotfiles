@@ -159,7 +159,7 @@ in
   services.qbittorrent-nox.ui.port = 19642;
   services.qbittorrent-nox.torrent.port = 45522;
 
-  services.jellyfin.enable = true;
+  services.jellyfin.enable = false;
 
   services.nginx.virtualHosts."home.${cfg.domainName}".locations = {
     "/torrent/" = {

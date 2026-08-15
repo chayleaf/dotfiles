@@ -66,7 +66,7 @@ in
           ];
         };
         gc = {
-          automatic = true;
+          automatic = false;
           dates = "weekly";
           options = "--delete-older-than 30d";
         };
@@ -75,6 +75,8 @@ in
       nix.daemonCPUSchedPolicy = lib.mkDefault "idle";
       nix.daemonIOSchedClass = lib.mkDefault "idle";
 
+      # you have eaten enough of my ssd
+      systemd.coredump.enable = false;
       boot.kernelParams =
         lib.optionals (cfg.resolution != null) [
           "consoleblank=60"
