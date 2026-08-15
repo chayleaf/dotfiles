@@ -442,7 +442,7 @@ in
                     command = "floating on; move workspace current";
                     criteria = {
                       app_id = "^org.keepassxc.KeePassXC$";
-                      title = "^KeePassXC - (?:Browser |ブラウザーの)?(?:Access Request|アクセス要求)$";
+                      title = "^KeePassXC - (?:Browser |ブラウザーの|Browser-)?(?:Access Request|アクセス要求|Zugriffsanfrage)$";
                     };
                   }
                 ]

@@ -143,4 +143,8 @@
     id = 1;
     inherit (config.programs.librewolf.profiles.chayleaf) extensions settings;
   };
+  programs.librewolf.profiles.de = {
+    id = 2;
+    inherit (config.programs.librewolf.profiles.chayleaf) extensions settings;
+  };
 }
