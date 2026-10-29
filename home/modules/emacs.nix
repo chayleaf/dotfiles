@@ -25,7 +25,7 @@
     bash-language-server
     typescript-language-server
     nil
-    nixfmt-rfc-style
+    nixfmt
     marksman
     taplo
     csharp-ls

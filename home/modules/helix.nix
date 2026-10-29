@@ -51,7 +51,7 @@ in
         vscode-langservers-extracted
         typescript-go
         nil
-        nixfmt-rfc-style
+        nixfmt
         marksman
         taplo
         csharp-ls

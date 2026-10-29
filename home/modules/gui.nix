@@ -9,11 +9,12 @@
   imports = [ ./terminal.nix ];
   config = lib.mkMerge [
     (lib.mkIf (!config.minimal) {
+      # drivers = pipewire,pulseaudio,jack,alsa,oss,
+      # ^ crashes minecraft...
       xdg.configFile."alsoft.conf".text = ''
         [general]
         hrtf = true
         stereo-encoding = hrtf
-        drivers = pipewire,pulseaudio,jack,alsa,oss,
         periods = 2
         hrtf-paths = ${pkgs.openal}/share/openal/hrtf
 
@@ -126,8 +127,10 @@
 
           z = "add sub-delay -0.1";
           x = "add sub-delay 0.1";
-          Z = "add audio-delay -0.1";
-          X = "add audio-delay 0.1";
+          Z = "add secondary-sub-delay -0.1";
+          X = "add secondary-sub-delay 0.1";
+          d = "add audio-delay -0.1";
+          D = "add audio-delay 0.1";
 
           "1" = "add volume -1";
           "2" = "add volume 1";

@@ -90,6 +90,11 @@ in*/
     luasnip = REQ "luasnip";
 
     plugins = let ps = pkgs.vimPlugins; in [
+      { plugin = ps.vim-surround; }
+      { plugin = ps.vim-sexp; }
+      { plugin = ps.vim-sexp-mappings-for-regular-people; }
+      { plugin = ps.conjure;
+        config = [ (SET (vimg "maplocalleader") ",") ]; }
       { plugin = ps.vim-svelte; }
       # vim-nix isn't necessary for syntax highlighting, but it improves overall editing experience
       { plugin = ps.vim-nix; }
@@ -480,7 +485,7 @@ in*/
       llvmPackages_latest.clang-tools
       vscode-langservers-extracted
       nil
-      nixfmt-rfc-style
+      nixfmt
       marksman
       taplo
       ripgrep
