@@ -144,6 +144,7 @@ in
 
       # add import'able flake inputs (like nixpkgs) to nix path
       # nix path is used for old nix commands (like nix-build, nix-shell)
+      # TODO: map the specific nixpkgs used in flake.nix
       environment.etc =
         lib.mapAttrs'
           (name: value: {
@@ -152,7 +153,7 @@ in
           })
           (
             lib.filterAttrs (
-              k: v: (k != "self" || !cfg.minimal) && builtins.pathExists "${v}/default.nix"
+              k: v: !lib.hasPrefix "nixpkgs-" k && (k != "self" || !cfg.minimal) && builtins.pathExists "${v}/default.nix"
             ) inputs
           );
 

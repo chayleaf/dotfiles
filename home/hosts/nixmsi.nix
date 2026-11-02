@@ -60,12 +60,12 @@
     glaxnimate
     mediainfo
     ghidra
-    (cutter.withPlugins (
-      p: with p; [
-        sigdb
-        rz-ghidra
-      ]
-    ))
+    #(cutter.withPlugins (
+    #  p: with p; [
+    #    sigdb
+    #    rz-ghidra
+    #  ]
+    #))
     openrgb
     piper
     steam-run
