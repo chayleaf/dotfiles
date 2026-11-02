@@ -143,21 +143,13 @@ rec {
     '';
     fixupPhase = "true";
   };
-  linux = pkgs.linux_latest.override {
+  linux = (pkgs.linux_latest.override {
+    # cant be in structuredExtraConfig because of wrong ordering
+    kernelPatches = [ { name = "fix-config"; patch = ./i-hate-ordering.patch; }];
     ignoreConfigErrors = false;
     # there's probably more enabled-by-default configs that are better left disabled, but whatever
     structuredExtraConfig = with lib.kernel; {
-      /*
-        "Select this option if you are building a kernel for a server or
-         scientific/computation system, or if you want to maximize the
-         raw processing power of the kernel, irrespective of scheduling
-         latencies."
-      */
-      PREEMPT_NONE = yes;
-      # disable the other preempts
-      PREEMPT_VOLUNTARY = lib.mkForce no;
-      PREEMPT = no;
-
+      PREEMPT_LAZY = yes;
       CPU_FREQ_GOV_ONDEMAND = yes;
       CPU_FREQ_DEFAULT_GOV_ONDEMAND = yes;
       CPU_FREQ_DEFAULT_GOV_SCHEDUTIL = lib.mkForce no;
@@ -285,6 +277,7 @@ rec {
 
       SFP = yes;
       ARCH_MEDIATEK = yes;
+      # clock must be Y, see e.g. https://lists.debian.org/debian-kernel/2025/01/msg00383.html
       COMMON_CLK_MEDIATEK = yes;
       COMMON_CLK_MEDIATEK_FHCTL = yes;
       COMMON_CLK_MT7986 = yes;
@@ -347,6 +340,16 @@ rec {
       DRM_AMD_SECURE_DISPLAY.tristate = lib.mkForce null;
       DRM_DP_CEC.tristate = lib.mkForce null;
       DRM_NOUVEAU_SVM.tristate = lib.mkForce null;
+      DRM_AMD_ISP.tristate = lib.mkForce null;
+      DRM_HYPERV.tristate = lib.mkForce null;
+      DRM_NOVA.tristate = lib.mkForce null;
+      DRM_PANIC.tristate = lib.mkForce null;
+      DRM_PANIC_SCREEN.freeform = lib.mkForce null;
+      DRM_PANIC_SCREEN_QR_CODE.tristate = lib.mkForce null;
+      DRM_RAS.tristate = lib.mkForce null;
+      HSA_AMD_P2P.tristate = lib.mkForce null;
+      ROCKCHIP_DW_HDMI_QP.tristate = lib.mkForce null;
+      ROCKCHIP_DW_MIPI_DSI2.tristate = lib.mkForce null;
       MEM_SOFT_DIRTY.tristate = lib.mkForce null;
       PM_TRACE.tristate = lib.mkForce null;
       RAS_CEC.tristate = lib.mkForce null;
@@ -451,6 +454,6 @@ rec {
       XEN_SAVE_RESTORE.tristate = lib.mkForce null;
       XEN_SYS_HYPERVISOR.tristate = lib.mkForce null;
     };
-  };
+  });
   linuxPackages = pkgs.linuxPackagesFor linux;
 }

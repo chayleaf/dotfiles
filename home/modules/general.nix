@@ -18,7 +18,7 @@
     enableSshSupport = true;
     maxCacheTtl = 72000;
     maxCacheTtlSsh = 72000;
-    pinentryPackage = if config.minimal then pkgs.pinentry-tty else pkgs.pinentry-qt;
+    pinentry.package = if config.minimal then pkgs.pinentry-tty else pkgs.pinentry-qt;
   };
   home.shellAliases = {
     s = "sudo -A";
@@ -178,11 +178,14 @@
         export ATUIN_NOBIND=true
       '';
     };
+    delta = {
+      enable = true;
+      enableGitIntegration = true;
+    };
     git = {
       enable = !config.minimal;
       package = pkgs.gitFull;
-      delta.enable = true;
-      extraConfig = {
+      settings = {
         commit.gpgsign = true;
         # disable the atrocious gui password prompt
         core.askPass = "";
@@ -216,7 +219,7 @@
     };
     ssh = {
       enable = !config.minimal;
-      compression = true;
+      #settings."*".Compression = true;
     };
     tmux = {
       enable = true;

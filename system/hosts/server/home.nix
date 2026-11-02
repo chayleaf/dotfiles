@@ -220,6 +220,8 @@ in
   # (mostly to prevent overheating)
   systemd.services.nix-daemon.serviceConfig.CPUQuota = "${toString (50 * 8)}%";
   systemd.services.nix-daemon.serviceConfig.Nice = "19";
+  systemd.services."nix-daemon@".serviceConfig.CPUQuota = "${toString (50 * 8)}%";
+  systemd.services."nix-daemon@".serviceConfig.Nice = "19";
   nix.daemonCPUSchedPolicy = "idle";
   nix.daemonIOSchedClass = "idle";
   common.useNixPlugins = true;
@@ -306,10 +308,10 @@ in
         enable = true;
         listenAddress = "127.0.0.1";
       };
-      rspamd = {
-        enable = true;
-        listenAddress = "127.0.0.1";
-      };
+      #rspamd = {
+      #  enable = true;
+      #  listenAddress = "127.0.0.1";
+      #};
       smartctl = {
         enable = true;
         listenAddress = "127.0.0.1";
@@ -357,13 +359,13 @@ in
               "postfix"
               "postgres"
               "redis"
-              "rspamd"
               "smartctl"
             ];
             labels.machine = "server";
           }
         ];
       }
+      # TODO rspamd metrics?
       {
         job_name = "gitea";
         bearer_token_file = "/secrets/prometheus_bearer";
@@ -432,11 +434,11 @@ in
   # don't mess with my dns god damn it
   services.resolved.enable = false;
   # TODO: enable
-  services.matrix-appservice-discord.settings.metrics = {
-    enable = true;
-    host = "127.0.0.1";
-    port = 9173;
-  };
+  #services.matrix-appservice-discord.settings.metrics = {
+  #  enable = true;
+  #  host = "127.0.0.1";
+  #  port = 9173;
+  #};
   services.matrix-synapse.settings = {
     enable_metrics = true;
     federation_metrics_domains = [ "matrix.org" ];
@@ -494,9 +496,9 @@ in
   };
   services.avahi = {
     enable = true;
-    hostName = "home";
+    settings.server.host-name = "home";
     publish.enable = true;
-    publish.addresses = true;
+    settings.publish.publish-addresses = true;
     publish.userServices = true;
   };
   hardware.sane = {

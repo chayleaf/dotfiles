@@ -107,9 +107,6 @@
 
   services.ratbagd.enable = true;
 
-  services.mullvad-vpn.enable = true;
-  services.mullvad-vpn.package = pkgs.mullvad-vpn;
-
   # System76 scheduler (not actually a scheduler, just a renice daemon) for improved responsiveness
   /*
     services.dbus.packages = [ pkgs.system76-scheduler ];

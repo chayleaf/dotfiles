@@ -29,7 +29,7 @@
     */
     profiles.chayleaf = lib.mkMerge [
       {
-        extensions =
+        extensions.packages =
           (with pkgs.nur.repos.rycee.firefox-addons; [
             cookies-txt
             don-t-fuck-with-paste

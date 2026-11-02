@@ -99,8 +99,7 @@ in
       };
     };
   };
-  services.gitea-actions-runner = {
-    package = pkgs.forgejo-runner;
+  services.forgejo-runner = {
     instances.main = {
       enable = true;
       hostPackages = with pkgs; [
@@ -115,8 +114,10 @@ in
         (python3.withPackages (p: [ p.requests p.beautifulsoup4 p.statsmodels ]))
       ];
       labels = [ "native:host" ];
-      name = "git.${cfg.domainName}";
-      tokenFile = "/secrets/forgejo_actions_token";
+      #name = "git.${cfg.domainName}";
+      #tokenFile = "/secrets/forgejo_actions_token";
+      settings.server.connections.default.uuid = "863c2ae5-bd84-4f31-b286-96acd0597e1a";
+      secrets.server.connections.default.token_url = "/secrets/forgejo_actions_token2";
       url = "https://git.${cfg.domainName}";
     };
   };
@@ -144,7 +145,7 @@ in
     # TODO: use socket auth and remove the next line
     database.createLocally = false;
     config = {
-      adminpassFile = "/var/lib/nextcloud/admin_password";
+      #adminpassFile = "/var/lib/nextcloud/admin_password";
       dbpassFile = "/var/lib/nextcloud/db_password";
       dbtype = "pgsql";
       dbhost = "/run/postgresql";

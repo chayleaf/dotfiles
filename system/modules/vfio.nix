@@ -108,28 +108,26 @@ in
       };
     };
     boot = {
-      initrd.postDeviceCommands = lib.mkIf (!cfg.passGpuAtBoot) ''
-        for o in $(cat /proc/cmdline); do
-          case $o in
-            early_load_vfio)
-              loadVfio=1
-              ;;
-          esac
-        done
-        if [[ -n "$loadVfio" ]]; then
+      initrd.systemd.services.load-vfio = lib.mkIf (!cfg.passGpuAtBoot) {
+        unitConfig.ConditionKernelCommandLine = "early_load_vfio";
+        before = [ "initrd.target" ];
+        wantedBy = [ "initrd.target" ];
+        serviceConfig.Type = "oneshot";
+        script = ''
           modprobe vfio
           modprobe vfio_iommu_type1
           modprobe vfio_pci
-        ${
-          if cfg.nvidiaGpu then
-            ""
-          else
-            ''
-              else
-                modprobe amdgpu''
-        }
-        fi
-      '';
+        '';
+      };
+      initrd.systemd.services.dont-load-vfio = lib.mkIf (!cfg.passGpuAtBoot && !cfg.nvidiaGpu) {
+        unitConfig.ConditionKernelCommandLine = "!early_load_vfio";
+        before = [ "initrd.target" ];
+        wantedBy = [ "initrd.target" ];
+        serviceConfig.Type = "oneshot";
+        script = ''
+          modprobe amdgpu
+        '';
+      };
       initrd.kernelModules =
         [
           (if cfg.intelCpu then "kvm-intel" else "kvm-amd")

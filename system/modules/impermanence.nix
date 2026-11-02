@@ -150,7 +150,7 @@ in
                 mode = "0700";
               }
             ]
-            ++ lib.optionals config.services.botamusique.enable [
+            /*++ lib.optionals config.services.botamusique.enable [
               {
                 directory = /var/lib/private/botamusique;
                 user = "root";
@@ -158,7 +158,7 @@ in
                 mode = "0750";
                 defaultPerms.mode = "0700";
               }
-            ]
+            ]*/
             ++ lib.optionals config.programs.ccache.enable [
               {
                 directory = config.programs.ccache.cacheDir;
@@ -266,13 +266,13 @@ in
                 mode = "0750";
               }
             ]
-            ++ lib.optionals config.services.matrix-appservice-discord.enable [
+            /*++ lib.optionals config.services.matrix-appservice-discord.enable [
               {
                 directory = /var/lib/private/matrix-appservice-discord;
                 mode = "0750";
                 defaultPerms.mode = "0700";
               }
-            ]
+            ]*/
             ++ lib.optionals config.services.matrix-synapse.enable [
               {
                 directory = /var/lib/matrix-synapse;

@@ -251,7 +251,8 @@
           fcitx5-qt = pkgs.libsForQt5.fcitx5-qt;
         in
         {
-          enabled = "fcitx5";
+          enable = true;
+          type = "fcitx5";
           fcitx5.addons = with pkgs; [
             fcitx5-lua
             fcitx5-gtk

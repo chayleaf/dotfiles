@@ -49,7 +49,7 @@ in
         llvmPackages_latest.clang-tools
         llvmPackages_latest.lldb
         vscode-langservers-extracted
-        typescript-go
+        typescript
         nil
         nixfmt
         marksman
@@ -71,18 +71,12 @@ in
       );
     };
     languages = {
-      language-server.typescript-go = {
-        command = "tsgo";
-        args = [
-          "--lsp"
-          "--stdio"
-        ];
-      };
+      language-server.typescript = { };
       language =
         map
           (x: {
             name = x;
-            language-servers = [ "typescript-go" ];
+            language-servers = [ "typescript" ];
           })
           [
             "javascript"
@@ -95,7 +89,7 @@ in
             (x: {
               name = x;
               language-servers = [
-                "typescript-go"
+                "typescript"
                 "vscode-eslint-language-server"
                 "ember-language-server"
               ];

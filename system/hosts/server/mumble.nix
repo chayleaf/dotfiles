@@ -36,18 +36,19 @@ in
 
   # Mumble music bot
   services.nginx.virtualHosts."mumble.${cfg.domainName}" =
-    let
+    /*let
       inherit (config.services.botamusique) settings;
-    in
+    in*/
     {
       quic = true;
       enableACME = true;
       forceSSL = true;
       globalRedirect = cfg.domainName;
-      locations."/music".extraConfig = "return 301 https://mumble.${cfg.domainName}/music/;";
+      /*locations."/music".extraConfig = "return 301 https://mumble.${cfg.domainName}/music/;";
       locations."/music/".proxyPass =
-        "http://${lib.quoteListenAddr settings.webinterface.listening_addr}:${toString settings.webinterface.listening_port}/";
+        "http://${lib.quoteListenAddr settings.webinterface.listening_addr}:${toString settings.webinterface.listening_port}/";*/
     };
+  /*
 
   services.botamusique = {
     enable = false;
@@ -76,7 +77,7 @@ in
     };
   };
   systemd.services.botamusique.wants = [ "murmur.service" ];
-  systemd.services.botamusique.after = [ "murmur.service" ];
+  systemd.services.botamusique.after = [ "murmur.service" ];*/
 
   networking.firewall = {
     allowedTCPPorts = [

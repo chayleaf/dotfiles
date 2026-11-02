@@ -27,9 +27,9 @@ in
 {
   inherit (inputs.nix-gaming.packages.${system}) faf-client osu-lazer-bin;
   inherit (inputs.osu-wine.packages.${system}) osu-wine;
-  matrix-appservice-discord = pkgs.callPackage ./matrix-appservice-discord {
-    inherit (pkgs) matrix-appservice-discord;
-  };
+  #matrix-appservice-discord = pkgs.callPackage ./matrix-appservice-discord {
+  #  inherit (pkgs) matrix-appservice-discord;
+  #};
 
   #krita = pkgs.callPackage ./krita { inherit (pkgs) krita; };
 
@@ -85,13 +85,13 @@ in
   };
   rofi-steam-game-list = callPackage ./rofi-steam-game-list { };
   # scanservjs = callPackage ./scanservjs { };
-  searxng = pkgs'.python3.pkgs.toPythonModule (
-    pkgs.searxng.overrideAttrs (old: {
-      inherit (sources.searxng) src;
-      version = "unstable-" + sources.searxng.date;
-      postInstall = builtins.replaceStrings [ "/botdetection" ] [ "" ] old.postInstall;
-    })
-  );
+  #searxng = pkgs'.python3.pkgs.toPythonModule (
+  #  pkgs.searxng.overrideAttrs (old: {
+  #    inherit (sources.searxng) src;
+  #    version = "unstable-" + sources.searxng.date;
+  #    postInstall = builtins.replaceStrings [ "/botdetection" ] [ "" ] old.postInstall;
+  #  })
+  #);
   cthulock = callPackage ./cthulock { };
   schlock = callPackage ./schlock { };
   sxmo-swaylock = callPackage ./sxmo-swaylock { };

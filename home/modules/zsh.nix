@@ -7,11 +7,11 @@
     # zsh-syntax-highlighting
     syntaxHighlighting.enable = true;
     defaultKeymap = "viins";
-    dotDir = ".config/zsh";
+    dotDir = "${config.xdg.configHome}/zsh";
     history.ignoreDups = true;
     history.path = "${config.xdg.dataHome}/zsh/zsh_history";
     # I dont want to remap the up key, so only map this, setting ATUIN_NOBIND to true
-    initExtra = ''
+    initContent = ''
       up-line-or-local-history() {
         zle set-local-history 1
         zle up-line-or-history

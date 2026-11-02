@@ -15,7 +15,8 @@ in
   inherit unpatchedNixForNixPlugins nixForNixPlugins;
   patchedLix = pkgs.lix.overrideAttrs (old: {
     outputChecks = {};
-    patches = (old.patches or []) ++ [ ./lix-extra-builtins.patch ];
+    patches = (old.patches or [])
+        ++ [ (if pkgs.lib.versionAtLeast pkgs.lix.version "2.95" then ./lix-extra-builtins2.patch else ./lix-extra-builtins.patch) ];
   });
   # Various patches to change Nix version of existing packages so they don't error out because of nix-plugins in nix.conf
   nix-plugins =

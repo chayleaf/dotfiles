@@ -5,7 +5,8 @@
     nix-community-infra.url = "github:nix-community/infra";
     nix-community-infra.inputs.nixpkgs.follows = "nixpkgs";
     nix-community-infra.inputs.nixpkgs-update.inputs.nixpkgs.follows = "nixpkgs";
-    nixpkgs-kernel.url = "github:NixOS/nixpkgs/b5fae34d3c422c85dbde6fba8294379cdc2347e2";
+    nixpkgs-kernel.url = "github:NixOS/nixpkgs/6a5384a33cb84fa5ec7a8a158e3e4d9e42b25d32";
+    nixpkgs-kernel2.url = "github:NixOS/nixpkgs/b5fae34d3c422c85dbde6fba8294379cdc2347e2";
     nixpkgs-ereader.url = "github:NixOS/nixpkgs/dc9637876d0dcc8c9e5e22986b857632effeb727";
     nixpkgs.url = "github:chayleaf/nixpkgs/ci";
     nixvim.url = "github:nix-community/nixvim";
@@ -76,7 +77,7 @@
   };
 
   outputs =
-    base-inputs@{ self, nixpkgs, ... }:
+    base-inputs@{ self, ... }:
     let
       # --impure required for developing
       # it takes the paths for modules from filesystem as opposed to flake inputs
@@ -120,6 +121,7 @@
         else
           input
       ) base-inputs;
+      inherit (inputs) nixpkgs;
       # if x has key s, get it. Otherwise return def
       # All private config for hostname
       getPriv = hostname: priv.${hostname} or { };
@@ -281,7 +283,7 @@
           home ? { },
           ...
         }:
-        (args.flake or base-inputs.nixpkgs).lib.nixosSystem {
+        (args.flake or inputs.nixpkgs).lib.nixosSystem {
           inherit (args) system;
           # allow modules to access nixpkgs directly, use customized lib,
           # and pass nixos-harware to let hardware modules import parts of nixos-hardware

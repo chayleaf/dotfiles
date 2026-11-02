@@ -298,8 +298,8 @@ in
               lib.mapAttrsToList (k: v: ../../pkgs/mako/${k}) (builtins.readDir ../../pkgs/mako)
             );
         });
-        defaultTimeout = 10000;
-        font = "Noto Sans Mono 12";
+        settings.default-timeout = 10000;
+        settings.font = "Noto Sans Mono 12";
         settings.max-history = 50;
         # TODO: fix freezing
         # settings."mode=idle".freeze = 1;

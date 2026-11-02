@@ -19,7 +19,7 @@ in
     ../hosts/nixmsi.nix
   ];
 
-  boot.initrd.systemd.enable = false;
+  #boot.initrd.systemd.enable = false;
   boot.initrd = {
     luks.devices.cryptroot = {
       device = parts.encroot;

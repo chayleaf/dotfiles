@@ -473,7 +473,9 @@ in {
       dns = [ netAddresses.lan6 ];
       gateways = [ netAddresses.lan6 ];
       radvdSettings.AdvAutonomous = true;
+      #radvdSettings.AdvOnLink = false;
       coreradSettings.autonomous = true;
+      #coreradSettings.on_link = false;
       # # don't allocate addresses for most devices
       # keaSettings.pools = [ ];
       # just assign the reservations

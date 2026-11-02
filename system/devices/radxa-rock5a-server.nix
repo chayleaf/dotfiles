@@ -75,7 +75,7 @@ in
   boot.initrd = {
     systemd = {
       services.unlock-bcachefs-persist.enable = false;
-      enable = true;
+      #enable = true;
       network = {
         enable = true;
         links."10-mac" = {
@@ -125,8 +125,6 @@ in
     };
     luks.devices.cryptroot = {
       device = parts.enc;
-      # idk whether this is needed but it works
-      preLVM = true;
       # see https://asalor.blogspot.de/2011/08/trim-dm-crypt-problems.html before enabling
       allowDiscards = true;
       # improve SSD performance
@@ -134,19 +132,16 @@ in
     };
     luks.devices.bch0 = {
       device = parts.bch0;
-      preLVM = true;
       allowDiscards = true;
       bypassWorkqueues = true;
     };
     luks.devices.bch1 = {
       device = parts.bch1;
-      preLVM = true;
       allowDiscards = true;
       bypassWorkqueues = true;
     };
     luks.devices.bch2 = {
       device = parts.bch2;
-      preLVM = true;
       allowDiscards = true;
       bypassWorkqueues = true;
     };

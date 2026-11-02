@@ -64,7 +64,7 @@ in
     # actually this just means don't run kresd, unbound is used as the local dns resolver instead
     localDnsResolver = false;
     recipientDelimiter = "-";
-    lmtpSaveToDetailMailbox = "no";
+    lmtpSaveToDetailMailbox = false;
     hierarchySeparator = "/";
     stateVersion = 3;
     # Only allow local connections to noreply account
@@ -75,16 +75,13 @@ in
     };
   };
 
-  services.dovecot2.extraConfig =
-    let
-      passwd = builtins.toFile "dovecot2-local-passwd" ''
+  services.dovecot2.settings =
+    {
+      "passdb local-passdb" = {
+        driver = "passwd-file";
+        passwd_file_path = builtins.toFile "dovecot2-local-passwd" ''
         noreply@${cfg.domainName}:{plain}${cfg.unhashedNoreplyPassword}::::::allow_nets=local,127.0.0.0/8,::1
       '';
-    in
-    ''
-      passdb {
-        driver = passwd-file
-        args = ${passwd}
-      }
-    '';
+      };
+    };
 }

@@ -423,7 +423,7 @@ in*/
         }; }
       { settings.plugins.image = {
           enable = true;
-          backend = "kitty";
+          settings.backend = "kitty";
           settings.integrations = {
             markdown = {
               enabled = true;
