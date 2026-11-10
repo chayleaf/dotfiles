@@ -293,9 +293,11 @@
           package = pkgs.kdePackages.breeze-gtk;
           name = "Breeze-Dark";
         };
+        gtk4.theme = config.gtk.theme;
       };
       programs.fzf = {
         enable = true;
+        historyWidget.command = "";
       };
 
       # i run this manually instead
@@ -328,6 +330,7 @@
 
       # some packages require a pointer theme
       home.pointerCursor = {
+        enable = true;
         gtk.enable = true;
         package = pkgs.vanilla-dmz;
         name = "Vanilla-DMZ";

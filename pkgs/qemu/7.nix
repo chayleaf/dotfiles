@@ -42,19 +42,19 @@
   setfile,
   vmnet,
   guestAgentSupport ? with stdenv.hostPlatform; isLinux || isSunOS || isWindows,
-  numaSupport ? stdenv.isLinux && !stdenv.isAarch32,
+  numaSupport ? stdenv.isLinux && !stdenv.hostPlatform.isAarch32,
   numactl,
   seccompSupport ? stdenv.isLinux,
   libseccomp,
   alsaSupport ? lib.hasSuffix "linux" stdenv.hostPlatform.system && !nixosTestRunner,
-  pulseSupport ? !stdenv.isDarwin && !nixosTestRunner,
+  pulseSupport ? !stdenv.hostPlatform.isDarwin && !nixosTestRunner,
   libpulseaudio,
-  sdlSupport ? !stdenv.isDarwin && !nixosTestRunner,
+  sdlSupport ? !stdenv.hostPlatform.isDarwin && !nixosTestRunner,
   SDL2,
   SDL2_image,
-  jackSupport ? !stdenv.isDarwin && !nixosTestRunner,
+  jackSupport ? !stdenv.hostPlatform.isDarwin && !nixosTestRunner,
   libjack2,
-  gtkSupport ? !stdenv.isDarwin && !xenSupport && !nixosTestRunner,
+  gtkSupport ? !stdenv.hostPlatform.isDarwin && !xenSupport && !nixosTestRunner,
   gtk3,
   gettext,
   vte,
@@ -96,7 +96,7 @@
   hostCpuOnly ? false,
   hostCpuTargets ? (
     if hostCpuOnly then
-      (lib.optional stdenv.isx86_64 "i386-softmmu" ++ [ "${stdenv.hostPlatform.qemuArch}-softmmu" ])
+      (lib.optional stdenv.hostPlatform.isx86_64 "i386-softmmu" ++ [ "${stdenv.hostPlatform.qemuArch}-softmmu" ])
     else
       null
   ),
@@ -138,7 +138,7 @@ stdenv.mkDerivation rec {
       python3Packages.sphinx-rtd-theme
     ]
     ++ lib.optionals gtkSupport [ wrapGAppsHook ]
-    ++ lib.optionals stdenv.isDarwin [ sigtool ];
+    ++ lib.optionals stdenv.hostPlatform.isDarwin [ sigtool ];
 
   buildInputs =
     [
@@ -157,7 +157,7 @@ stdenv.mkDerivation rec {
       libslirp
     ]
     ++ lib.optionals ncursesSupport [ ncurses ]
-    ++ lib.optionals stdenv.isDarwin [
+    ++ lib.optionals stdenv.hostPlatform.isDarwin [
       CoreServices
       Cocoa
       Hypervisor
@@ -216,7 +216,7 @@ stdenv.mkDerivation rec {
 
   outputs = [ "out" ] ++ lib.optional guestAgentSupport "ga";
   # On aarch64-linux we would shoot over the Hydra's 2G output limit.
-  separateDebugInfo = !(stdenv.isAarch64 && stdenv.isLinux);
+  separateDebugInfo = !(stdenv.hostPlatform.isAarch64 && stdenv.isLinux);
 
   patches =
     [
@@ -303,7 +303,7 @@ stdenv.mkDerivation rec {
     ++ lib.optional spiceSupport "--enable-spice"
     ++ lib.optional usbredirSupport "--enable-usb-redir"
     ++ lib.optional (hostCpuTargets != null) "--target-list=${lib.concatStringsSep "," hostCpuTargets}"
-    ++ lib.optionals stdenv.isDarwin [
+    ++ lib.optionals stdenv.hostPlatform.isDarwin [
       "--enable-cocoa"
       "--enable-hvf"
     ]
@@ -326,7 +326,7 @@ stdenv.mkDerivation rec {
   # voiding the entitlements and making it non-operational.
   # The alternative is to re-sign with entitlements after stripping:
   # * https://github.com/qemu/qemu/blob/v6.1.0/scripts/entitlement.sh#L25
-  dontStrip = stdenv.isDarwin;
+  dontStrip = stdenv.hostPlatform.isDarwin;
 
   postFixup =
     ''
@@ -377,7 +377,7 @@ stdenv.mkDerivation rec {
       sed -i -e '/\/qga\/get-fsinfo/d' -e '/\/qga\/blacklist/d' \
         ../tests/unit/test-qga.c
     ''
-    + lib.optionalString stdenv.isDarwin ''
+    + lib.optionalString stdenv.hostPlatform.isDarwin ''
       # skip test that stalls on darwin, perhaps due to subtle differences
       # in fifo behaviour
       substituteInPlace ../tests/unit/meson.build \

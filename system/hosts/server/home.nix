@@ -76,6 +76,7 @@ in
       proxyWebsockets = true;
     };
     locations."/grafana/public/".alias = "${config.services.grafana.settings.server.static_root_path}/";
+    locations."/grafana/public/plugins/".alias = "/var/lib/grafana/plugins/";
     locations."/printer/" = {
       proxyPass = "http://127.0.0.1:631/";
       proxyWebsockets = true;
@@ -497,9 +498,9 @@ in
   services.avahi = {
     enable = true;
     settings.server.host-name = "home";
-    publish.enable = true;
+    settings.publish.disable-publishing = false;
     settings.publish.publish-addresses = true;
-    publish.userServices = true;
+    settings.publish.disable-user-service-publishing = false;
   };
   hardware.sane = {
     enable = true;

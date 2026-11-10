@@ -71,7 +71,10 @@ in
       );
     };
     languages = {
-      language-server.typescript = { };
+      language-server.typescript = {
+        command = "typescript-language-server";
+        args = [ "--stdio" ];
+      };
       language =
         map
           (x: {

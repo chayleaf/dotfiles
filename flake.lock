@@ -408,11 +408,11 @@
         ]
       },
       "locked": {
-        "lastModified": 1793193205,
-        "narHash": "sha256-X6xa6sGA7RnJQuZGbFMC+K+KToWAlBDCCjJXfTwEPsw=",
+        "lastModified": 1794260194,
+        "narHash": "sha256-jmaqtyhtPFNgK52WZo33PRvNPPs8AjOWBeCc07nTAM8=",
         "owner": "nix-community",
         "repo": "home-manager",
-        "rev": "095fef2f265c3c0da4fe315efba8f8a04495ab34",
+        "rev": "a9752a621164e9f84eb2a15858f1d54fd3cedab8",
         "type": "github"
       },
       "original": {
@@ -847,17 +847,17 @@
     },
     "nixpkgs-kernel": {
       "locked": {
-        "lastModified": 1793110602,
-        "narHash": "sha256-/gMqj0zr92So3WXxSicr4bOV8E5GufgFj2eNfK0vt/U=",
+        "lastModified": 1793540411,
+        "narHash": "sha256-fiPJ88izTVucjeo2EQ3jk4aWmLg03I1D4vxnX2QjEgE=",
         "owner": "NixOS",
         "repo": "nixpkgs",
-        "rev": "6a5384a33cb84fa5ec7a8a158e3e4d9e42b25d32",
+        "rev": "0bb2eedc20e4739f29e8045034f2828ad7054f8f",
         "type": "github"
       },
       "original": {
         "owner": "NixOS",
         "repo": "nixpkgs",
-        "rev": "6a5384a33cb84fa5ec7a8a158e3e4d9e42b25d32",
+        "rev": "0bb2eedc20e4739f29e8045034f2828ad7054f8f",
         "type": "github"
       }
     },
@@ -910,11 +910,11 @@
     },
     "nixpkgs_2": {
       "locked": {
-        "lastModified": 1793302057,
-        "narHash": "sha256-eLTefl6TJ0BZur0BYoHYtKdCakLTTMUamiaHuGYjACY=",
+        "lastModified": 1793621163,
+        "narHash": "sha256-LuyxePueK9qWEF1GRT4xF8fz/v5K3motJ6oldiq4044=",
         "owner": "chayleaf",
         "repo": "nixpkgs",
-        "rev": "f8309932eb7c1955661b9c4f51cefbc7390548b3",
+        "rev": "7fd8305cd44322a8b1e372d0bf31b2cdb315c6ea",
         "type": "github"
       },
       "original": {
@@ -973,11 +973,11 @@
         ]
       },
       "locked": {
-        "lastModified": 1790311603,
-        "narHash": "sha256-05Mocg7MgsBNF3PLyloUg7C9uCEvlwHRaPk2o5JHkL8=",
+        "lastModified": 1794324014,
+        "narHash": "sha256-ZHFAtrXrHKiL2fIrM6MLEUPK3Fp9y07BX9R+vqusqD0=",
         "owner": "chayleaf",
         "repo": "notnft",
-        "rev": "b453dcfb38d03d4632f42e4bb7ec1803f3ae34ec",
+        "rev": "68cc53c4ba2921f4a178cb57bd70cffba9c7fe0b",
         "type": "github"
       },
       "original": {

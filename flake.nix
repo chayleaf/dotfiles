@@ -5,7 +5,7 @@
     nix-community-infra.url = "github:nix-community/infra";
     nix-community-infra.inputs.nixpkgs.follows = "nixpkgs";
     nix-community-infra.inputs.nixpkgs-update.inputs.nixpkgs.follows = "nixpkgs";
-    nixpkgs-kernel.url = "github:NixOS/nixpkgs/6a5384a33cb84fa5ec7a8a158e3e4d9e42b25d32";
+    nixpkgs-kernel.url = "github:NixOS/nixpkgs/0bb2eedc20e4739f29e8045034f2828ad7054f8f";
     nixpkgs-kernel2.url = "github:NixOS/nixpkgs/b5fae34d3c422c85dbde6fba8294379cdc2347e2";
     nixpkgs-ereader.url = "github:NixOS/nixpkgs/dc9637876d0dcc8c9e5e22986b857632effeb727";
     nixpkgs.url = "github:chayleaf/nixpkgs/ci";
@@ -207,7 +207,7 @@
           nixmsi = rec {
             system = "x86_64-linux";
             modules = [ ./system/devices/msi-delta-15-workstation.nix ];
-            home.common.modules = [ inputs.nixvim.homeManagerModules.default ];
+            home.common.modules = [ inputs.nixvim.homeModules.default ];
             home.common.extraSpecialArgs = {
               notlua = inputs.notlua.lib.${system};
             };
@@ -216,7 +216,7 @@
           phone = rec {
             system = "aarch64-linux";
             modules = [ ./system/devices/oneplus-6-phone.nix ];
-            home.common.modules = [ inputs.nixvim.homeManagerModules.default ];
+            home.common.modules = [ inputs.nixvim.homeModules.default ];
             home.common.extraSpecialArgs = {
               notlua = inputs.notlua.lib.${system};
             };

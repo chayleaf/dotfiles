@@ -113,12 +113,10 @@ in
         wget
         (python3.withPackages (p: [ p.requests p.beautifulsoup4 p.statsmodels ]))
       ];
-      labels = [ "native:host" ];
-      #name = "git.${cfg.domainName}";
-      #tokenFile = "/secrets/forgejo_actions_token";
+      settings.runner.labels = [ "native:host" ];
+      settings.server.connections.default.url = "https://git.${cfg.domainName}";
       settings.server.connections.default.uuid = "863c2ae5-bd84-4f31-b286-96acd0597e1a";
       secrets.server.connections.default.token_url = "/secrets/forgejo_actions_token2";
-      url = "https://git.${cfg.domainName}";
     };
   };
 
@@ -140,7 +138,7 @@ in
   };
   services.nextcloud = {
     enable = true;
-    package = pkgs.nextcloud33;
+    package = pkgs.nextcloud35;
     autoUpdateApps.enable = true;
     # TODO: use socket auth and remove the next line
     database.createLocally = false;

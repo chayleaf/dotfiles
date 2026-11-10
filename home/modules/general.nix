@@ -40,6 +40,7 @@
   };
 
   home.shell.enableBashIntegration = true;
+  xdg.userDirs.setSessionVariables = false;
   programs = {
     atuin = {
       enable = true;
@@ -219,6 +220,7 @@
     };
     ssh = {
       enable = !config.minimal;
+      enableDefaultConfig = false;
       #settings."*".Compression = true;
     };
     tmux = {
@@ -279,7 +281,7 @@
   home.file.".cache/nix-index/files" = lib.mkIf (!config.minimal) {
     source =
       assert config.xdg.cacheHome == "${config.home.homeDirectory}/.cache";
-      inputs.nix-index-database.packages.${pkgs.system}.nix-index-database;
+      inputs.nix-index-database.packages.${pkgs.stdenv.hostPlatform.system}.nix-index-database;
   };
 
   systemd.user.tmpfiles.rules = lib.mkIf (!config.minimal) (

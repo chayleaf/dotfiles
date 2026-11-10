@@ -605,13 +605,8 @@ in
       };
       services.swayidle = {
         enable = config.wayland.windowManager.sway.enable;
-        events = [
-          {
-            event = "before-sleep";
-            command = toString swaylock-start;
-          }
-          # after-resume, lock, unlock
-        ];
+        events.before-sleep = toString swaylock-start;
+        # after-resume, lock, unlock
         timeouts = [
           {
             timeout = if config.phone.enable && !config.minimal then 30 else 300;
@@ -667,7 +662,6 @@ in
       home.packages = lib.mkIf config.wayland.windowManager.sway.enable (with pkgs; [ wl-clipboard ]);
       programs.rofi = {
         enable = true;
-        font = "Noto Sans Mono 16";
         package = lib.mkIf config.phone.enable (
           pkgs.rofi.override {
             rofi-unwrapped = pkgs.rofi-unwrapped.overrideAttrs (old: {
@@ -724,8 +718,9 @@ in
             };
             "@import" = "${./gruvbox-common.rasi}";
           };
-        terminal = config.terminalBin;
-        extraConfig = {
+        settings = {
+          terminal = config.terminalBin;
+          font = "Noto Sans Mono 16";
           modi =
             lib.optionals (!config.phone.enable) [
               "steam:${pkgs.rofi-steam-game-list}/bin/rofi-steam-game-list"

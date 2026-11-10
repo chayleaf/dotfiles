@@ -58,8 +58,10 @@
           };
           unhashedNoreplyPassword = mkOption {
             type = types.str;
-            description = "unhashed noreply password for internal access only. \
-              This should be different from the password that is hashed for better security";
+            description = ''
+              unhashed noreply password for internal access only.
+              this should be different from the password that is hashed for better security
+            '';
           };
         };
       };

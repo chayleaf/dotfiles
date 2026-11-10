@@ -110,9 +110,9 @@ let
   in with notnft.dsl; with payload; ruleset {
     filter = add table.netdev ({
       ingress_common = add chain
-        ([(is.eq (bit.and tcp.flags (f: bit.or f.fin f.syn)) (f: bit.or f.fin f.syn))] ++ logIfWan "${logPrefix}fin+syn drop " ++ [drop])
-        ([(is.eq (bit.and tcp.flags (f: bit.or f.syn f.rst)) (f: bit.or f.syn f.rst))] ++ logIfWan "${logPrefix}syn+rst drop " ++ [drop])
-        [(is.eq (bit.and tcp.flags (f: with f; bit.or fin syn rst psh ack urg)) 0) (log "${logPrefix}null drop ") drop]
+        ([(is.eq (bit.and tcp.flags (f: bit.OR f.fin f.syn)) (f: bit.OR f.fin f.syn))] ++ logIfWan "${logPrefix}fin+syn drop " ++ [drop])
+        ([(is.eq (bit.and tcp.flags (f: bit.OR f.syn f.rst)) (f: bit.OR f.syn f.rst))] ++ logIfWan "${logPrefix}syn+rst drop " ++ [drop])
+        [(is.eq (bit.and tcp.flags (f: with f; bit.OR fin syn rst psh ack urg)) 0) (log "${logPrefix}null drop ") drop]
         [(is tcp.flags (f: f.syn)) (is.eq tcpOpt.maxseg.size (range 0 500)) (log "${logPrefix}maxseg drop ") drop]
         # reject requests with own saddr
         # log if they are meant for us...
@@ -473,9 +473,9 @@ in {
       dns = [ netAddresses.lan6 ];
       gateways = [ netAddresses.lan6 ];
       radvdSettings.AdvAutonomous = true;
-      #radvdSettings.AdvOnLink = false;
+      radvdSettings.AdvOnLink = false;
       coreradSettings.autonomous = true;
-      #coreradSettings.on_link = false;
+      coreradSettings.on_link = false;
       # # don't allocate addresses for most devices
       # keaSettings.pools = [ ];
       # just assign the reservations
@@ -995,14 +995,12 @@ in {
   # share printers (and allow unbound to resolve .local)
   services.avahi = {
     enable = true;
-    hostName = "router";
-    allowInterfaces = [ "br0" ];
-    publish = {
-      enable = true;
-      addresses = true;
-      domain = true;
-      userServices = true;
-    };
+    settings.server.host-name = "router";
+    settings.server.allow-interfaces = [ "br0" ];
+    settings.publish.publish-domain = true;
+    settings.publish.publish-addresses = true;
+    settings.publish.disable-publishing = false;
+    settings.publish.disable-user-service-publishing = false;
   };
 
   services.iperf3 = {

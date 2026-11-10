@@ -1,4 +1,4 @@
-{ config, pkgs, lib, notlua, ... }:
+{ config, pkgs, lib, notlua, inputs, ... }:
 /*let
   omnisharp-mono = pkgs.fetchzip {
     url = "https://github.com/omnisharp/omnisharp-roslyn/releases/download/v1.39.13/omnisharp-linux-x64.zip";
@@ -474,6 +474,7 @@ in*/
       { plugin = ps.neorg-telescope; }
     ];
   in lib.mkMerge ((builtins.concatLists (map (x: lib.toList (x.settings or [ ])) plugins)) ++ lib.toList {
+    nixpkgs.source = inputs.nixpkgs;
     enable = true;
     defaultEditor = true;
     package = pkgs.neovim-unwrapped;
